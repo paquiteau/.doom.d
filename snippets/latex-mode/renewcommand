@@ -1,0 +1,6 @@
+# -*- mode: snippet -*-
+# name: renewcommand
+# key: rcmd
+# --
+\renewcommand{$1}{$2}
+$3

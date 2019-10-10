@@ -1,0 +1,5 @@
+# key: par
+# name: paragraph
+# --
+\paragraph{$1}
+$2

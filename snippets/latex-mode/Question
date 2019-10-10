@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: Question
+# key: q
+# --
+\Question $0

@@ -1,0 +1,27 @@
+# -*- mode: snippet -*-
+# contributor: Mads D. Kristensen <madsdk@gmail.com>
+# contributor : Song Qiang <tsiangsung@gmail.com>
+# key: article
+# group: skeleton
+# name: \documentclass{article} ...
+# --
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[french]{babel}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage[left=2cm,right=2cm,top=2cm,bottom=2cm]{geometry}
+
+\title{${1:title}}
+\author{${2:Author Name}}
+
+\begin{document}
+\maketitle
+
+
+\bibliographystyle{${3:plain}}
+\bibliography{${4:literature.bib}}
+
+\end{document}

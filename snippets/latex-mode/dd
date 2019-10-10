@@ -1,0 +1,4 @@
+# key: dd
+# name: deriv
+# --
+\deriv[$1]{$2}

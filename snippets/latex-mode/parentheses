@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: parentheses
+# key: pare
+# --
+\left( $1 \right)$2

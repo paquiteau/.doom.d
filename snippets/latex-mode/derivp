@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: derivp
+# key: dp
+# --
+\\derivp[$1]{$2}$3

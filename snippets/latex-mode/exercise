@@ -1,0 +1,10 @@
+# -*- mode: snippet -*-
+# name: exercise
+# key: exercise
+# --
+\\begin{Exercise}[title=${1:titre}]
+${2:Enonce}
+\\end{Exercise}
+\\begin{Answer}
+${3:Solution}
+\\end{Answer}
