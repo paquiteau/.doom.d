@@ -1,19 +1,20 @@
-;;; ~/.doom.d/config.el -*- lexical-binding: t; -*-
+;;; .doom.d/config.el -*- lexical-binding: t; -*-
 
 ;; Place your private configuration here
-;; ---------------------
-;; Private
-;; ---------------------
+;;; Code:
+;; -----------------
+;; USER CONFIG
+;; -----------------
+
 
 (setq user-mail-adress "pac@crans.org"
       user-full-name "Pierre-Antoine Comby")
-;; ---------------------
-;; Themes
-;; ---------------------
-;;
 
-;; All theme are safe to load
-(setq custom-safe-themes t)
+(setq projectile-project-search-path  '("~/Repositories"))
+
+;; -----------------
+;; THEME
+;; -----------------
 
 ;; Custom doom-one configuration
   (when (custom-theme-enabled-p 'doom-one)
@@ -24,50 +25,62 @@
                           :foreground "#a16ba1"
                           :weight 'bold
                           :height 0.9
-                          :box '(:line-width 2 :color "#5c3d5c"))))
+                          :box '(:line-width 2 :color "#5c3d5c")
+                          )
+      )
+    )
 (after! imenu-list
   (set-popup-rule! "^\\*Ilist"
-    :side 'right :size 35 :quit nil :select t :ttl 0))
+    :side 'right :size 35 :quit nil :select t :ttl 0)
+  )
+(setq doom-modeline-icon t
+      doom-modeline-major-mode-icon t
+      doom-modeline-minor-modes nil
+      doom-modeline-enable-word-count t
+      doom-modeline-checker-simple-format t
+      doom-modeline-persp-name t
+      doom-modeline-lsp t)
+
+;; Show trailing white spaces
+(setq show-trailing-whitespace t)
+
+;; Disable trailing whitespaces in the minibuffer
+(add-hook! '(minibuffer-setup-hook doom-popup-mode-hook)
+  (setq-local show-trailing-whitespace nil))
 
 
-(setq treemacs-width 20)
 
-
-
-;; ---------------------
-;; LaTeX
-;; ---------------------
-
+;; -----------------
+;;  LaTeX
+;; -----------------
 
 (after! latex
   ;; Save without asking when invoking TeX commands
   (setq TeX-save-query nil)
+  ;; use --shell-escape required for minted package
+  (setq LaTeX-command (concat LaTeX-command " -shell-escape"))
   ;; While inserting commands in comment sections, do not be intelligent and comment the command
   (setq LaTeX-insert-into-comments nil)
-  ;; if the babel language is german, set the quotes as if english
+  ;; if the babel language is french set the quotes as if english
   (add-hook 'TeX-language-fr-hook
             (lambda ()
               (setq TeX-quote-language `("francais" "``" "''" ,TeX-quote-after-quote))))
-(turn-off-smartparens-mode)
-;;  (setq LaTeX-electric-left-right-brace t)
-  ;; Do not spellcheck latex documents when opened, this takes a lot of time.
-  ;;(remove-hook 'flyspell-mode-hook #'+spellcheck|immediately)
-  (after! tex
-    (setq-hook! 'TeX-mode-hook +flyspell-immediately nil))
+  ;; use ! instead of ` for symbol shortcut
   (customize-set-variable 'LaTeX-math-abbrev-prefix (kbd "!"))
-  (setq LaTeX-command (concat LaTeX-command " -shell-escape"))
+  (add-hook 'LaTeX-mode-hook (lambda () (LaTeX-math-mode)
+                               (prettify-symbols-mode)
+                               ;;(latex-extra-mode)
+                               (visual-line-mode)
+                               (set-fill-column 2001)
+                               )
+            )
   )
-
-;; Enable whitespace mode with latex
-;;(add-hook 'LaTeX-mode-hook #'whitespace-mode)
-
-;; Enable LaTeX-math-mode by default: add math symbols with the key `LaTeX-math-abbrev-prefix'
-(add-hook 'LaTeX-mode-hook (lambda () (LaTeX-math-mode)
-                             (prettify-symbols-mode)
-                            ; (latex-extra-mode)
-                             (visual-line-mode)
-                             (set-fill-column 2000)
+;; need to be done separetly
+(setq LaTeX-math-list (quote (
+                             (?I "int" "" 8734)
+                             (?8 "infty" "" 8747))
                              ))
+
 ;; ---------------------
 ;; OrgMode
 ;; ---------------------
@@ -120,11 +133,6 @@
 
 )
 
-(def-package! org-ref
-  :after org
-  :config
-  )
-
 
 ;; ------------
 ;; Org Files
@@ -153,18 +161,6 @@
   ;; After evaluating a SRC_BLOCK, redisplay inline images
   (add-hook 'org-babel-after-execute-hook #'org-redisplay-inline-images)
   )
-;; ------
-;; Org & Getting things done
-;; ------
-(after! org
-  (setq org-agenda-files '("~/org/todo.org"
-                           "~/org/gtd.org"))
-
-  (setq org-refile-targets '(("~/org/gtd.org" :maxlevel . 2)
-                             ("~/org/someday.org" :level . 1)
-                             ("~/org/tickler.org" :maxlevel . 2)))
-)
-
 
 
 ;; -----------------------
@@ -174,36 +170,20 @@
 (add-hook! magit-mode (visual-line-mode +1))
 
 
-;; -----------------------
-;; UI
-;; -----------------------
-(setq doom-modeline-icon t
-      doom-modeline-major-mode-icon t
-      doom-modeline-minor-modes nil
-      doom-modeline-enable-word-count t
-      doom-modeline-checker-simple-format t
-      doom-modeline-persp-name t
-      doom-modeline-lsp t)
+(after! treemacs
+  (setq treemacs-width 20)
+  )
 
-;; Show trailing white spaces
-(setq show-trailing-whitespace t)
-
-;; Disable trailing whitespaces in the minibuffer
-(add-hook! '(minibuffer-setup-hook doom-popup-mode-hook)
-  (setq-local show-trailing-whitespace nil))
-
-;; Reuse dired buffers
-(put 'dired-find-alternate-file 'disabled nil)
-
+;; --------------
 ;; song book mode
-
+;; --------------
 (load! "songbook")
 (setq auto-mode-alist
 (append '(("\\.sg$" . songbook-mode)
 ) auto-mode-alist))
 (autoload 'songbook-mode "songbook" "Major-mode for Patacrep songbook's songs" t)
 
-;;
+;; --------------
 ;; Wiki Moin Moin
-;;
+;; --------------
 (load! "moinmoin-mode")
