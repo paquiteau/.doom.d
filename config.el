@@ -17,7 +17,7 @@
 ;; -----------------
 
 ;; Custom doom-one configuration
-  (when (custom-theme-enabled-p 'doom-one)
+(when (custom-theme-enabled-p 'doom-one)
     (after! org
       ;; Purple boxes for Org BEGIN_SRC and END_SRC
       (set-face-attribute 'org-block-begin-line nil
