@@ -65,6 +65,11 @@
 ;; Create new workspace when switching project
 (setq +workspaces-on-switch-project-behavior t)
 
+(after! dired
+  (map!
+   :map dired-mode-map
+   :nv "DEL" #'dired-up-directory)
+  )
 
 ;; -----------------
 ;;  LaTeX
