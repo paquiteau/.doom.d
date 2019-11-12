@@ -13,11 +13,13 @@
        ;;japanese
 
        :completion
-       company           ; the ultimate code completion backend
+       (company            ; the ultimate code completion backend
+         +childframe)      ;
        ;;helm              ; the *other* search engine for love and life
        ;;ido               ; the other *other* search engine...
-       (ivy               ; a search engine for love and life
-        +icons)
+       (ivy                ; a search engine for love and life
+        +icons
+        +childframe)
 
        :ui
        ;;deft              ; notational velocity for Emacs
@@ -141,7 +143,8 @@
        ;;php               ; perl's insecure younger brother
        ;;plantuml          ; diagrams for confusing people more
        ;;purescript        ; javascript, but functional
-       python            ; beautiful is better than ugly
+       (python             ; beautiful is better than ugly
+          +pyenv)          ;
        ;;qt                ; the 'cutest' gui framework ever
        ;;racket            ; a DSL for DSLs
        ;;rest              ; Emacs as a REST client
