@@ -184,6 +184,13 @@
   )
 
 
+;; --------------
+;; MATLAB
+;; --------------
+(add-hook! matlab-mode
+           (linum-mode)
+           (matlab-cedet-setup)
+           )
 
 ;; --------------
 ;; song book mode
