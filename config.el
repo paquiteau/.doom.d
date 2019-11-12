@@ -48,6 +48,22 @@
 (add-hook! '(minibuffer-setup-hook doom-popup-mode-hook)
   (setq-local show-trailing-whitespace nil))
 
+;; --------------------
+;;        IDE
+;; --------------------
+
+(add-hook! magit-mode (visual-line-mode +1))
+(setq magit-repository-directories '(("~/Repositories" . 3)))
+
+(after! treemacs
+  (setq treemacs-width 20)
+  )
+
+(after! company
+  (setq company-idle-delay 0))
+
+;; Create new workspace when switching project
+(setq +workspaces-on-switch-project-behavior t)
 
 
 ;; -----------------
@@ -163,16 +179,6 @@
   )
 
 
-;; -----------------------
-;; Tools
-;; -----------------------
-
-(add-hook! magit-mode (visual-line-mode +1))
-
-
-(after! treemacs
-  (setq treemacs-width 20)
-  )
 
 ;; --------------
 ;; song book mode
