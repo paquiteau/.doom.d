@@ -10,25 +10,11 @@
 (setq user-mail-adress "pac@crans.org"
       user-full-name "Pierre-Antoine Comby")
 
-(setq projectile-project-search-path  '("~/Repositories"))
-
 ;; -----------------
 ;; THEME
 ;; -----------------
 
 ;; Custom doom-one configuration
-(when (custom-theme-enabled-p 'doom-one)
-    (after! org
-      ;; Purple boxes for Org BEGIN_SRC and END_SRC
-      (set-face-attribute 'org-block-begin-line nil
-                          :background "#5c3d5c"
-                          :foreground "#a16ba1"
-                          :weight 'bold
-                          :height 0.9
-                          :box '(:line-width 2 :color "#5c3d5c")
-                          )
-      )
-    )
 (after! imenu-list
   (set-popup-rule! "^\\*Ilist"
     :side 'right :size 35 :quit nil :select t :ttl 0)
@@ -54,6 +40,7 @@
 
 (add-hook! magit-mode (visual-line-mode +1))
 (setq magit-repository-directories '(("~/Repositories" . 3)))
+(setq projectile-project-search-path  '("~/Repositories"))
 
 (after! treemacs
   (setq treemacs-width 20)
@@ -131,12 +118,27 @@
         org-return-follows-link t  ; RET follows links
         org-hide-emphasis-markers t ; do not show format markers
         org-startup-with-inline-images t ; open buffers show inline images
+        org-image-actual-width 200       ; same size for all images
         ;;ob-async-no-async-languages-alist '("ipython" "jupyter") ; do not use async for these languages
         ;; visual-fill-column-width 120 ; size for usage with visual fill column mode
         ;;org-babel-default-header-args:sh
 
         )
   )
+;; Style for org boxes
+(when (custom-theme-enabled-p 'doom-one)
+    (after! org
+      ;; Purple boxes for Org BEGIN_SRC and END_SRC
+      (set-face-attribute 'org-block-begin-line nil
+                          :background "#5c3d5c"
+                          :foreground "#a16ba1"
+                          :weight 'bold
+                          :height 0.9
+                          :box '(:line-width 2 :color "#5c3d5c")
+                          )
+      )
+    )
+
 ;; ------------
 ;; Org & LaTeX
 ;; ------------
@@ -182,7 +184,6 @@
                       :height 0.9
                       :box '(:line-width 2 :color "#5c3d5c"))
   (add-hook 'org-mode-hook (lambda () (hl-fill-column-mode -1)))
-
 
   ;; Do not enable auto-fill-mode by default
   (remove-hook 'org-mode-hook #'auto-fill-mode)
