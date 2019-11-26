@@ -221,3 +221,27 @@
 ;; Wiki Moin Moin
 ;; --------------
 (load! "moinmoin-mode")
+
+;; ;
+;;  Disable arrow keys !
+;; (define-key evil-insert-state-map [left] 'undefined)
+;; (define-key evil-insert-state-map [right] 'undefined)
+;; (define-key evil-insert-state-map [up] 'undefined)
+;; (define-key evil-insert-state-map [down] 'undefined)
+
+;; (define-key evil-motion-state-map [left] 'undefined)
+;; (define-key evil-motion-state-map [right] 'undefined)
+;; (define-key evil-motion-state-map [up] 'undefined)
+;; (define-key evil-motion-state-map [down] 'undefined)
+;; (global-unset-key (kbd "<left>"))
+;; (global-unset-key (kbd "<right>"))
+;; (global-unset-key (kbd "<up>"))
+;; (global-unset-key (kbd "<down>"))
+;; (global-unset-key (kbd "<C-left>"))
+;; (global-unset-key (kbd "<C-right>"))
+;; (global-unset-key (kbd "<C-up>"))
+;; (global-unset-key (kbd "<C-down>"))
+;; (global-unset-key (kbd "<M-left>"))
+;; (global-unset-key (kbd "<M-right>"))
+;; (global-unset-key (kbd "<M-up>"))
+;; (global-unset-key (kbd "<M-down>"))
