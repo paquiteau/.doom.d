@@ -1,0 +1,14 @@
+# -*- mode: snippet -*-
+# name: subfile
+# key: subfile
+# condition: t                                 
+# --
+\documentclass[${1:main.tex}]{subfiles}
+\begin{document}
+$0
+\end{document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "${1:$(file-name-sans-extension yas-text)}"
+%%% End:
