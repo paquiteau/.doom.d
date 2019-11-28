@@ -58,9 +58,9 @@
    :nv "DEL" #'dired-up-directory)
   )
 
-(setq  ispell-dictionary "francais" )
+(setq  ispell-dictionary "english" )
 
-(let ((langs '("english" "francais" )))
+(let ((langs '("english" "francais" "deutsch" )))
   (setq lang-ring (make-ring (length langs)))
   (dolist (elem langs) (ring-insert lang-ring elem)))
 
