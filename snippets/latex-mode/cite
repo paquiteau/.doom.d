@@ -1,5 +1,6 @@
 # -*- mode: snippet -*-
 # name: cite
+# condition: (not (texmathp))
 # key: c
 # uuid: c
 # --

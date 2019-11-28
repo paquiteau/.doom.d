@@ -72,6 +72,9 @@
 
 (global-set-key [f6] 'cycle-ispell-languages)
 
+(after! yasnippet
+(setq yas-triggers-in-field t)
+)
 
 ;; -----------------
 ;;  LaTeX
