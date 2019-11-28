@@ -1,0 +1,6 @@
+# -*- mode: snippet -*-
+# name: sum
+# key: s
+# condition: (texmathp)
+# --
+\sum_{$1:}^{$2}$0

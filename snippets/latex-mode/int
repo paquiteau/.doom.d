@@ -1,0 +1,6 @@
+# -*- mode: snippet -*-
+# name: int
+# key: int
+# condition: (texmathp)
+# --
+\int_{$1}^{$2}$0
