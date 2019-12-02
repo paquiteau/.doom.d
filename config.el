@@ -58,6 +58,11 @@
    :nv "DEL" #'dired-up-directory)
   )
 
+
+;; --------------------
+;;      Language
+;; --------------------
+
 (setq  ispell-dictionary "francais" )
 
 (let ((langs '("english" "francais" )))
@@ -72,6 +77,10 @@
 
 (global-set-key [f6] 'cycle-ispell-languages)
 
+
+;; -------------------
+;;      Snippet
+;; -------------------
 (after! yasnippet
 (setq yas-triggers-in-field t)
 )
@@ -104,7 +113,9 @@
 ;; need to be done separetly
 (setq LaTeX-math-list (quote (
                              (?I "int" "" 8734)
-                             (?8 "infty" "" 8747))
+                             (?8 "infty" "" 8747)
+                             (?! (lambda () (interactive) (insert "!")) "" ?!)
+                             )
                              ))
 
 ;; ---------------------
