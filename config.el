@@ -2,10 +2,12 @@
 
 ;; Place your private configuration here
 ;;; Code:
+
+(fset 'battery-update #'ignore)
+
 ;; -----------------
 ;; USER CONFIG
 ;; -----------------
-
 
 (setq user-mail-adress "pac@crans.org"
       user-full-name "Pierre-Antoine Comby")
@@ -38,8 +40,10 @@
 ;;        IDE
 ;; --------------------
 
-(add-hook! magit-mode (visual-line-mode +1))
-(setq magit-repository-directories '(("~/Repositories" . 3)))
+
+  (add-hook! magit-mode (visual-line-mode +1))
+  (setq magit-repository-directories '(("~/Repositories" . 3)))
+
 (setq projectile-project-search-path  '("~/Repositories"))
 
 (after! treemacs

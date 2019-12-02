@@ -11,4 +11,5 @@ $0
 %%% Local Variables:
 %%% mode: latex
 %%% TeX-master: "${1:$(file-name-sans-extension yas-text)}"
+%%% ispell-local-dictionary: "${2:english}"
 %%% End:
