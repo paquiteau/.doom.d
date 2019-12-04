@@ -104,9 +104,14 @@
 ;; need to be done separetly
 (setq LaTeX-math-list (quote (
                              (?I "int" "" 8734)
-                             (?8 "infty" "" 8747))
+                             (?8 "infty" "" 8747)
+                             (?! (lambda () (interactive) (insert "!")) "" ?!))
                              ))
 
+(setq auto-mode-alist
+     (append
+         '(("\\.tikz\\'" . latex-mode))
+          auto-mode-alist))
 ;; ---------------------
 ;; OrgMode
 ;; ---------------------
