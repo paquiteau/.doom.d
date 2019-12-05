@@ -66,9 +66,9 @@
 ;;      Language
 ;; --------------------
 
-(setq  ispell-dictionary "francais" )
+(setq  ispell-dictionary "english" )
 
-(let ((langs '("english" "francais" )))
+(let ((langs '("english" "francais" "deutsch" )))
   (setq lang-ring (make-ring (length langs)))
   (dolist (elem langs) (ring-insert lang-ring elem)))
 
@@ -117,10 +117,13 @@
 (setq LaTeX-math-list (quote (
                              (?I "int" "" 8734)
                              (?8 "infty" "" 8747)
-                             (?! (lambda () (interactive) (insert "!")) "" ?!)
-                             )
+                            (?! (lambda () (interactive) (insert "!")) "" ?!))
                              ))
 
+(setq auto-mode-alist
+     (append
+         '(("\\.tikz\\'" . latex-mode))
+          auto-mode-alist))
 ;; ---------------------
 ;; OrgMode
 ;; ---------------------
