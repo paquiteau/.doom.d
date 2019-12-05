@@ -3,7 +3,6 @@
 ;; Place your private configuration here
 ;;; Code:
 
-(fset 'battery-update #'ignore)
 
 ;; -----------------
 ;; USER CONFIG
@@ -51,7 +50,7 @@
   )
 
 (after! company
-  (setq company-idle-delay 0))
+  (setq company-idle-delay 0.5))
 
 ;; Create new workspace when switching project
 (setq +workspaces-on-switch-project-behavior t)
