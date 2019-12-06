@@ -1,20 +1,19 @@
-;;; .doom.d/config.el -*- lexical-binding: t; -*-
+#+TITLE: My emacs doom configuration
+#+AUTHOR: Pierre-Antoine Comby
+#+EMAIL: pac@crans.org
+#+LANGUAGE: en
+#+PROPERTY: header-args :tangle yes :cache yes :results silent :padline no
 
-;; Place your private configuration here
-;;; Code:
+* Personal Informations
 
-
-;; -----------------
-;; USER CONFIG
-;; -----------------
-
+#+BEGIN_SRC emacs-lisp
 (setq user-mail-adress "pac@crans.org"
       user-full-name "Pierre-Antoine Comby")
+#+END_SRC
 
-;; -----------------
-;; THEME
-;; -----------------
+* Themes
 
+#+BEGIN_SRC emacs-lisp
 ;; Custom doom-one configuration
 (after! imenu-list
   (set-popup-rule! "^\\*Ilist"
@@ -35,39 +34,79 @@
 (add-hook! '(minibuffer-setup-hook doom-popup-mode-hook)
   (setq-local show-trailing-whitespace nil))
 
-;; --------------------
-;;        IDE
-;; --------------------
+#+END_SRC
 
+* Emacs as an IDE
+** Magit Version control
 
+#+BEGIN_SRC emacs-lisp
   (add-hook! magit-mode (visual-line-mode +1))
   (setq magit-repository-directories '(("~/Repositories" . 3)))
+#+END_SRC
 
+** Projectile
+
+#+BEGIN_SRC emacs-lisp
 (setq projectile-project-search-path  '("~/Repositories"))
 
+(setq +workspaces-on-switch-project-behavior t)
+#+END_SRC
+
+** Treemacs
+
+the folder sidebar, usefull
+#+BEGIN_SRC emacs-lisp
 (after! treemacs
   (setq treemacs-width 20)
   )
+#+END_SRC
 
+** Company
+
+autocompletion done fast!
+#+BEGIN_SRC emacs-lisp
 (after! company
   (setq company-idle-delay 0.5))
+#+END_SRC
 
-;; Create new workspace when switching project
-(setq +workspaces-on-switch-project-behavior t)
+** Snippet
+#+BEGIN_SRC emacs-lisp
+(after! yasnippet
+  (setq yas-triggers-in-field t)
+)
+#+END_SRC
 
+* Dired
+
+the file explorer, underused at the moment
+
+#+BEGIN_SRC emacs-lisp
 (after! dired
   (map!
    :map dired-mode-map
    :nv "DEL" #'dired-up-directory)
   )
+#+END_SRC
 
+* Natural languages checking
+** Language dictionnary
+*** system configuration
+Need to have aspell-<language> install.
 
-;; --------------------
-;;      Language
-;; --------------------
+#+BEGIN_SRC sh :export nil
+sudo apt install aspell-fr aspell-en aspell-de
+#+END_SRC
 
+*** flyspell configuration
+
+Set english as default.
+#+BEGIN_SRC emacs-lisp
 (setq  ispell-dictionary "english" )
+#+END_SRC
 
+Cycle through language support.
+
+#+BEGIN_SRC emacs-lisp
 (let ((langs '("english" "francais" "deutsch" )))
   (setq lang-ring (make-ring (length langs)))
   (dolist (elem langs) (ring-insert lang-ring elem)))
@@ -80,17 +119,11 @@
 
 (global-set-key [f6] 'cycle-ispell-languages)
 
+#+END_SRC
 
-;; -------------------
-;;      Snippet
-;; -------------------
-(after! yasnippet
-(setq yas-triggers-in-field t)
-)
-
-;; -----------------
-;;  LaTeX
-;; -----------------
+* Markup Languages
+** LaTeX
+#+BEGIN_SRC emacs-lisp
 
 (after! latex
   ;; Save without asking when invoking TeX commands
@@ -112,22 +145,74 @@
                                (set-fill-column 2001)
                                )
             )
-  )
-;; need to be done separetly
+)
+#+END_SRC
+
+*** Textidote support
+
+#+BEGIN_SRC sh :export code :tangle ~/textidote-wrapper.sh
+#!/usr/bin/env bash
+
+filename=$(basename ${@: -1})
+output=$(mktemp)
+
+java -jar ~/bin/textidote.jar \
+    --ignore sh:seclen \
+    --no-color \
+    --check en \
+    "$@" > $output
+
+exit_code=$?
+
+cat $output | \
+    perl -pe "s/\* L(\d+)C(\d+)[^ ]+/$filename:\1:\2 --/" | \
+    perl -pe 's/([^]]) \n$/\1 /' | \
+    perl -pe 's/[ ]+/ /g' | \
+    perl -pe 's/(.*) -- (.*)\[(.*)\] $/\1: [\3] \2/' | \
+    grep -v '^\s\+'
+
+rm $output
+
+#+END_SRC
+
+#+BEGIN_SRC emacs-lisp
+(after! flycheck
+  (flycheck-define-checker my-latex
+    "My latex checker"
+    :command
+    ("~/bin/textidote-wrapper.sh" source)
+    :error-patterns
+    ((warning line-start (file-name) ":" line ":" column ": [" (id (1+ (not (any "]")))) "] " (message) line-end))
+    :modes
+    (latex-mode))
+
+  (add-to-list 'flycheck-checkers 'my-latex)
+)
+
+#+END_SRC
+*** Maths
+Set "!" as shortcut for greek characters and more . "!!" yields "!".
+#+BEGIN_SRC emacs-lisp
 (setq LaTeX-math-list (quote (
                              (?I "int" "" 8734)
                              (?8 "infty" "" 8747)
                             (?! (lambda () (interactive) (insert "!")) "" ?!))
                              ))
 
+#+END_SRC
+*** TikZ
+enable latex mode in tikz
+#+BEGIN_SRC emacs-lisp
 (setq auto-mode-alist
      (append
          '(("\\.tikz\\'" . latex-mode))
           auto-mode-alist))
-;; ---------------------
-;; OrgMode
-;; ---------------------
 
+#+END_SRC
+
+** OrgMode
+*** themes and style
+#+BEGIN_SRC emacs-lisp
 (after! org
   (setq org-startup-folded nil ; do not start folded
         org-tags-column -100 ; the column to the right to align tags
@@ -142,11 +227,14 @@
         ;;ob-async-no-async-languages-alist '("ipython" "jupyter") ; do not use async for these languages
         ;; visual-fill-column-width 120 ; size for usage with visual fill column mode
         ;;org-babel-default-header-args:sh
-
         )
   )
-;; Style for org boxes
-(when (custom-theme-enabled-p 'doom-one)
+
+#+END_SRC
+
+Enhance code block with color:
+
+#+BEGIN_SRC emacs-lisp
     (after! org
       ;; Purple boxes for Org BEGIN_SRC and END_SRC
       (set-face-attribute 'org-block-begin-line nil
@@ -157,11 +245,11 @@
                           :box '(:line-width 2 :color "#5c3d5c")
                           )
       )
-    )
+#+END_SRC
 
-;; ------------
-;; Org & LaTeX
-;; ------------
+** Org & Latex
+#+BEGIN_SRC emacs-lisp
+
 (after! org
   ;; Include the latex-exporter
   ;; Add minted to the defaults packages to include when exporting
@@ -190,19 +278,12 @@
   (plist-put dvipng--plist :image-converter '("dvipng -D %D -T tight -o %O %f")))
 
 )
+#+END_SRC
 
+*** Custom hooks
+#+BEGIN_SRC emacs-lisp
 
-;; ------------
-;; Org Files
-;; ------------
 (after! org
-  ;; Purple boxes for Org BEGIN_SRC and END_SRC
-  (set-face-attribute 'org-block-begin-line nil
-                      :background "#5c3d5c"
-                      :foreground "#a16ba1"
-                      :weight 'bold
-                      :height 0.9
-                      :box '(:line-width 2 :color "#5c3d5c"))
   (add-hook 'org-mode-hook (lambda () (hl-fill-column-mode -1)))
 
   ;; Do not enable auto-fill-mode by default
@@ -217,51 +298,38 @@
 
   ;; After evaluating a SRC_BLOCK, redisplay inline images
   (add-hook 'org-babel-after-execute-hook #'org-redisplay-inline-images)
-  )
+)
+#+END_SRC
 
+** WikiMoinMoin
+#+BEGIN_SRC emacs-lisp
 
-;; --------------
-;; MATLAB
-;; --------------
-(add-hook! matlab-mode
-           (linum-mode)
-           (matlab-cedet-setup)
-           )
+(load! "moinmoin-mode")
 
-;; --------------
-;; song book mode
-;; --------------
+#+END_SRC
+
+** SongBook
+#+BEGIN_SRC emacs-lisp
+
 (load! "songbook")
 (setq auto-mode-alist
 (append '(("\\.sg$" . songbook-mode)
 ) auto-mode-alist))
 (autoload 'songbook-mode "songbook" "Major-mode for Patacrep songbook's songs" t)
 
-;; --------------
-;; Wiki Moin Moin
-;; --------------
-(load! "moinmoin-mode")
+#+END_SRC
 
-;; ;
-;;  Disable arrow keys !
-;; (define-key evil-insert-state-map [left] 'undefined)
-;; (define-key evil-insert-state-map [right] 'undefined)
-;; (define-key evil-insert-state-map [up] 'undefined)
-;; (define-key evil-insert-state-map [down] 'undefined)
+* Programming Languages
+** MATLAB
+matlab mode required in =package.el=
+#+BEGIN_SRC emacs-lisp
 
-;; (define-key evil-motion-state-map [left] 'undefined)
-;; (define-key evil-motion-state-map [right] 'undefined)
-;; (define-key evil-motion-state-map [up] 'undefined)
-;; (define-key evil-motion-state-map [down] 'undefined)
-;; (global-unset-key (kbd "<left>"))
-;; (global-unset-key (kbd "<right>"))
-;; (global-unset-key (kbd "<up>"))
-;; (global-unset-key (kbd "<down>"))
-;; (global-unset-key (kbd "<C-left>"))
-;; (global-unset-key (kbd "<C-right>"))
-;; (global-unset-key (kbd "<C-up>"))
-;; (global-unset-key (kbd "<C-down>"))
-;; (global-unset-key (kbd "<M-left>"))
-;; (global-unset-key (kbd "<M-right>"))
-;; (global-unset-key (kbd "<M-up>"))
-;; (global-unset-key (kbd "<M-down>"))
+(add-hook! matlab-mode
+           (linum-mode)
+           (matlab-cedet-setup)
+           )
+
+#+END_SRC
+
+
+* Local Variables
