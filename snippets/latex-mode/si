@@ -1,0 +1,6 @@
+# -*- mode: snippet -*-
+# name: si
+# key: si
+# condition: t
+# --
+\SI{$1}{$2}$0
