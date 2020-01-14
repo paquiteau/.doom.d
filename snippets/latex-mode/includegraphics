@@ -3,4 +3,4 @@
 # key: ig
 # uuid: ig
 # --
-\includegraphics${1:[$2]}{$0}
+\includegraphics${1:[width=$2\textwidth]}{$0}
