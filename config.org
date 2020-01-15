@@ -40,8 +40,12 @@
 ** Magit Version control
 
 #+BEGIN_SRC emacs-lisp
-  (add-hook! magit-mode (visual-line-mode +1))
-  (setq magit-repository-directories '(("~/Repositories" . 3)))
+(add-hook! magit-mode (visual-line-mode +1))
+(setq magit-repository-directories '(("~/Repositories" . 3)))
+(after! magit
+(custom-set-variables                                                                                                                                                                                      '(magit-log-arguments                                                                                                                                                                                  
+ (list "--graph" "--color" "--decorate" "-n256"))))
+
 #+END_SRC
 
 ** Projectile
@@ -150,7 +154,7 @@ Cycle through language support.
 
 *** Textidote support
 
-#+BEGIN_SRC sh :export code :tangle ~/textidote-wrapper.sh
+#+BEGIN_SRC sh :export code :tangle ~/bin/textidote-wrapper.sh :tangle-mode (identity #o755)
 #!/usr/bin/env bash
 
 filename=$(basename ${@: -1})
@@ -159,7 +163,8 @@ output=$(mktemp)
 java -jar ~/bin/textidote.jar \
     --ignore sh:seclen \
     --no-color \
-    --check en \
+    --check en_UK \
+    --dict ~/.aspell.en.pws \
     "$@" > $output
 
 exit_code=$?
@@ -175,6 +180,8 @@ rm $output
 
 #+END_SRC
 
+Enable textidote as an flycheck checker.
+
 #+BEGIN_SRC emacs-lisp
 (after! flycheck
   (flycheck-define-checker my-latex
@@ -188,8 +195,9 @@ rm $output
 
   (add-to-list 'flycheck-checkers 'my-latex)
 )
-
 #+END_SRC
+
+
 *** Maths
 Set "!" as shortcut for greek characters and more . "!!" yields "!".
 #+BEGIN_SRC emacs-lisp
