@@ -3,7 +3,7 @@
 # key: sf
 # uuid: sf
 # --
-\subfigure[${1:caption}]{
-  \label{fig:${2:label}} 
-  \includegraphics[width=.${3:3}\textwidth]{${4:path}}}
-$0
+\begin{subfigure}{.${1:5}\textwidth}
+  $0
+\subcaption{\label{fig:${2:label}}${3:caption}}
+\end{subfigure}
