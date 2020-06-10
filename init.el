@@ -14,12 +14,16 @@
 
        :completion
        (company            ; the ultimate code completion backend
-         +childframe)      ;
+         +childframe
+       )       ;
        ;;helm              ; the *other* search engine for love and life
        ;;ido               ; the other *other* search engine...
        (ivy                ; a search engine for love and life
         +icons
-        +childframe)
+        +prescient
+        +fuzzy
+        +childframe
+        )
 
        :ui
        ;;deft              ; notational velocity for Emacs
@@ -30,7 +34,8 @@
        hl-todo             ; highlight TODO/FIXME/NOTE/DEPRECATED/HACK/REVIEW
        ;;hydra
        ;;indent-guides     ; highlighted indent columns
-       modeline            ; snazzy, Atom-inspired modeline, plus API
+       (modeline            ; snazzy, Atom-inspired modeline, plus API
+        + light)
        nav-flash           ; blink the current line after jumping
        ;;neotree           ; a project drawer, like NERDTree for vim
        ophints             ; highlight the region an operation acts on
@@ -65,7 +70,8 @@
        (dired              ; making dired pretty [functional]
          +icons)
        electric            ; smarter, keyword-based electric-indent
-       ibuffer             ; interactive buffer management                          ;
+       ibuffer             ; interactive buffer management
+       undo                ; persistent, smarter undo for your inevitable mistakes
        vc                  ; version-control and Emacs, sitting in a tree
 
        :term
@@ -75,28 +81,29 @@
        ;;vterm             ; another terminals in Emacs
 
        :checkers
-       syntax              ; tasing you for every semicolon you forget
+       ;;syntax              ; tasing you for every semicolon you forget
        spell             ; tasing you for misspelling mispelling
-       grammar           ; tasing grammar mistake every you make
+       ;; grammar           ; tasing grammar mistake every you make
 
        :tools
        ;;ansible
        ;;debugger          ; FIXME stepping through code, to help you add bugs
        ;;direnv
        ;;docker
-       ;;editorconfig      ; let someone else argue about tabs vs spaces
+       editorconfig      ; let someone else argue about tabs vs spaces
        ;;ein               ; tame Jupyter notebooks with emacs
        (eval               ; run code, run (also, repls)
         +overlay)
        ;;gist              ; interacting with github gists
        (lookup             ; helps you navigate your code and documentation
         +docsets)          ; ...or in Dash docsets locally
-       ;;lsp
+       (lsp
+        +peek)
        ;;macos             ; MacOS-specific commands
        magit               ; a git porcelain for Emacs
        ;;make              ; run make tasks from Emacs
        ;;pass              ; password manager for nerds
-       ;;pdf               ; pdf enhancements
+       pdf               ; pdf enhancements
        ;;prodigy           ; FIXME managing external services & code builders
        rgb                 ; creating color strings
        ;;terraform         ; infrastructure as code
@@ -125,16 +132,18 @@
        ;;(haskell +intero) ; a language that's lazier than I am
        ;;hy                ; readability of scheme w/ speed of python
        ;;idris             ;
+       json              ; At least it ain't XML
        ;;(java +meghanada) ; the poster child for carpal tunnel syndrome
-       ;;javascript        ; all(hope(abandon(ye(who(enter(here))))))
+       javascript        ; all(hope(abandon(ye(who(enter(here))))))
        ;;julia             ; a better, faster MATLAB
        ;;kotlin            ; a better, slicker Java(Script)
        (latex              ; writing papers in Emacs has never been so fun
+         ;+lsp
          +latexmk)
        ;;lean
        ;;ledger            ; an accounting system in Emacs
        ;;lua               ; one-based indices? one-based indices
-       ;;markdown          ; writing docs for people to ignore
+       markdown          ; writing docs for people to ignore
        ;;nim               ; python + lisp at the speed of c
        ;;nix               ; I hereby declare "nix geht mehr!"
        ;;ocaml             ; an objective camel
@@ -150,6 +159,7 @@
        ;;plantuml          ; diagrams for confusing people more
        ;;purescript        ; javascript, but functional
        (python             ; beautiful is better than ugly
+          +lsp
           +pyenv)          ;
        ;;qt                ; the 'cutest' gui framework ever
        ;;racket            ; a DSL for DSLs
@@ -162,8 +172,9 @@
        ;;solidity          ; do you need a blockchain? No.
        ;;swift             ; who asked for emoji variables?
        ;;terra             ; Earth and Moon in alignment for performance.
-       web                 ; the tubes
-
+       (web                 ; the tubes
+        +web-django-mode)
+       yaml
        :email
        ;;(mu4e +gmail)       ; WIP
        ;;notmuch             ; WIP
@@ -188,3 +199,5 @@
        ;; config. Use it as a reference for your own modules.
        (default +bindings +smartparens)
        )
+(auto-fill-mode -1)
+(remove-hook 'text-mode-hook #'turn-on-auto-fill)

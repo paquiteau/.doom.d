@@ -9,6 +9,7 @@
 #+BEGIN_SRC emacs-lisp
 (setq user-mail-adress "pac@crans.org"
       user-full-name "Pierre-Antoine Comby")
+(auto-fill-mode -1)
 #+END_SRC
 
 * Themes
@@ -19,6 +20,7 @@
   (set-popup-rule! "^\\*Ilist"
     :side 'right :size 35 :quit nil :select t :ttl 0)
   )
+(setq doom-font (font-spec :family "monospace" :size 14))
 (setq doom-modeline-icon t
       doom-modeline-major-mode-icon t
       doom-modeline-minor-modes nil
@@ -37,14 +39,20 @@
 #+END_SRC
 
 * Emacs as an IDE
+** Tramp
+#+BEGIN_SRC emacs-lisp
+;; faster than default scp
+(setq tramp-default-method "ssh")
+
+#+END_SRC
 ** Magit Version control
 
 #+BEGIN_SRC emacs-lisp
 (add-hook! magit-mode (visual-line-mode +1))
 (setq magit-repository-directories '(("~/Repositories" . 3)))
 (after! magit
-(custom-set-variables                                                                                                                                                                                      '(magit-log-arguments                                                                                                                                                                                  
- (list "--graph" "--color" "--decorate" "-n256"))))
+(custom-set-variables '(magit-log-arguments
+ (list "--graph" "--decorate"))))
 
 #+END_SRC
 
@@ -92,7 +100,7 @@ the file explorer, underused at the moment
   )
 #+END_SRC
 
-* Natural languages checking
+* Languages checking
 ** Language dictionnary
 *** system configuration
 Need to have aspell-<language> install.
@@ -124,8 +132,23 @@ Cycle through language support.
 (global-set-key [f6] 'cycle-ispell-languages)
 
 #+END_SRC
+** Flycheck
+#+BEGIN_SRC emacs-lisp
+(defun disable-flycheck-mode ()
+  (interactive)
+  (flycheck-mode -1))
+(add-hook 'lsp-mode-hook 'disable-flycheck-mode)
+#+END_SRC
 
 * Markup Languages
+** Markdown
+#+BEGIN_SRC emacs-lisp
+(remove-hook! '(prog-mode-hook text-mode-hook markdown-mode-hook conf-mode-hook)
+   #'auto-fill-mode)
+(add-hook! markdown-mode #'visual-line-mode)
+
+#+END_SRC
+
 ** LaTeX
 #+BEGIN_SRC emacs-lisp
 
@@ -153,10 +176,12 @@ Cycle through language support.
 #+END_SRC
 
 *** Textidote support
+[[https://github.com/sylvainhalle/textidote][Textidote]] is a powerfull LaTeX checker, but usage within Emacs neeed further configuration
+
+Script to wrap the call to textditote in ~~/bin/txtidote.jar~.
 
 #+BEGIN_SRC sh :export code :tangle ~/bin/textidote-wrapper.sh :tangle-mode (identity #o755)
 #!/usr/bin/env bash
-
 filename=$(basename ${@: -1})
 output=$(mktemp)
 
@@ -181,10 +206,9 @@ rm $output
 #+END_SRC
 
 Enable textidote as an flycheck checker.
-
 #+BEGIN_SRC emacs-lisp
 (after! flycheck
-  (flycheck-define-checker my-latex
+  (flycheck-define-checker textidote
     "My latex checker"
     :command
     ("~/bin/textidote-wrapper.sh" source)
@@ -193,23 +217,22 @@ Enable textidote as an flycheck checker.
     :modes
     (latex-mode))
 
-  (add-to-list 'flycheck-checkers 'my-latex)
+  (add-to-list 'flycheck-checkers 'textidote)
 )
 #+END_SRC
 
-
 *** Maths
-Set "!" as shortcut for greek characters and more . "!!" yields "!".
+Set "!" as shortcut for greek characters and more. ~!!~ yields ~!~.
 #+BEGIN_SRC emacs-lisp
 (setq LaTeX-math-list (quote (
                              (?I "int" "" 8734)
                              (?8 "infty" "" 8747)
                             (?! (lambda () (interactive) (insert "!")) "" ?!))
                              ))
-
 #+END_SRC
+
 *** TikZ
-enable latex mode in tikz
+enable latex mode for ~.tikz~ files.
 #+BEGIN_SRC emacs-lisp
 (setq auto-mode-alist
      (append
@@ -220,6 +243,7 @@ enable latex mode in tikz
 
 ** OrgMode
 *** themes and style
+
 #+BEGIN_SRC emacs-lisp
 (after! org
   (setq org-startup-folded nil ; do not start folded
@@ -256,8 +280,8 @@ Enhance code block with color:
 #+END_SRC
 
 ** Org & Latex
+*** Package Config
 #+BEGIN_SRC emacs-lisp
-
 (after! org
   ;; Include the latex-exporter
   ;; Add minted to the defaults packages to include when exporting
@@ -269,22 +293,37 @@ Enhance code block with color:
   (setq org-latex-listings 'minted)
   (setq org-latex-minted-options
         '(("frame" "lines") ("linenos=true")))
+)
+#+END_SRC
+*** Export
+ Let the exporter use the -shell-escape option to let latex execute external programs.
+#+BEGIN_SRC emacs-lisp
+(after! org
+  (setq org-latex-pdf-process (list "latexmk -shell-escape -bibtex -f -pdf %f"))
 
-  ;; Let the exporter use the -shell-escape option to let latex
-  ;; execute external programs.
-  ;; This obviously and can be dangerous to activate!
+(defun my/org-save-and-export-pdf ()
+  (if (eq major-mode 'org-mode)
+    (org-latex-export-to-pdf t)))
+; LaTeX
+(defun my/org-save-and-export-latex ()
+  (if (eq major-mode 'org-mode)
+    (org-latex-export-to-latex t)))
+(defun my/org-save-and-export-beamer ()
+  (if (eq major-mode 'org-mode)
+    (org-beamer-export-to-latex  t)))
 
-  (setq org-latex-pdf-process
-        '("xelatex -shell-escape -interaction nonstopmode -output-directory %o %f"
-          "bibtex %b"
-          "xelatex -shell-escape -interaction nonstopmode -output-directory %o %f"
-          "xelatex -shell-escape -interaction nonstopmode -output-directory %o %f"))
+)
 
-;; fix color handling in org-preview-latex-fragment
+
+#+END_SRC
+
+In preview, with dark mode, invert color
+
+#+BEGIN_SRC emacs-lisp
+(after! org
 (let ((dvipng--plist (alist-get 'dvipng org-preview-latex-process-alist)))
   (plist-put dvipng--plist :use-xcolor t)
   (plist-put dvipng--plist :image-converter '("dvipng -D %D -T tight -o %O %f")))
-
 )
 #+END_SRC
 
@@ -293,41 +332,55 @@ Enhance code block with color:
 
 (after! org
   (add-hook 'org-mode-hook (lambda () (hl-fill-column-mode -1)))
-
   ;; Do not enable auto-fill-mode by default
-  (remove-hook 'org-mode-hook #'auto-fill-mode)
-  (add-hook 'org-mode-hook #'visual-line-mode)
-
+  (remove-hook 'org-mode-hook #'auto-fill-mode )
+  (add-hook 'org-mode-hook #'visual-line-mode )
   ;; Do not move my buffer after cycling visibility
-  (remove-hook 'org-cycle-hook #'org-optimize-window-after-visibility-change)
-
+  (remove-hook 'org-cycle-hook #'org-optimize-window-after-visibility-change )
   ;; Enable flyspell
-  (add-hook 'org-mode-hook #'flyspell-mode)
-
+  (add-hook 'org-mode-hook #'flyspell-mode )
   ;; After evaluating a SRC_BLOCK, redisplay inline images
-  (add-hook 'org-babel-after-execute-hook #'org-redisplay-inline-images)
-)
+  (add-hook 'org-babel-after-execute-hook #'org-redisplay-inline-images )
+(add-hook 'after-save-hook 'my/org-save-and-export-pdf)
+(add-hook 'after-save-hook 'my/org-save-and-export-latex)
+(add-hook 'after-save-hook 'my/org-save-and-export-beamer)
+     )
 #+END_SRC
+
+# *** Org-ref
+# #+BEGIN_SRC emacs-lisp
+# (use-package! org-ref
+# :after org
+# :init
+# (setq org-ref-completion-library 'org-ref-ivy-cite)
+# :config
+# (setq org-ref-default-citation-link "cite")
+# )
+# #+END_SRC
 
 ** WikiMoinMoin
 #+BEGIN_SRC emacs-lisp
-
 (load! "moinmoin-mode")
-
 #+END_SRC
 
 ** SongBook
 #+BEGIN_SRC emacs-lisp
-
 (load! "songbook")
 (setq auto-mode-alist
 (append '(("\\.sg$" . songbook-mode)
 ) auto-mode-alist))
 (autoload 'songbook-mode "songbook" "Major-mode for Patacrep songbook's songs" t)
-
 #+END_SRC
 
 * Programming Languages
+** LSP
+#+BEGIN_SRC emacs-lisp
+(after! lsp
+  ;; configure lsp for python. See https://github.com/emacs-lsp/lsp-mode/blob/master/lsp-pyls.el
+(setq lsp-pyls-plugins-pycodestyle-max-line-length 100)
+)
+#+END_SRC
+** Python
 ** MATLAB
 matlab mode required in =package.el=
 #+BEGIN_SRC emacs-lisp
@@ -339,5 +392,5 @@ matlab mode required in =package.el=
 
 #+END_SRC
 
-
-* Local Variables
+* Local config
+** Repositories
