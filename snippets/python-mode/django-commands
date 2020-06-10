@@ -1,0 +1,25 @@
+# -*- mode: snippet -*-
+# name: django-commands
+# key: command
+# --
+#!/usr/bin/env python3
+
+import json
+import time
+from collections import defaultdict
+
+from django.core.management.base import BaseCommand
+from django.apps import apps
+from django.db import transaction
+
+
+class `(file-name-nondirectory (file-name-sans-extension (buffer-file-name)))` (BaseCommand):
+      """
+      $1
+      """
+
+      def add_arguments(self,parser):
+          return parser
+
+      def handle(self, *args, **kwargs):
+          $0
