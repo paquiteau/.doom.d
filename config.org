@@ -2,32 +2,89 @@
 #+AUTHOR: Pierre-Antoine Comby
 #+EMAIL: pac@crans.org
 #+LANGUAGE: en
-#+PROPERTY: header-args :tangle yes :cache yes :results silent :padline no
+* Introduction
 
-* Personal Informations
+This configuration is a mess, a big pile of crap, mostly stolen on the internet, and I may only understand half of it.
 
+* Better defaults
+** Personal Information
 #+BEGIN_SRC emacs-lisp
 (setq user-mail-adress "pac@crans.org"
       user-full-name "Pierre-Antoine Comby")
-(auto-fill-mode -1)
 #+END_SRC
 
-* Themes
+** Simple settings
+#+BEGIN_SRC emacs-lisp
+(setq-default
+ delete-by-moving-to-trash t                      ; Delete files to trash
+ tab-width 4                                      ; Set width for tabs
+ uniquify-buffer-name-style 'forward              ; Uniquify buffer names
+ window-combination-resize t                      ; take new window space from all other windows (not just current)
+ x-stretch-cursor t)                              ; Stretch cursor to the glyph width
 
+(setq undo-limit 80000000                         ; Raise undo-limit to 80Mb
+      evil-want-fine-undo t                       ; By default while in insert all changes are one big blob. Be more granular
+      auto-save-default t                         ; Nobody likes to loose work, I certainly don't
+      inhibit-compacting-font-caches t            ; When there are lots of glyphs, keep them in memory
+      truncate-string-ellipsis "…")               ; Unicode ellispis are nicer than "...", and also save /precious/ space
+
+(auto-fill-mode -1)
+(remove-hook 'text-mode-hook #'turn-on-auto-fill)
+(delete-selection-mode 1)                         ; Replace selection when inserting text
+(display-time-mode 1)                             ; Enable time in the mode-line
+(setq display-time-24hr-format 1)
+(global-subword-mode 1)                           ; Iterate through CamelCase words
+
+#+END_SRC
+
+** Auto-customization
+ By default changes made via a customisation interface are added to init.el. I prefer the idea of using a separate file for this. We just need to change a setting, and load it if it exists.
+#+BEGIN_SRC emacs-lisp
+(setq-default custom-file (expand-file-name ".custom.el" doom-private-dir))
+(when (file-exists-p custom-file)
+  (load custom-file))
+#+END_SRC
+
+** Windows
+After splitting a window, ask for buffer to show
+#+BEGIN_SRC emacs-lisp
+(setq evil-vsplit-window-right t
+      evil-split-window-below t)
+#+END_SRC
+Ask ivy
+#+BEGIN_SRC emacs-lisp
+(defadvice! prompt-for-buffer (&rest _)
+  :after '(evil-window-split evil-window-vsplit)
+  (+ivy/switch-buffer))
+#+END_SRC
+preview are nice
+#+BEGIN_SRC emacs-lisp
+(setq +ivy-buffer-preview t)
+#+END_SRC
+Layout rotation is done ith =SPC w SPC= + arrow key
+#+BEGIN_SRC emacs-lisp
+(map! :map evil-window-map
+      "SPC" #'rotate-layout
+       ;; Navigation
+       "<left>"     #'evil-window-left
+       "<down>"     #'evil-window-down
+       "<up>"       #'evil-window-up
+       "<right>"    #'evil-window-right
+       ;; Swapping windows
+       "C-<left>"       #'+evil/window-move-left
+       "C-<down>"       #'+evil/window-move-down
+       "C-<up>"         #'+evil/window-move-up
+       "C-<right>"      #'+evil/window-move-right)
+#+END_SRC
+
+** Doom configuration
+*** Themes
 #+BEGIN_SRC emacs-lisp
 ;; Custom doom-one configuration
 (after! imenu-list
   (set-popup-rule! "^\\*Ilist"
     :side 'right :size 35 :quit nil :select t :ttl 0)
   )
-(setq doom-font (font-spec :family "monospace" :size 14))
-(setq doom-modeline-icon t
-      doom-modeline-major-mode-icon t
-      doom-modeline-minor-modes nil
-      doom-modeline-enable-word-count t
-      doom-modeline-checker-simple-format t
-      doom-modeline-persp-name t
-      doom-modeline-lsp t)
 
 ;; Show trailing white spaces
 (setq show-trailing-whitespace t)
@@ -37,83 +94,97 @@
   (setq-local show-trailing-whitespace nil))
 
 #+END_SRC
-
-* Emacs as an IDE
-** Tramp
+*** Modeline
+However, by default ~red~ text is used in the ~modeline~, so let's make that orange
+so I don't feel like something's gone /wrong/ when editing files.
 #+BEGIN_SRC emacs-lisp
-;; faster than default scp
-(setq tramp-default-method "ssh")
-
+(custom-set-faces!
+  '(doom-modeline-buffer-modified :foreground "orange"
+                                  :weight bold ))
 #+END_SRC
-** Magit Version control
-
+While we're modifying the modeline, =LF UTF-8= is the default file encoding, and
+thus not worth noting in the modeline. So, let's conditionally hide it.
 #+BEGIN_SRC emacs-lisp
-(add-hook! magit-mode (visual-line-mode +1))
-(setq magit-repository-directories '(("~/Repositories" . 3)))
-(after! magit
-(custom-set-variables '(magit-log-arguments
- (list "--graph" "--decorate"))))
+(defun doom-modeline-conditional-buffer-encoding ()
+  "We expect the encoding to be LF UTF-8, so only show the modeline when this is not the case"
+  (setq doom-modeline-buffer-encoding
+              (unless (or (eq buffer-file-coding-system 'utf-8-unix)
+                          (eq buffer-file-coding-system 'utf-8)))))
 
-#+END_SRC
-
-** Projectile
-
-#+BEGIN_SRC emacs-lisp
-(setq projectile-project-search-path  '("~/Repositories"))
-
-(setq +workspaces-on-switch-project-behavior t)
+(add-hook 'after-change-major-mode-hook #'doom-modeline-conditional-buffer-encoding)
 #+END_SRC
 
-** Treemacs
-
-the folder sidebar, usefull
+* Custom Packages
+:PROPERTIES:
+:header-args:emacs-lisp: :tangle "packages.el" :comments link
+:END:
+Tangling this section to =package.el=
+This file shouldn't be byte compiled.
+#+BEGIN_SRC emacs-lisp :tangle "packages.el" :comments no
+;; -*- no-byte-compile: t; -*-
+#+END_SRC
+** Magit Delta
+[[https://github.com/dandavison/delta/][Delta]] is a git diff syntax highlighter written in rust. The author also wrote a
+package to hook this into the magit diff view. This requires the ~delta~ binary.
 #+BEGIN_SRC emacs-lisp
-(after! treemacs
-  (setq treemacs-width 20)
-  )
+(package! magit-delta :recipe (:host github :repo "dandavison/magit-delta"))
+#+END_SRC
+** Flyspell-lazy
+Make flyspell a little bit faster. see [[flyspell configuration]]
+#+BEGIN_SRC emacs-lisp
+(package! flyspell-lazy )
+#+END_SRC
+#+BEGIN_SRC emacs-lisp
+(use-package! info-colors
+  :commands (info-colors-fontify-node))
+
+(add-hook 'Info-selection-hook 'info-colors-fontify-node)
+
+(add-hook 'Info-mode-hook #'mixed-pitch-mode)
 #+END_SRC
 
-** Company
-
-autocompletion done fast!
+** Doom-snippet
 #+BEGIN_SRC emacs-lisp
-(after! company
-  (setq company-idle-delay 0.5))
+(package! doom-snippets :ignore t)
 #+END_SRC
-
-** Snippet
+** Org
 #+BEGIN_SRC emacs-lisp
-(after! yasnippet
-  (setq yas-triggers-in-field t)
-)
+(package! org-ref )
 #+END_SRC
-
-* Dired
-
-the file explorer, underused at the moment
-
+*** Visuals
+Org tables aren't the prettiest thing to look at. This package is supposed to
+redraw them in the buffer with box-drawing characters. Sounds like an
+improvement to me! Just need to get it working...
 #+BEGIN_SRC emacs-lisp
-(after! dired
-  (map!
-   :map dired-mode-map
-   :nv "DEL" #'dired-up-directory)
-  )
+(package! org-pretty-table-mode
+  :recipe (:host github :repo "Fuco1/org-pretty-table") :pin "88380f865a79bba49e4f501b7fe73a7bfb03bd1a")
 #+END_SRC
-
-* Languages checking
-** Language dictionnary
-*** system configuration
+For automatically toggling LaTeX fragment previews there's this nice package
+#+BEGIN_SRC emacs-lisp
+(package! org-fragtog :pin "92119e3ae7c9a0ae2b5c9d9e4801b5fdc4804ad7")
+#+END_SRC
+~org-superstar-mode~ is great. While we're at it we may as well make tags prettier as well :)
+#+BEGIN_SRC emacs-lisp
+(package! org-pretty-tags :pin "40fd72f3e701e31813f383fb429d30bb88cee769")
+#+END_SRC
+** Evil-TeX
+evil toolbox for LaTeX editing. Provides many text objects fully utilizing evil-surround, some useful movements, and keymaps for quickly entering environments or cdlatex-like accents. And useful toggles.
+#+BEGIN_SRC emacs-lisp
+(package! evil-tex)
+#+END_SRC
+* Package config
+** Languages checking
+*** System configuration
 Need to have aspell-<language> install.
-
-#+BEGIN_SRC sh :export nil
+#+BEGIN_SRC shell :tangle no
 sudo apt install aspell-fr aspell-en aspell-de
 #+END_SRC
-
-*** flyspell configuration
-
+*** Flyspell configuration
 Set english as default.
+
 #+BEGIN_SRC emacs-lisp
 (setq  ispell-dictionary "english" )
+(after! flyspell (require 'flyspell-lazy) (flyspell-lazy-mode 1)) ;; lazy-laod things
 #+END_SRC
 
 Cycle through language support.
@@ -132,50 +203,360 @@ Cycle through language support.
 (global-set-key [f6] 'cycle-ispell-languages)
 
 #+END_SRC
-** Flycheck
-#+BEGIN_SRC emacs-lisp
-(defun disable-flycheck-mode ()
-  (interactive)
-  (flycheck-mode -1))
-(add-hook 'lsp-mode-hook 'disable-flycheck-mode)
+*** Downloading dictionaries
+Let's get a nice big dictionary from [[http://app.aspell.net/create][SCOWL Custom List/Dictionary Creator]] with
+the following configuration
+ - size :: 80 (huge)
+ - spellings :: British(-ise) and Australian
+ - spelling variants level :: 0
+ - diacritics :: keep
+ - extra lists :: hacker, roman numerals
+
+**** Hunspell
+#+BEGIN_SRC sh :tangle /home/pac/.doom.d/setup.sh
+cd /tmp
+curl -o "hunspell-en-custom.zip" 'http://app.aspell.net/create?max_size=80&spelling=GBs&spelling=US&max_variant=0&diacritic=keep&special=hacker&special=roman-numerals&encoding=utf-8&format=inline&download=hunspell'
+unzip "hunspell-en-custom.zip"
+
+sudo chown root:root en-custom.*
+sudo mv en-custom.{aff,dic} /usr/share/myspell/
 #+END_SRC
 
-* Markup Languages
+**** Aspell
+#+BEGIN_SRC sh :tangle /home/pac/.doom.d/setup.sh
+cd /tmp
+curl -o "aspell6-en-custom.tar.bz2" 'http://app.aspell.net/create?max_size=80&spelling=GBs&spelling=US&max_variant=0&diacritic=keep&special=hacker&special=roman-numerals&encoding=utf-8&format=inline&download=aspell'
+tar -xjf "aspell6-en-custom.tar.bz2"
+
+cd aspell6-en-custom
+./configure && make && sudo make install
+#+END_SRC
+
+**** Configuration
+#+BEGIN_SRC emacs-lisp
+(setq ispell-dictionnary "en-custom")
+(setq ispell-personal-dictionnary (expand-file-name ".ispell_personal" doom-private-dir))
+#+END_SRC
+
+** Company
+It's nice to have completions almost all the time, in my opinion. Key strokes
+are just waiting to be saved!
+#+BEGIN_SRC emacs-lisp
+(after! company
+  (setq company-idle-delay 0.2
+        company-minimum-prefix-length 2)
+  (setq company-show-numbers t)
+(add-hook 'evil-normal-state-entry-hook #'company-abort) ;; make aborting less annoying.
+)
+#+END_SRC
+Now, the improvements from ~precedent~ are mostly from remembering history, so
+let's improve that memory.
+#+BEGIN_SRC emacs-lisp
+(setq-default history-length 1000)
+(setq-default prescient-history-length 1000)
+#+END_SRC
+*** Plain Text
+~Ispell~ is nice, let's have it in ~text~, ~markdown~, and ~GFM~.
+#+BEGIN_SRC emacs-lisp
+(set-company-backend! '(text-mode
+                        markdown-mode
+                        gfm-mode)
+  '(:seperate company-ispell
+              company-files
+              company-yasnippet))
+#+END_SRC
+** Flycheck
+#+BEGIN_SRC emacs-lisp
+(after! flycheck
+  (setq-default flycheck-temp-prefix ".flycheck")
+  )
+#+END_SRC
+** Tramp
+#+BEGIN_SRC emacs-lisp
+;; faster than default scp
+(setq tramp-default-method "ssh")
+#+END_SRC
+** Magit Version control
+#+BEGIN_SRC emacs-lisp
+(add-hook! magit-mode (visual-line-mode +1))
+(setq magit-repository-directories '(("~/Repositories" . 3)))
+(after! magit
+(custom-set-variables '(magit-log-arguments
+ (list "--graph" "--decorate"))))
+
+#+END_SRC
+
+** Projectile
+#+BEGIN_SRC emacs-lisp
+(setq projectile-project-search-path  '("~/Repositories"))
+
+(setq projectile-ignored-projects '("~/" "/tmp" "~/.emacs.d/.local/straight/repos/"))
+(defun projectile-ignored-project-function (filepath)
+  "Return t if FILEPATH is within any of `projectile-ignored-projects'"
+  (or (mapcar (lambda (p) (s-starts-with-p p filepath)) projectile-ignored-projects)))
+
+(setq +workspaces-on-switch-project-behavior t)
+#+END_SRC
+
+** Treemacs
+
+project folder sidebar, usefull for projects
+#+BEGIN_SRC emacs-lisp
+(after! treemacs
+  (setq treemacs-width 20))
+#+END_SRC
+Let's remove file we never open from the sidebar.
+#+BEGIN_SRC emacs-lisp
+(after! treemacs
+  (defvar treemacs-file-ignore-extensions '()
+    "File extension which `treemacs-ignore-filter' will ensure are ignored")
+  (defvar treemacs-file-ignore-globs '()
+    "Globs which will are transformed to `treemacs-file-ignore-regexps' which `treemacs-ignore-filter' will ensure are ignored")
+  (defvar treemacs-file-ignore-regexps '()
+    "RegExps to be tested to ignore files, generated from `treeemacs-file-ignore-globs'")
+  (defun treemacs-file-ignore-generate-regexps ()
+    "Generate `treemacs-file-ignore-regexps' from `treemacs-file-ignore-globs'"
+    (setq treemacs-file-ignore-regexps (mapcar 'dired-glob-regexp treemacs-file-ignore-globs)))
+  (if (equal treemacs-file-ignore-globs '()) nil (treemacs-file-ignore-generate-regexps))
+  (defun treemacs-ignore-filter (file full-path)
+    "Ignore files specified by `treemacs-file-ignore-extensions', and `treemacs-file-ignore-regexps'"
+    (or (member (file-name-extension file) treemacs-file-ignore-extensions)
+        (let ((ignore-file nil))
+          (dolist (regexp treemacs-file-ignore-regexps ignore-file)
+            (setq ignore-file (or ignore-file (if (string-match-p regexp full-path) t nil)))))))
+  (add-to-list 'treemacs-ignored-file-predicates #'treemacs-ignore-filter))
+#+END_SRC
+Now, we just identify the files in question.
+#+BEGIN_SRC emacs-lisp
+(setq treemacs-file-ignore-extensions '(;; LaTeX
+                                        ".aux"
+                                        ".out"
+                                        ".ptc"
+                                        ".log"
+                                        ".lof"
+                                        ".fdb_latexmk"
+                                        ".fls"
+                                        ".synctex.gz"
+                                        ".toc"
+                                        ".run.xml"
+                                        ;; LaTeX - glossary
+                                        ".glg"
+                                        ".glo"
+                                        ".gls"
+                                        ".glsdefs"
+                                        ".ist"
+                                        ".acn"
+                                        ".acr"
+                                        ".alg"
+                                        ;; LateX - bibliography
+                                        ".bbl"
+                                        ".bcf"
+                                        ".blg"
+                                        ;; LaTeX - pgfplots
+                                        ".mw"
+                                        ;; LaTeX - pdfx
+                                        ".pdfa.xmpi"
+                                        ))
+(setq treemacs-file-ignore-globs '(;; LaTeX
+                                   "*/_minted-*"
+                                   ;; AucTeX
+                                   "*/.auctex-auto"
+                                   "*/_region_.log"
+                                   "*/_region_.tex"))
+#+END_SRC
+** Which-key
+Let's make this popup a bit faster
+#+BEGIN_SRC emacs-lisp
+(setq which-key-idle-delay 0.5) ;; I need the help, I really do
+#+END_SRC
+I also think that having =evil-= appear in so many popups is a bit too verbose, let's change that, and do a few other similar tweaks while we're at it.
+#+BEGIN_SRC emacs-lisp
+(setq which-key-allow-multiple-replacements t)
+(after! which-key
+  (pushnew!
+   which-key-replacement-alist
+   '(("" . "\\`+?evil[-:]?\\(?:a-\\)?\\(.*\\)") . (nil . "◂\\1"))
+   '(("\\`g s" . "\\`evilem--?motion-\\(.*\\)") . (nil . "◃\\1"))
+   ))
+#+END_SRC
+** Snippet
+#+BEGIN_SRC emacs-lisp
+(after! yasnippet
+  (setq yas-triggers-in-field t)
+)
+#+END_SRC
+
+** Dired
+the file explorer, underused at the moment
+#+BEGIN_SRC emacs-lisp
+(after! dired
+  (map!
+   :map dired-mode-map
+   :nv "DEL" #'dired-up-directory)
+  )
+#+END_SRC
+
 ** Markdown
 #+BEGIN_SRC emacs-lisp
 (remove-hook! '(prog-mode-hook text-mode-hook markdown-mode-hook conf-mode-hook)
    #'auto-fill-mode)
 (add-hook! markdown-mode #'visual-line-mode)
-
 #+END_SRC
-
-** LaTeX
+* LaTeX
 #+BEGIN_SRC emacs-lisp
-
 (after! latex
   ;; Save without asking when invoking TeX commands
-  (setq TeX-save-query nil)
-  ;; use --shell-escape required for minted package
-  (setq LaTeX-command (concat LaTeX-command " -shell-escape"))
+  (setq TeX-save-query nil
+        TeX-show-compilation t
+        TeX-command-extra-options "-shell-escape")
   ;; While inserting commands in comment sections, do not be intelligent and comment the command
   (setq LaTeX-insert-into-comments nil)
   ;; if the babel language is french set the quotes as if english
   (add-hook 'TeX-language-fr-hook
-            (lambda ()
-              (setq TeX-quote-language `("francais" "``" "''" ,TeX-quote-after-quote))))
+            (lambda ()(setq TeX-quote-language `("francais" "``" "''" ,TeX-quote-after-quote))))
   ;; use ! instead of ` for symbol shortcut
   (customize-set-variable 'LaTeX-math-abbrev-prefix (kbd "!"))
+
   (add-hook 'LaTeX-mode-hook (lambda () (LaTeX-math-mode)
-                               (prettify-symbols-mode)
-                               ;;(latex-extra-mode)
-                               (visual-line-mode)
-                               (set-fill-column 2001)
-                               )
-            )
-)
+                                   (prettify-symbols-mode)
+                                 ;;(latex-extra-mode)
+                                   (visual-line-mode)
+                                   (set-fill-column 2001))))
+#+END_SRC
+** Visuals and TeX-Fold
+*** Fonts
+#+BEGIN_SRC emacs-lisp
+(add-hook 'LateX-mode-hook #'mixed-pitch-mode)
+#+END_SRC
+Make the section header bigger
+#+BEGIN_SRC emacs-lisp
+(after! latex
+  (custom-set-faces!
+  '(font-latex-sectioning-0-face :weight extra-bold :height 1.6)
+  '(font-latex-sectioning-1-face :weight bold :height 1.5)
+  '(font-latex-sectioning-2-face :weight bold :height 1.4)
+  '(font-latex-sectioning-3-face :weight semi-bold :height 1.3)
+  '(font-latex-sectioning-4-face :weight semi-bold :height 1.2)
+  '(font-latex-sectioning-5-face :weight semi-bold :height 1.1)
+  ))
+#+END_SRC
+*** TeX-fold-Math
+enhancing Tex-fold Math:
+#+BEGIN_SRC emacs-lisp
+(defun string-offset-roman-chars (offset word)
+  "Shift the codepoint of each charachter in WORD by OFFSET with an extra -6 shift if the letter is lowercase"
+    (apply 'string
+       (mapcar (lambda (c) (+ (if (>= c 97) (- c 6) c) offset)) word)))
+
+(defun TeX-fold-parenthesize-as-neccesary (tokens &optional suppress-left suppress-right)
+  "Add ❪ ❫ parenthesis as if multiple LaTeX tokens appear to be present"
+  (if (TeX-string-single-token-p tokens) tokens
+    (concat (if suppress-left "" "❪")
+            tokens
+            (if suppress-right "" "❫"))))
+
+(defun TeX-string-single-token-p (teststring)
+  "Return t if TESTSTRING appears to be a single token, nil otherwise"
+ (if (string-match-p "^\\\\?\\w+$" teststring) t nil))
+#+END_SRC
+#+BEGIN_SRC emacs-lisp
+(after! latex
+  (setcar (assoc "⋆" LaTeX-fold-math-spec-list) "★")) ;; make \star bigger
+(setq TeX-fold-math-spec-list
+      `(
+        ;;         ;; conviniance shorts -- these don't work nicely ATM
+        ;; ("‹" ("left"))
+        ;; ("›" ("right"))
+        ;;         ;; private macros
+        ;;         ;; ("ℝ" ("RR"))
+        ;;         ;; ("ℕ" ("NN"))
+        ;;         ;; ("ℤ" ("ZZ"))
+        ;;         ;; ("ℚ" ("QQ"))
+        ;;         ;; ("ℂ" ("CC"))
+        ;;         ;; ("ℙ" ("PP"))
+        ;;         ;; ("ℍ" ("HH"))
+        ;;         ;; ("𝔼" ("EE"))
+        ("𝑑" ("d"))
+        ;;         ;; known commands
+        ("" ("phantom"))
+        (,(lambda (num den) (if (and (TeX-string-single-token-p num) (TeX-string-single-token-p den))
+                                (concat num "／" den)
+                              (concat "❪" num "／" den "❫"))) ("frac"))
+        (,(lambda (arg) (concat "√" (TeX-fold-parenthesize-as-neccesary arg))) ("sqrt"))
+        (,(lambda (arg) (concat "⭡" (TeX-fold-parenthesize-as-neccesary arg))) ("vec"))
+        ;;         ("‘{1}’" ("text"))
+        ;;         ;; private commands
+        ;;         ;; ("|{1}|" ("abs"))
+        ("‖" ("|"))
+        ;;         ;; ("⌊{1}⌋" ("floor"))
+        ;;         ;; ("⌈{1}⌉" ("ceil"))
+        ;;         ;; ("⌊{1}⌉" ("round"))
+        ;; ("𝑑[1]/𝑑{1}" ("deriv"))
+        ;; ("∂[1]/∂{1}" ("derivp"))
+        ;;         ;; fancification
+        ("{1}" ("mathrm"))
+        (,(lambda (word) (string-offset-roman-chars 119743 word)) ("mathbf"))
+        (,(lambda (word) (string-offset-roman-chars 119951 word)) ("mathcal"))
+        (,(lambda (word) (string-offset-roman-chars 120003 word)) ("mathfrak"))
+        (,(lambda (word) (string-offset-roman-chars 120055 word)) ("mathbb"))
+        (,(lambda (word) (string-offset-roman-chars 120159 word)) ("mathsf"))
+        (,(lambda (word) (string-offset-roman-chars 120367 word)) ("mathtt"))
+        ))
 #+END_SRC
 
-*** Textidote support
+*** TeX-Fold-macro
+#+BEGIN_SRC emacs-lisp
+(setq TeX-fold-macro-spec-list
+      '(
+        ;; as the defaults
+        ("[f]{1}" ("footnote" "marginpar"))
+        ("[{1}]" ("cite"))
+        ("[►{1}]" ("label"))
+        ("[{1}]" ("ref" "autoref" "subref"))
+        ("({1})" ("eqref"))
+        ("[i]{1}" ("index" "glossary"))
+        ("..." ("dots"))
+        ("{1}" ("emph" "textit" "textsl" "textmd" "textrm" "textsf" "texttt"
+                "textbf" "textsc" "textup"))
+        ;; tweaked defaults
+        ("©" ("copyright"))
+        ("®" ("textregistered"))
+        ("™"  ("texttrademark"))
+        ("[1]:||►" ("item"))
+        ("❡❡ {1}" ("part" "part*"))
+        ("❡ {1}" ("chapter" "chapter*"))
+        ("§ {1}" ("section" "section*"))
+        ("§§ {1}" ("subsection" "subsection*"))
+        ("§§§ {1}" ("subsubsection" "subsubsection*"))
+        ("¶ {1}" ("paragraph" "paragraph*"))
+        ("¶¶ {1}" ("subparagraph" "subparagraph*"))
+        ;;         ;; extra
+        ("⬖ {1}" ("begin"))
+        ("⬗ {1}" ("end"))
+        ))
+#+END_SRC
+
+use =C-RETURN= for inserting nex item in list.
+#+BEGIN_SRC emacs-lisp
+(after! latex
+  (map!
+   :map LaTeX-mode-map
+   :ei [C-return] #'LaTeX-insert-item
+
+   ;; normal stuff here
+   :localleader
+   :desc "View" "v" #'TeX-view)
+  (setq TeX-electric-math '("\\(" . "")))
+#+END_SRC
+
+And enable shell escape for the preview
+#+BEGIN_SRC emacs-lisp
+(setq preview-LaTeX-command '("%`%l \"\\nonstopmode\\nofiles\
+\\PassOptionsToPackage{" ("," . preview-required-option-list) "}{preview}\
+\\AtBeginDocument{\\ifx\\ifPreview\\undefined"
+preview-default-preamble "\\fi}\"%' \"\\detokenize{\" %t \"}\""))
+#+END_SRC
+** Textidote support
 [[https://github.com/sylvainhalle/textidote][Textidote]] is a powerfull LaTeX checker, but usage within Emacs neeed further configuration
 
 Script to wrap the call to textditote in ~~/bin/txtidote.jar~.
@@ -186,20 +567,20 @@ filename=$(basename ${@: -1})
 output=$(mktemp)
 
 java -jar ~/bin/textidote.jar \
-    --ignore sh:seclen \
-    --no-color \
-    --check en_UK \
-    --dict ~/.aspell.en.pws \
-    "$@" > $output
+--ignore sh:seclen \
+--no-color \
+--check en_UK \
+--dict ~/.aspell.en.pws \
+"$@" > $output
 
 exit_code=$?
 
 cat $output | \
-    perl -pe "s/\* L(\d+)C(\d+)[^ ]+/$filename:\1:\2 --/" | \
-    perl -pe 's/([^]]) \n$/\1 /' | \
-    perl -pe 's/[ ]+/ /g' | \
-    perl -pe 's/(.*) -- (.*)\[(.*)\] $/\1: [\3] \2/' | \
-    grep -v '^\s\+'
+perl -pe "s/\* L(\d+)C(\d+)[^ ]+/$filename:\1:\2 --/" | \
+perl -pe 's/([^]]) \n$/\1 /' | \
+perl -pe 's/[ ]+/ /g' | \
+perl -pe 's/(.*) -- (.*)\[(.*)\] $/\1: [\3] \2/' | \
+grep -v '^\s\+'
 
 rm $output
 
@@ -208,20 +589,20 @@ rm $output
 Enable textidote as an flycheck checker.
 #+BEGIN_SRC emacs-lisp
 (after! flycheck
-  (flycheck-define-checker textidote
-    "My latex checker"
-    :command
-    ("~/bin/textidote-wrapper.sh" source)
-    :error-patterns
-    ((warning line-start (file-name) ":" line ":" column ": [" (id (1+ (not (any "]")))) "] " (message) line-end))
-    :modes
-    (latex-mode))
+(flycheck-define-checker textidote
+"My latex checker"
+:command
+("~/bin/textidote-wrapper.sh" source)
+:error-patterns
+((warning line-start (file-name) ":" line ":" column ": [" (id (1+ (not (any "]")))) "] " (message) line-end))
+:modes
+(latex-mode))
 
-  (add-to-list 'flycheck-checkers 'textidote)
+(add-to-list 'flycheck-checkers 'textidote)
 )
 #+END_SRC
 
-*** Maths
+** Maths
 Set "!" as shortcut for greek characters and more. ~!!~ yields ~!~.
 #+BEGIN_SRC emacs-lisp
 (setq LaTeX-math-list (quote (
@@ -231,7 +612,7 @@ Set "!" as shortcut for greek characters and more. ~!!~ yields ~!~.
                              ))
 #+END_SRC
 
-*** TikZ
+** TikZ
 enable latex mode for ~.tikz~ files.
 #+BEGIN_SRC emacs-lisp
 (setq auto-mode-alist
@@ -240,17 +621,25 @@ enable latex mode for ~.tikz~ files.
           auto-mode-alist))
 
 #+END_SRC
+** Evilification
+Let's face it. Being evil is fun, let's take it as far as we can.
+#+BEGIN_SRC emacs-lisp
+(use-package! evil-tex
+  :hook (LaTeX-mode . evil-tex-mode))
+#+END_SRC
 
-** OrgMode
-*** themes and style
+* OrgMode
+#+BEGIN_SRC emacs-lisp
+(setq org-directory "/home/pac/org/")
+#+END_SRC
 
 #+BEGIN_SRC emacs-lisp
 (after! org
   (setq org-startup-folded nil ; do not start folded
         org-tags-column -100 ; the column to the right to align tags
         org-log-done 'time ; record the time when an element was marked done/checked
+        org-ellipsis "⮧"
         org-fontify-done-headline nil ; do not change the font of DONE items
-        org-ellipsis " ↴ "
         org-babel-min-lines-for-block-output 5 ; when to wrap results in #begin_example
         org-return-follows-link t  ; RET follows links
         org-hide-emphasis-markers t ; do not show format markers
@@ -261,26 +650,35 @@ enable latex mode for ~.tikz~ files.
         ;;org-babel-default-header-args:sh
         )
   )
-
 #+END_SRC
 
-Enhance code block with color:
-
+Here I try to do two things: improve the styling of the various documents, via
+font changes etc, and also propagate colours from the current theme.
+** Font Display
+Earlier I loaded the ~org-pretty-table~ package, let's enable it everywhere!
 #+BEGIN_SRC emacs-lisp
-    (after! org
-      ;; Purple boxes for Org BEGIN_SRC and END_SRC
-      (set-face-attribute 'org-block-begin-line nil
-                          :background "#5c3d5c"
-                          :foreground "#a16ba1"
-                          :weight 'bold
-                          :height 0.9
-                          :box '(:line-width 2 :color "#5c3d5c")
-                          )
-      )
+(setq global-org-pretty-table-mode t)
 #+END_SRC
-
-** Org & Latex
-*** Package Config
+Let's make headings a bit bigger
+#+BEGIN_SRC emacs-lisp
+(custom-set-faces!
+  '(outline-1 :weight extra-bold :height 1.25)
+  '(outline-2 :weight bold :height 1.15)
+  '(outline-3 :weight bold :height 1.12)
+  '(outline-4 :weight semi-bold :height 1.09)
+  '(outline-5 :weight semi-bold :height 1.06)
+  '(outline-6 :weight semi-bold :height 1.03)
+  '(outline-8 :weight semi-bold)
+  '(outline-9 :weight semi-bold))
+#+END_SRC
+And the same with the title.
+#+BEGIN_SRC emacs-lisp
+(after! org
+  (custom-set-faces!
+    '(org-document-title :height 1.2)))
+#+END_SRC
+* Org & Latex
+** Package Config
 #+BEGIN_SRC emacs-lisp
 (after! org
   ;; Include the latex-exporter
@@ -295,7 +693,7 @@ Enhance code block with color:
         '(("frame" "lines") ("linenos=true")))
 )
 #+END_SRC
-*** Export
+** Export
  Let the exporter use the -shell-escape option to let latex execute external programs.
 #+BEGIN_SRC emacs-lisp
 (after! org
@@ -313,25 +711,13 @@ Enhance code block with color:
     (org-beamer-export-to-latex  t)))
 
 )
-
-
 #+END_SRC
 
-In preview, with dark mode, invert color
-
-#+BEGIN_SRC emacs-lisp
-(after! org
-(let ((dvipng--plist (alist-get 'dvipng org-preview-latex-process-alist)))
-  (plist-put dvipng--plist :use-xcolor t)
-  (plist-put dvipng--plist :image-converter '("dvipng -D %D -T tight -o %O %f")))
-)
-#+END_SRC
-
-*** Custom hooks
+** Custom hooks
 #+BEGIN_SRC emacs-lisp
 
 (after! org
-  (add-hook 'org-mode-hook (lambda () (hl-fill-column-mode -1)))
+;;  (add-hook 'org-mode-hook (lambda () (hl-fill-column-mode -1)))
   ;; Do not enable auto-fill-mode by default
   (remove-hook 'org-mode-hook #'auto-fill-mode )
   (add-hook 'org-mode-hook #'visual-line-mode )
@@ -346,30 +732,25 @@ In preview, with dark mode, invert color
 (add-hook 'after-save-hook 'my/org-save-and-export-beamer)
      )
 #+END_SRC
-
-# *** Org-ref
-# #+BEGIN_SRC emacs-lisp
-# (use-package! org-ref
-# :after org
-# :init
-# (setq org-ref-completion-library 'org-ref-ivy-cite)
-# :config
-# (setq org-ref-default-citation-link "cite")
-# )
-# #+END_SRC
-
-** WikiMoinMoin
+** Org-ref
 #+BEGIN_SRC emacs-lisp
-(load! "moinmoin-mode")
+(use-package! org-ref
+:after org
+:init
+(setq org-ref-completion-library 'org-ref-ivy-cite)
+:config
+(setq org-ref-default-citation-link "cite")
+)
 #+END_SRC
 
-** SongBook
+In preview, with dark mode, invert color
+
 #+BEGIN_SRC emacs-lisp
-(load! "songbook")
-(setq auto-mode-alist
-(append '(("\\.sg$" . songbook-mode)
-) auto-mode-alist))
-(autoload 'songbook-mode "songbook" "Major-mode for Patacrep songbook's songs" t)
+(after! org
+(let ((dvipng--plist (alist-get 'dvipng org-preview-latex-process-alist)))
+  (plist-put dvipng--plist :use-xcolor t)
+  (plist-put dvipng--plist :image-converter '("dvipng -D %D -T tight -o %O %f")))
+)
 #+END_SRC
 
 * Programming Languages
@@ -377,20 +758,26 @@ In preview, with dark mode, invert color
 #+BEGIN_SRC emacs-lisp
 (after! lsp
   ;; configure lsp for python. See https://github.com/emacs-lsp/lsp-mode/blob/master/lsp-pyls.el
-(setq lsp-pyls-plugins-pycodestyle-max-line-length 100)
+(setq lsp-pyls-plugins-pycodestyle-max-line-length 200)
+(setq lsp-auto-guess-root t)
 )
 #+END_SRC
 ** Python
-** MATLAB
-matlab mode required in =package.el=
+Somehow, the =pyenv= executable is not automatically detected. Let's fix that.
 #+BEGIN_SRC emacs-lisp
-
-(add-hook! matlab-mode
-           (linum-mode)
-           (matlab-cedet-setup)
-           )
-
+(add-to-list 'exec-path "/home/pac/.pyenv/bin/")
 #+END_SRC
 
-* Local config
-** Repositories
+Find a virtualenv and load it automatically
+#+BEGIN_SRC emacs-lisp
+(defun pyvenv-autoload ()
+  "Automatically activates pyvenv version if .venv directory exists."
+  (f-traverse-upwards
+   (lambda (path)
+     (let ((venv-path (f-expand "env" path)))
+       (if (f-exists? venv-path)
+           (progn
+             (pyvenv-workon venv-path))
+             t)))))
+(add-hook 'python-mode-hook 'pyvenv-autoload)
+#+END_SRC

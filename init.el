@@ -42,7 +42,7 @@
        (popup              ; tame sudden yet inevitable temporary windows
         +all               ; catch all popups that start with an asterix
         +defaults)         ; default popup rules
-       ;;pretty-code       ; replace bits of code with pretty symbols
+       ligatures           ; replace bits of code with pretty symbols
        ;;tabs              ; an tab bar for Emacs
        treemacs            ; a project drawer, like neotree but cooler
        ;;unicode           ; extended unicode support for various languages
@@ -50,7 +50,7 @@
        vi-tilde-fringe     ; fringe tildes to mark beyond EOB
        window-select       ; visually switch windows
        workspaces          ; tab emulation, persistence & separate workspaces
-       ;;zen               ; distraction-free coding or writing
+       zen               ; distraction-free coding or writing
 
        :editor
        (evil +everywhere)  ; come to the dark side, we have cookies
@@ -67,11 +67,10 @@
        ;;word-wrap         ; soft wrapping with language-aware indent
 
        :emacs
-       (dired              ; making dired pretty [functional]
-         +icons)
+       (dired +icons)      ; making dired pretty [functional]
        electric            ; smarter, keyword-based electric-indent
-       ibuffer             ; interactive buffer management
-       undo                ; persistent, smarter undo for your inevitable mistakes
+       (ibuffer +icons)    ; interactive buffer management
+       (undo +tree)        ; persistent, smarter undo for your inevitable mistakes
        vc                  ; version-control and Emacs, sitting in a tree
 
        :term
@@ -81,16 +80,16 @@
        ;;vterm             ; another terminals in Emacs
 
        :checkers
-       ;;syntax              ; tasing you for every semicolon you forget
+       syntax              ; tasing you for every semicolon you forget
        spell             ; tasing you for misspelling mispelling
-       ;; grammar           ; tasing grammar mistake every you make
+       grammar           ; tasing grammar mistake every you make
 
        :tools
        ;;ansible
        ;;debugger          ; FIXME stepping through code, to help you add bugs
        ;;direnv
        ;;docker
-       editorconfig      ; let someone else argue about tabs vs spaces
+       ;;editorconfig      ; let someone else argue about tabs vs spaces
        ;;ein               ; tame Jupyter notebooks with emacs
        (eval               ; run code, run (also, repls)
         +overlay)
@@ -100,15 +99,16 @@
        (lsp
         +peek)
        ;;macos             ; MacOS-specific commands
-       magit               ; a git porcelain for Emacs
-       ;;make              ; run make tasks from Emacs
+       (magit              ; a git porcelain for Emacs
+        +forge)
+       make                ; run make tasks from Emacs
        ;;pass              ; password manager for nerds
-       pdf               ; pdf enhancements
+       pdf                 ; pdf enhancements
        ;;prodigy           ; FIXME managing external services & code builders
        rgb                 ; creating color strings
        ;;terraform         ; infrastructure as code
        ;;tmux              ; an API for interacting with tmux
-       ;;upload            ; map local to remote projects via ssh/ftp
+       upload            ; map local to remote projects via ssh/ftp
        ;;wakatime
 
        :lang
@@ -134,12 +134,14 @@
        ;;idris             ;
        json              ; At least it ain't XML
        ;;(java +meghanada) ; the poster child for carpal tunnel syndrome
-       javascript        ; all(hope(abandon(ye(who(enter(here))))))
+       (javascript +lsp)   ; all(hope(abandon(ye(who(enter(here))))))
        ;;julia             ; a better, faster MATLAB
        ;;kotlin            ; a better, slicker Java(Script)
        (latex              ; writing papers in Emacs has never been so fun
          ;+lsp
-         +latexmk)
+        +cdlatex
+        +latexmk
+        +fold)
        ;;lean
        ;;ledger            ; an accounting system in Emacs
        ;;lua               ; one-based indices? one-based indices
@@ -152,6 +154,7 @@
         ;+hugo             ; use Emacs for hugo blogging
         +ipython           ; ipython/jupyter support for babel
         +pandoc            ; export-with-pandoc support
+        ;;+pretty
         ;+pomodoro         ; be fruitful with the tomato technique
         +present)          ; using org-mode for presentations
        ;;perl              ; write code no one else can comprehend
@@ -159,8 +162,9 @@
        ;;plantuml          ; diagrams for confusing people more
        ;;purescript        ; javascript, but functional
        (python             ; beautiful is better than ugly
-          +lsp
-          +pyenv)          ;
+        +lsp
+        +pyright
+        +pyenv)          ;
        ;;qt                ; the 'cutest' gui framework ever
        ;;racket            ; a DSL for DSLs
        ;;rest              ; Emacs as a REST client
@@ -199,5 +203,3 @@
        ;; config. Use it as a reference for your own modules.
        (default +bindings +smartparens)
        )
-(auto-fill-mode -1)
-(remove-hook 'text-mode-hook #'turn-on-auto-fill)

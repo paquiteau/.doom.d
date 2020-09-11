@@ -1,9 +1,43 @@
 ;; -*- no-byte-compile: t; -*-
-;;; .doom.d/packages.el
 
-;;; Examples:
-;; (package! some-package)
-;; (package! another-package :recipe (:host github :repo "username/repo"))
-;; (package! builtin-package :disable t)
+;; [[file:/tmp/config.org.M5AgkA::*Magit Delta][Magit Delta:1]]
+(package! magit-delta :recipe (:host github :repo "dandavison/magit-delta"))
+;; Magit Delta:1 ends here
+
+;; [[file:/tmp/config.org.M5AgkA::*Flyspell-lazy][Flyspell-lazy:1]]
+(package! flyspell-lazy )
+;; Flyspell-lazy:1 ends here
+
+;; [[file:/tmp/config.org.M5AgkA::*Flyspell-lazy][Flyspell-lazy:2]]
+(use-package! info-colors
+  :commands (info-colors-fontify-node))
+
+(add-hook 'Info-selection-hook 'info-colors-fontify-node)
+
+(add-hook 'Info-mode-hook #'mixed-pitch-mode)
+;; Flyspell-lazy:2 ends here
+
+;; [[file:/tmp/config.org.M5AgkA::*Doom-snippet][Doom-snippet:1]]
 (package! doom-snippets :ignore t)
-(package! matlab-mode)
+;; Doom-snippet:1 ends here
+
+;; [[file:/tmp/config.org.M5AgkA::*Org][Org:1]]
+(package! org-ref )
+;; Org:1 ends here
+
+;; [[file:/tmp/config.org.M5AgkA::*Visuals][Visuals:1]]
+(package! org-pretty-table-mode
+  :recipe (:host github :repo "Fuco1/org-pretty-table") :pin "88380f865a79bba49e4f501b7fe73a7bfb03bd1a")
+;; Visuals:1 ends here
+
+;; [[file:/tmp/config.org.M5AgkA::*Visuals][Visuals:2]]
+(package! org-fragtog :pin "92119e3ae7c9a0ae2b5c9d9e4801b5fdc4804ad7")
+;; Visuals:2 ends here
+
+;; [[file:/tmp/config.org.M5AgkA::*Visuals][Visuals:3]]
+(package! org-pretty-tags :pin "40fd72f3e701e31813f383fb429d30bb88cee769")
+;; Visuals:3 ends here
+
+;; [[file:/tmp/config.org.M5AgkA::*Evil-TeX][Evil-TeX:1]]
+(package! evil-tex)
+;; Evil-TeX:1 ends here
