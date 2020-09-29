@@ -243,7 +243,7 @@ It's nice to have completions almost all the time, in my opinion. Key strokes
 are just waiting to be saved!
 #+BEGIN_SRC emacs-lisp
 (after! company
-  (setq company-idle-delay 0.2
+  (setq company-idle-delay 0.5
         company-minimum-prefix-length 2)
   (setq company-show-numbers t)
 (add-hook 'evil-normal-state-entry-hook #'company-abort) ;; make aborting less annoying.
@@ -411,6 +411,8 @@ the file explorer, underused at the moment
         TeX-command-extra-options "-shell-escape")
   ;; While inserting commands in comment sections, do not be intelligent and comment the command
   (setq LaTeX-insert-into-comments nil)
+  ;;pdf-tools as  a default viewer
+  (setq +latex-viewers '(pdf-tools))
   ;; if the babel language is french set the quotes as if english
   (add-hook 'TeX-language-fr-hook
             (lambda ()(setq TeX-quote-language `("francais" "``" "''" ,TeX-quote-after-quote))))
@@ -498,7 +500,8 @@ enhancing Tex-fold Math:
         (,(lambda (word) (string-offset-roman-chars 119743 word)) ("mathbf"))
         (,(lambda (word) (string-offset-roman-chars 119951 word)) ("mathcal"))
         (,(lambda (word) (string-offset-roman-chars 120003 word)) ("mathfrak"))
-        (,(lambda (word) (string-offset-roman-chars 120055 word)) ("mathbb"))
+;;        (,(lambda (word) (string-offset-roman-chars 120055 word)) ("mathbb"))
+        (,(lambda (word) (string-offset-roman-chars 8394 word)) ("mathbb"))
         (,(lambda (word) (string-offset-roman-chars 120159 word)) ("mathsf"))
         (,(lambda (word) (string-offset-roman-chars 120367 word)) ("mathtt"))
         ))
@@ -530,13 +533,13 @@ enhancing Tex-fold Math:
         ("§§§ {1}" ("subsubsection" "subsubsection*"))
         ("¶ {1}" ("paragraph" "paragraph*"))
         ("¶¶ {1}" ("subparagraph" "subparagraph*"))
-        ;;         ;; extra
-        ("⬖ {1}" ("begin"))
+        ;; Environmnent with arguments
+        ((lambda (env &optional mand) (concat "⬖" env (when mand (concat "{" mand "}")))) ("begin"))
         ("⬗ {1}" ("end"))
         ))
 #+END_SRC
 
-use =C-RETURN= for inserting nex item in list.
+use =C-RETURN= for inserting next item in list.
 #+BEGIN_SRC emacs-lisp
 (after! latex
   (map!
@@ -545,8 +548,13 @@ use =C-RETURN= for inserting nex item in list.
 
    ;; normal stuff here
    :localleader
-   :desc "View" "v" #'TeX-view)
-  (setq TeX-electric-math '("\\(" . "")))
+   :desc "View" "v" #'TeX-view
+   :desc "Compile all" "a" #'TeX-command-run-all
+   :desc "Compile buffer" "b" #'TeX-command-buffer
+   :desc "Compile master" "c" #'TeX-command-master
+   )
+
+  (setq TeX-electric-math nil))
 #+END_SRC
 
 And enable shell escape for the preview
@@ -610,6 +618,22 @@ Set "!" as shortcut for greek characters and more. ~!!~ yields ~!~.
                              (?8 "infty" "" 8747)
                             (?! (lambda () (interactive) (insert "!")) "" ?!))
                              ))
+
+#+END_SRC
+Add custom environment and fontify them
+#+BEGIN_SRC emacs-lisp
+(add-hook 'LaTeX-mode-hook 'add-my-latex-environments)
+(defun add-my-latex-environments ()
+  (LaTeX-add-environments
+     '("dmath" LaTeX-env-label)
+     '("rem" LaTeX-env-label)
+     '("prop" LaTeX-env-label)
+     '("thm" LaTeX-env-label)
+     '("defin" LaTeX-env-label)))
+(custom-set-variables
+ '(font-latex-math-environments (quote
+     ("display" "displaymath" "equation" "eqnarray" "gather" "multline"
+      "align" "align*" "alignat" "xalignat" "dmath"))))
 #+END_SRC
 
 ** TikZ

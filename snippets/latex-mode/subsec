@@ -4,6 +4,4 @@
 # uuid: sub
 # --
 \subsection{${1:name}}
-\label{subsec:${2:label}}
-
 $0

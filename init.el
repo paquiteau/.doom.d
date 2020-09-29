@@ -103,7 +103,8 @@
         +forge)
        make                ; run make tasks from Emacs
        ;;pass              ; password manager for nerds
-       pdf                 ; pdf enhancements
+       (pdf                 ; pdf enhancements
+        +pdftools)
        ;;prodigy           ; FIXME managing external services & code builders
        rgb                 ; creating color strings
        ;;terraform         ; infrastructure as code
@@ -139,7 +140,7 @@
        ;;kotlin            ; a better, slicker Java(Script)
        (latex              ; writing papers in Emacs has never been so fun
          ;+lsp
-        +cdlatex
+ ;;       +cdlatex
         +latexmk
         +fold)
        ;;lean
