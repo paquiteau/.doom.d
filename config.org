@@ -333,7 +333,7 @@ redraw them in the buffer with box-drawing characters. Sounds like an
 improvement to me! We'll make use of this with =writeroom-mode=.
 #+begin_src emacs-lisp
 (package! org-pretty-table
-  :recipe (:host github :repo "Fuco1/org-pretty-table") :pin "87772a9469d91770f87bfa788580fca69b9e697a")
+  :recipe (:host github :repo "Fuco1/org-pretty-table"))
 #+end_src
 #+begin_src emacs-lisp :tangle yes
 (use-package! org-pretty-table
@@ -343,7 +343,7 @@ improvement to me! We'll make use of this with =writeroom-mode=.
 For automatically toggling LaTeX fragment previews as the cursor moves in and
 out of them there's this nice package
 #+begin_src emacs-lisp
-(package! org-fragtog :pin "0151cabc7aa9f244f82e682b87713b344d780c23")
+(package! org-fragtog)
 #+end_src
 
 Then for showing org formatting markers (=*/=~=)  when inside such a region, we
@@ -355,20 +355,20 @@ have =org-appear=.
 
 ~org-superstar-mode~ is great. While we're at it we may as well make tags prettier as well 🙂
 #+begin_src emacs-lisp
-(package! org-pretty-tags :pin "5c7521651b35ae9a7d3add4a66ae8cc176ae1c76")
+(package! org-pretty-tags)
 #+end_src
 
 Now and then citations need to happen
 #+begin_src emacs-lisp
+(package! org-ref
+  :recipe (:host github :repo "jkitchin/org-ref" )
+  :pin "37b64e6cc1068c1b7ffe579851a345aa57772333")
+(package! citeproc)
 (package! org-roam-bibtex
   :recipe (:host github :repo "org-roam/org-roam-bibtex"))
 
-(package! org-ref
-  :recipe (:host github :repo "jkitchin/org-ref"))
-
 ;; When using org-roam via the `+roam` flag
 (unpin! org-roam company-org-roam)
-
 ;; When using bibtex-completion via the `biblio` module
 (unpin! bibtex-completion helm-bibtex ivy-bibtex)
 #+end_src
@@ -439,7 +439,7 @@ are just waiting to be saved!
   (setq company-idle-delay 0
         company-minimum-prefix-length 2)
   (setq company-show-numbers t)
-  (add-hook 'evil-normal-state-entry-hook #'company-abort)) ;; make aborting less annoying.
+  )
 #+end_src
 Now, the improvements from ~precedent~ are mostly from remembering history, so
 let's improve that memory.
@@ -740,7 +740,7 @@ functionality as in LaTeX. Let's try viewing possible output files with this.
 *** Font Display
 Mixed pitch is great. As is ~+org-pretty-mode~, let's use them.
 #+begin_src emacs-lisp
-(add-hook 'org-mode-hook #'+org-pretty-mode)
+;(add-hook 'org-mode-hook #'+org-pretty-mode)
 #+end_src
 
 Let's make headings a bit bigger
@@ -824,73 +824,6 @@ do I'll use the above.
         (?C . 'all-the-icons-yellow)
         (?D . 'all-the-icons-green)
         (?E . 'all-the-icons-blue)))
-#+end_src
-#+begin_src  emacs-lisp
-;; (appendq! +ligatures-extra-symbols
-;;           `(:checkbox      "☐"
-;;             :pending       "◼"
-;;             :checkedbox    "☑"
-;;             :list_property "∷"
-;;             :em_dash       "—"
-;;             :ellipses      "…"
-;;             :arrow_right   "→"
-;;             :arrow_left    "←"
-;;             :title         "𝙏"
-;;             :subtitle      "𝙩"
-;;             :author        "𝘼"
-;;             :date          "𝘿"
-;;             :property      "☸"
-;;             :options       "⌥"
-;;             :startup       "⏻"
-;;             :macro         "𝓜"
-;;             :attr_org      "⒪"
-;;             :begin_quote   "❝"
-;;             :end_quote     "❞"
-;;             :caption       "☰"
-;;             :header        "›"
-;; ))
-;; (set-ligatures! 'org-mode
-;;   :merge t
-;;   :checkbox      "[ ]"
-;;   :pending       "[-]"
-;;   :checkedbox    "[X]"
-;;   :list_property "::"
-;;   :em_dash       "---"
-;;   :ellipsis      "..."
-;;   :arrow_right   "->"
-;;   :arrow_left    "<-"
-;;   :title         "#+title:"
-;;   :subtitle      "#+subtitle:"
-;;   :author        "#+author:"
-;;   :date          "#+date:"
-;;   :property      "#+property:"
-;;   :options       "#+options:"
-;;   :startup       "#+startup:"
-;;   :macro         "#+macro:"
-;;   :html_head     "#+html_head:"
-;;   :html          "#+html:"
-;;   :latex_class   "#+latex_class:"
-;;   :latex_header  "#+latex_header:"
-;;   :beamer_header "#+beamer_header:"
-;;   :latex         "#+latex:"
-;;   :attr_latex    "#+attr_latex:"
-;;   :attr_html     "#+attr_html:"
-;;   :attr_org      "#+attr_org:"
-;;   :begin_quote   "#+begin_quote"
-;;   :end_quote     "#+end_quote"
-;;   :caption       "#+caption:"
-;;   :header        "#+header:"
-;;   :begin_export  "#+begin_export"
-;;   :end_export    "#+end_export"
-;;   :results       "#+RESULTS:"
-;;   :property      ":PROPERTIES:"
-;;   :end           ":END:"
-;;   :priority_a    "[#A]"
-;;   :priority_b    "[#B]"
-;;   :priority_c    "[#C]"
-;;   :priority_d    "[#D]"
-;;   :priority_e    "[#E]")
-;; (plist-put +ligatures-extra-symbols :name "⁍")
 #+end_src
 *** TODOs
 #+begin_src emacs-lisp
@@ -986,27 +919,35 @@ functionality from =bmc-maths=, so we'll load that too.
 #+begin_src emacs-lisp
 
 ;; (after! org-roam
-  (require 'org-roam-dailies)
-  (setq org-roam-directory "/home/pac/org/roam/"
-        org-roam-dailies-directory "journal/")
-  (setq org-roam-dailies-capture-templates
-        '(("d" "default" plain
-           "%?"
-           :target (file+head "%<%Y-%m-%d>.org"
-                              "#+title: %<%Y-%m-%d>\n* Neurospin\n "))
-          ("m" "Meeting" entry
-           "* %?"
-           :target (file+head "%<%Y-%m-%d>.org"
-                              "#+title: %<%Y-%m-%d>\n* Neurospin\n"))
-                ))
+(require 'org-roam-dailies)
+(setq org-roam-directory "~/org/roam/"
+      org-roam-dailies-directory "journal/")
 
-  ;;)
+(setq org-roam-capture-templates
+      '(("d" "default" plain "%?" :target
+         (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n")
+         :unnarrowed t)
+        ("c" "config" plain "%?" :target
+         (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n #+filetag: config \n\n")
+         :unnarrowed t)
+        ))
+(setq org-roam-dailies-capture-templates
+      '(("d" "default" plain
+         "%?"
+         :target (file+head "%<%Y-%m-%d>.org"
+                            "#+title: %<%Y-%m-%d>\n* Neurospin\n "))
+        ("m" "Meeting" entry
+         "* %?"
+         :target (file+head "%<%Y-%m-%d>.org"
+                            "#+title: %<%Y-%m-%d>\n* Neurospin\n"))
+        ))
+
+;;)
 #+end_src
 
 Insert without capturing. do not block flow.
 
 #+begin_src emacs-lisp
-(defvar +org-roam-image-directory "/home/pac/org/roam/images/")
 (after! org-roam
 (defun org-roam-node-insert-immediate (arg &rest args)
   (interactive "P")
@@ -1014,7 +955,7 @@ Insert without capturing. do not block flow.
         (org-roam-capture-templates (list (append (car org-roam-capture-templates)
                                                   '(:immediate-finish t)))))
     (apply #'org-roam-node-insert args)))
-
+)
 #+end_src
 
 #+begin_src emacs-lisp
@@ -1044,16 +985,10 @@ Insert without capturing. do not block flow.
         (insert (concat "[[" filename "]]")))
     (org-display-inline-images)
   )
-;; map to convenient shortcut
-
-(map! )
 #+end_src
 #+begin_src emacs-lisp
-
-
 (map! :leader
       :prefix-map ("n" . "notes")
-
        :desc "Bibliographic entries"  "b" #'helm-bibtex ;; helm is clearly superior here
       (:prefix ("r" . "roam ")
        :desc "Insert node Immediatly" "I" #'org-roam-node-insert-immediate
@@ -1065,19 +1000,10 @@ The MVP here is org-roam-bibtex which connect the bib search interface ~helm-bib
 
 #+begin_src emacs-lisp
 (defvar pac-bibliography "~/Zotero/Library.bib")
-(use-package! org-ref
-  :ensure t
-  :config
-  (setq org-ref-get-pdf-filename-function 'org-ref-get-pdf-filename-helm-bibtex
-        org-ref-completion-library 'org-ref-helm-bibtex)
-  (setq org-ref-show-broken-links nil)
-  (setq org-ref-default-citation-link "cite"))
-#+end_src
-
-#+begin_src emacs-lisp
 (use-package! bibtex-completion
   :config
   (setq bibtex-completion-bibliography pac-bibliography
+        bibtex-completion-notes-path "~/org/roam/bib/"
         bibtex-completion-library-path "~/Zotero"))
 (use-package! org-roam-bibtex
   :after org-roam
@@ -1093,18 +1019,17 @@ The MVP here is org-roam-bibtex which connect the bib search interface ~helm-bib
         '("citekey" "title" "url" "author-or-editor" "keywords" "file")
         orb-process-file-keyword t
         orb-file-field-extensions '("pdf"))
-  (setq org-roam-capture-templates
-        '(("d" "default" plain "%?" :target
-           (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n")
-           :unnarrowed t)
-          ("r" "Bib Ref" plain (file "~/org/roam/templates/bib.org") :target
-           (file+head "bib/${citekey}.org" "#+title:${citekey}")
-           :unnarrowed t)
-          )
-        ))
+  (add-to-list
+               'org-roam-capture-templates
+               '("r" "Bib Ref" plain (file "~/org/roam/templates/bib.org") :target
+                 (file+head "bib/${citekey}.org" "#+title:${citekey}")
+                 :unnarrowed t)
+               t)
 
-  ;; Alternatively, call `org-roam-bibtex-mode' interactively
-  (org-roam-bibtex-mode)
+  )
+
+;; Alternatively, call `org-roam-bibtex-mode' interactively
+(org-roam-bibtex-mode)
 
 #+end_src
 
@@ -1184,6 +1109,11 @@ Build Agenda from Roam Notes: Every note which has a Project tag will be parsed 
       calendar-mark-holidays-flag t
       calendar-week-start-day 1
       calendar-mark-diary-entries-flag nil)
+#+end_src
+*** Agenda views
+#+begin_src emacs-lisp
+(setq org-agenda-custom-commands
+      '(("c" "Simple agenda view" ((agenda "")(alltodo "")))))
 #+end_src
 
 * LaTeX
@@ -1411,11 +1341,12 @@ Such special cases should be remapped to another value, as given in `string-offs
   (if (string-match-p "^\\\\?\\w+$" teststring) t nil))
 #+end_src
 ** CD LaTeX
+
 The symbols and modifies are very nice by default, but could do with a bit of
 fleshing out. Let's change the prefix to a key which is similarly rarely used,
 but more convenient, like =;=.
 #+begin_src emacs-lisp
-  (setq  cdlatex-math-symbol-prefix ?\;)
+(setq  cdlatex-math-symbol-prefix ?\;)
 (after! cdlatex
   (setq  cdlatex-math-symbol-prefix ?\;
    cdlatex-math-symbol-alist

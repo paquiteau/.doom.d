@@ -1,5 +1,4 @@
 ;;; init.el -*- lexical-binding: t; -*-
-
 ;; This file controls what Doom modules are enabled and what order they load
 ;; in. Remember to run 'doom sync' after modifying it!
 
@@ -86,7 +85,7 @@
        syntax              ; tasing you for every semicolon you forget
        (spell
         +flyspell
-        +everywhere
+        ;+everywhere
         +hunspell) ; tasing you for misspelling mispelling
        grammar           ; tasing grammar mistake every you make
 
@@ -103,7 +102,8 @@
        lookup              ; navigate your code and its documentation
        (lsp               ; M-x vscode
         +peek)
-       magit             ; a git porcelain for Emacs
+       (magit             ; a git porcelain for Emacs
+        +forge)
        ;;make              ; run make tasks from Emacs
        pass              ; password manager for nerds
        pdf               ; pdf enhancements
