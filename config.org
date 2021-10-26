@@ -189,8 +189,8 @@ Name=Doom Emacs
 GenericName=Text Editor
 Comment=A flexible platform for end-user applications
 MimeType=text/english;text/plain;text/x-makefile;text/x-c++hdr;text/x-c++src;text/x-chdr;text/x-csrc;text/x-java;text/x-moc;text/x-pascal;text/x-tcl;text/x-tex;application/x-shellscript;text/x-c;text/x-c++;
-Exec=/home/pac/.local/bin/e
-Icon=/home/pac/.doom.d/doom-icons.png
+Exec=emacsclient -create-frame --alternate-editor="" --no-wait %F
+Icon=doom-icons.png
 Type=Application
 Terminal=false
 Categories=TextEditor;Utility;
@@ -920,8 +920,8 @@ functionality from =bmc-maths=, so we'll load that too.
 
 ;; (after! org-roam
 (require 'org-roam-dailies)
-(setq org-roam-directory "/home/pac/org/roam/"
-      org-roam-dailies-directory "/home/pac/org/roam/journal/")
+(setq org-roam-directory "~/org/roam/"
+      org-roam-dailies-directory "~/org/roam/journal/")
 
 (setq org-roam-capture-templates
       '(("d" "default" plain "%?" :target
@@ -959,7 +959,7 @@ Insert without capturing. do not block flow.
 #+end_src
 
 #+begin_src emacs-lisp
-(defvar +org-roam-image-directory "/home/pac/org/roam/images/")
+(defvar +org-roam-image-directory "~/org/roam/images/")
 
 (defun pac/get-new-filename (filename &optional base-name count)
   "return a filename which does not already exists."
@@ -979,7 +979,7 @@ Insert without capturing. do not block flow.
 (defun pac/screenshot-to-roam ()
   "take a screenshot and insert an image link in the org-roam note file"
   (interactive)
-  (let ((filename (pac/get-new-filename (concat +org-roam-image-directory (org-id-get) ".png"))))
+  (let ((filename (pac/get-new-filename (concat (expand-file-name +org-roam-image-directory) (org-id-get) ".png"))))
         (shell-command (format "gnome-screenshot -a -f %s" filename))
         (shell-command (format "mogrify -trim %s" filename))
         (insert (concat "[[" filename "]]")))
