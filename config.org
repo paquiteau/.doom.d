@@ -920,8 +920,8 @@ functionality from =bmc-maths=, so we'll load that too.
 
 ;; (after! org-roam
 (require 'org-roam-dailies)
-(setq org-roam-directory "~/org/roam/"
-      org-roam-dailies-directory "journal/")
+(setq org-roam-directory "/home/pac/org/roam/"
+      org-roam-dailies-directory "/home/pac/org/roam/journal/")
 
 (setq org-roam-capture-templates
       '(("d" "default" plain "%?" :target
