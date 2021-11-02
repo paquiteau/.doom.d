@@ -431,15 +431,15 @@ than Objective-C. As such, it'll be switching the icon associated with =.m=.
   (setcdr (assoc "m" all-the-icons-extension-icon-alist)
           (cdr (assoc "matlab" all-the-icons-extension-icon-alist))))
 #+end_src
-** Company
+** COMMENT Company
 It's nice to have completions almost all the time, in my opinion. Key strokes
 are just waiting to be saved!
 #+begin_src emacs-lisp
 (after! company
   (setq company-idle-delay 0
-        company-minimum-prefix-length 2)
-  (setq company-show-numbers t)
-  )
+        company-minimum-prefix-length 2
+        company-show-numbers t
+        ))
 #+end_src
 Now, the improvements from ~precedent~ are mostly from remembering history, so
 let's improve that memory.
@@ -598,7 +598,16 @@ add package src directories to projectile. This isn't desirable in my opinion.
  "<<" ">>"
  :actions '(insert))
 #+end_src
-** Treemacs
+** Magit
+
+Let's add personal forges:
+#+begin_src emacs-lisp
+(after! forge
+  (add-to-list 'forge-alist '("gitlab.crans.org" "gitlab.crans.org/api/v4" "gitlab.crans.org" forge-gitlab-repository))
+                )
+#+end_src
+
+**  Treemacs
 Quite often there are superfluous files I'm not that interested in. There's no
 good reason for them to take up space. Let's add a mechanism to ignore them.
 #+begin_src emacs-lisp
@@ -620,7 +629,13 @@ good reason for them to take up space. Let's add a mechanism to ignore them.
           (dolist (regexp treemacs-file-ignore-regexps ignore-file)
             (setq ignore-file (or ignore-file (if (string-match-p regexp full-path) t nil)))))))
   (add-to-list 'treemacs-ignored-file-predicates #'treemacs-ignore-filter))
+
+(after! treemacs
+  (setq doom-themes-treemacs-theme "doom-colors"))
+(with-eval-after-load 'lsp-treemacs
+          (doom-themes-treemacs-config))
 #+end_src
+
 
 Now, we just identify the files in question.
 #+begin_src emacs-lisp
@@ -887,11 +902,8 @@ functionality from =bmc-maths=, so we'll load that too.
 #+begin_src emacs-lisp
 (setq org-format-latex-header "\\documentclass{article}
 \\usepackage[usenames]{xcolor}
-
 \\usepackage[T1]{fontenc}
-
 \\usepackage{booktabs}
-
 \\pagestyle{empty}             % do not remove
 % The settings below are copied from fullpage.sty
 \\setlength{\\textwidth}{\\paperwidth}
@@ -907,13 +919,36 @@ functionality from =bmc-maths=, so we'll load that too.
 \\setlength{\\topmargin}{1.5cm}
 \\addtolength{\\topmargin}{-2.54cm}
 % my custom stuff
-")
-#+end_src
+\\usepackage{mathtools}
+\\usepackage{amsfonts}
+\\usepackage{amssymb}
+\\usepackage{mathrsfs}
+\\usepackage{bm}
+\\usepackage{ntheorem}
+\\theoremstyle{break}
+\\usepackage[capitalize,nameinlink]{cleveref}
+\\newtheorem{Assumption}{Assumption}
+\\newtheorem{Definition}{Definition}
+\\newtheorem{Lemma}{Lemma}
+\\newtheorem{Proposition}{Proposition}
+\\newtheorem{Theorem}{Theorem}
+\\newtheorem{Corollary}{Corollary}
 
+\\newenvironment{proof}[1][]{{\\par \\noindent\\textit{{\\proofname#1}}: \\par}}{\\hfill$\\blacksquare$}
+
+\\DeclareMathOperator*{\\argmin}{arg\\,min}
+\\DeclareMathOperator*{\\diag}{diag}
+
+\\newcommand{\\prox}{\\operatorname{prox}}
+\\newcommand{\\dom}{\\operatorname{dom}}
+\\newcommand{\\Fix}{\\operatorname{Fix}}
+\\renewcommand{\\Ker}{\\operatorname{Ker}}
+\\newcommand{\\Zer}{\\operatorname{Zer}}
+                ")
+#+end_src
 ** Capture
 #+begin_src emacs-lisp
 (defvar +org-capture-inbox-file "~/org/inbox.org")
-(defvar +org-calendar-file "~/org/calendar.org")
 #+end_src
 ** Org-Roam
 #+begin_src emacs-lisp
@@ -1040,7 +1075,7 @@ Lets take some notes on pdf with org noter
 ** Agenda Configuration
 #+begin_src emacs-lisp
 (setq
-      org-agenda-files '(+org-calendar-file)
+      org-agenda-files '("~/org/calendar.org")
       org-agenda-skip-scheduled-if-done t
       org-agenda-skip-deadline-if-done t
       org-agenda-include-deadlines t
@@ -1115,6 +1150,12 @@ Build Agenda from Roam Notes: Every note which has a Project tag will be parsed 
 (setq org-agenda-custom-commands
       '(("c" "Simple agenda view" ((agenda "")(alltodo "")))))
 #+end_src
+
+* LaTeX Export
+#+begin_src emacs-lisp
+(setq org-latex-pdf-process '("latexmk -f -pdf -%latex -shell-escape -interaction=nonstopmode -output-directory=%o %f"))
+#+end_src
+
 
 * LaTeX
 #+begin_src emacs-lisp
