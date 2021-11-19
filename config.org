@@ -88,10 +88,10 @@ Oh, and previews are nice
   (setq mixed-pitch-face 'variable-pitch))
 #+end_src
 #+begin_src emacs-lisp
-(setq doom-font (font-spec :family "Fira Code" :size 18 :weight 'light)
+(setq doom-font (font-spec :family "FiraCode" :size 18 :weight 'light)
       doom-big-font (font-spec :family "Fira Code" :size 26)
       doom-variable-pitch-font (font-spec :family "Roboto" :size  18 :weight 'normal)
-      doom-unicode-font (font-spec :family "JuliaMono")
+      doom-unicode-font (font-spec :family "Symbola")
       doom-serif-font (font-spec :family "IBM Plex Mono" :weight 'light))
 #+end_src
 This a sample text for instance
@@ -1416,9 +1416,10 @@ but more convenient, like =;=.
 * Python
 
 #+begin_src emacs-lisp
-(after! python
-  (set-pretty-symbols! 'python-mode nil))
-(setq-hook! 'python-mode-hook +format-with-lsp nil)
+;; (after! python
+;;    (set-pretty-symbols! 'python-mode nil)
+;; )
+;; (setq-hook! 'python-mode-hook +format-with-lsp nil)
 #+end_src
 
 * Snippets
