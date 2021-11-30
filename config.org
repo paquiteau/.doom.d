@@ -425,6 +425,11 @@ than having to call `add-to-list' multiple times."
 #+begin_src emacs-lisp
 (package! numpydoc)
 #+end_src
+** Treemacs dired
+To have color icons in dired buffer. It only works in graphical session.
+#+begin_src emacs-lisp
+(package! treemacs-icons-dired)
+#+end_src
 * Package configuration
 ** All the icons
 =all-the-icons= does a generally great job giving file names icons. One minor
@@ -435,7 +440,7 @@ than Objective-C. As such, it'll be switching the icon associated with =.m=.
   (setcdr (assoc "m" all-the-icons-extension-icon-alist)
           (cdr (assoc "matlab" all-the-icons-extension-icon-alist))))
 #+end_src
-** COMMENT Company
+**  Company
 It's nice to have completions almost all the time, in my opinion. Key strokes
 are just waiting to be saved!
 #+begin_src emacs-lisp
@@ -486,7 +491,14 @@ The org-roam metadata clutters the deft menu, let's fix that.
                 "\\)"))
   (advice-add 'deft-parse-title :override #'cm/deft-parse-title)
   )
-      #+end_src
+#+end_src
+** Dired
+#+begin_src emacs-lisp
+(use-package! treemacs-icons-dired
+  :after treemacs dired
+  :config (treemacs-icons-dired-mode))
+#+end_src
+
 ** Doom modeline
 Very nice and pretty, however I think the PDF modeline could do with tweaking.
 I raised [[https://github.com/seagle0128/doom-modeline/pull/425][an issue]] on this, however the response was basically "put your
@@ -611,7 +623,7 @@ Let's add personal forges:
                 )
 #+end_src
 
-**  Treemacs
+** Treemacs
 Quite often there are superfluous files I'm not that interested in. There's no
 good reason for them to take up space. Let's add a mechanism to ignore them.
 #+begin_src emacs-lisp
@@ -1155,7 +1167,7 @@ Build Agenda from Roam Notes: Every note which has a Project tag will be parsed 
       '(("c" "Simple agenda view" ((agenda "")(alltodo "")))))
 #+end_src
 
-* LaTeX Export
+** LaTeX Export
 #+begin_src emacs-lisp
 (setq org-latex-pdf-process '("latexmk -f -pdf -%latex -shell-escape -interaction=nonstopmode -output-directory=%o %f"))
 #+end_src
@@ -1424,12 +1436,12 @@ but more convenient, like =;=.
   (setq lsp-pylsp-plugins-autopep8-enabled t
         lsp-pylsp-plugins-flake8-ignore "E121,E123,E126,E226,E24,E704,E402,E731,E722,E741,W503,W504,W605,D105"
         lsp-pylsp-plugins-flake8-max-line-length 105
-        lsp-pylsp-plugins-pydocstyle-add-ignore "D105"
-  )
-  )
+        lsp-pylsp-plugins-pydocstyle-add-ignore "D105"))
+
 (use-package! numpydoc
   :config (setq numpydoc-insertion-style 'yas
                 numpydoc-insert-examples-bloc nil))
+
 (map! :after python
       :map python-mode-map
       :localleader "n" 'numpydoc-generate)
