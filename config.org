@@ -163,7 +163,7 @@ Documentation=info:emacs man:emacs(1) https://gnu.org/software/emacs/
 
 [Service]
 Type=forking
-ExecStart=sh -c 'emacs --daemon && emacsclient -c --eval "(delete-frame)"'
+ExecStart=sh -c 'emacs --daemon --with-x-toolkit=lucid && emacsclient -c --eval "(delete-frame)"'
 ExecStop=/usr/bin/emacsclient --no-wait --eval "(progn (setq kill-emacs-hook nil) (kill emacs))"
 Restart=on-failure
 
@@ -420,6 +420,10 @@ than having to call `add-to-list' multiple times."
   :bind
   ("C-x m" . mathpix-screenshot))
 
+#+end_src
+** Python
+#+begin_src emacs-lisp
+(package! numpydoc)
 #+end_src
 * Package configuration
 ** All the icons
@@ -1416,10 +1420,19 @@ but more convenient, like =;=.
 * Python
 
 #+begin_src emacs-lisp
-;; (after! python
-;;    (set-pretty-symbols! 'python-mode nil)
-;; )
-;; (setq-hook! 'python-mode-hook +format-with-lsp nil)
+(after! lsp-mode
+  (setq lsp-pylsp-plugins-autopep8-enabled t
+        lsp-pylsp-plugins-flake8-ignore "E121,E123,E126,E226,E24,E704,E402,E731,E722,E741,W503,W504,W605,D105"
+        lsp-pylsp-plugins-flake8-max-line-length 105
+        lsp-pylsp-plugins-pydocstyle-add-ignore "D105"
+  )
+  )
+(use-package! numpydoc
+  :config (setq numpydoc-insertion-style 'yas
+                numpydoc-insert-examples-bloc nil))
+(map! :after python
+      :map python-mode-map
+      :localleader "n" 'numpydoc-generate)
 #+end_src
 
 * Snippets
