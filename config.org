@@ -110,6 +110,9 @@ so I don't feel like something's gone /wrong/ when editing files.
 #+begin_src emacs-lisp
 (custom-set-faces!
   '(doom-modeline-buffer-modified :foreground "orange"))
+(custom-set-faces!
+  '(mode-line :family "Noto Sans" :height 0.8)
+  '(mode-line-inactive :family "Noto Sans" :height 0.8))
 #+end_src
 While we're modifying the modeline, =LF UTF-8= is the default file encoding, and
 thus not worth noting in the modeline. So, let's conditionally hide it.
@@ -1050,7 +1053,7 @@ I use Zotero and the BetterBibTex plugins to gather all the references. It keep 
 The MVP here is org-roam-bibtex which connect the bib search interface ~helm-bibtex~ and ~org-roam~ it also tweak ~org-ref~ to behave nicely. In particular, there is no need to configure the =bibtex-completion-notes= file template, as we are going to use the one provided by org-roam.
 
 #+begin_src emacs-lisp
-(defvar pac-bibliography "~/Zotero/Library.bib")
+(defvar pac-bibliography "~/org/library.bib")
 (use-package! bibtex-completion
   :config
   (setq bibtex-completion-bibliography pac-bibliography
@@ -1433,10 +1436,14 @@ but more convenient, like =;=.
 
 #+begin_src emacs-lisp
 (after! lsp-mode
-  (setq lsp-pylsp-plugins-autopep8-enabled t
-        lsp-pylsp-plugins-flake8-ignore "E121,E123,E126,E226,E24,E704,E402,E731,E722,E741,W503,W504,W605,D105"
-        lsp-pylsp-plugins-flake8-max-line-length 105
-        lsp-pylsp-plugins-pydocstyle-add-ignore "D105"))
+  (setq lsp-pylsp-configuration-sources "[\'flake8\']"
+        lsp-pylsp-plugins-autopep8-enabled t
+        lsp-pylsp-plugins-jedi-use-pyenv-environment t
+        lsp-pylsp-plugins-pylint-enabled t
+        lsp-pylsp-plugins-flake8-ignore "Q000, D107"
+        lsp-pylsp-plugins-pydocstyle-ignore "D107"
+        ))
+
 
 (use-package! numpydoc
   :config (setq numpydoc-insertion-style 'yas
@@ -1447,4 +1454,8 @@ but more convenient, like =;=.
       :localleader "n" 'numpydoc-generate)
 #+end_src
 
+* C/C++/CUDA
+#+begin_src emacs-lisp
+(add-hook cuda-mode-hook #'lsp!)
+#+end_src
 * Snippets
