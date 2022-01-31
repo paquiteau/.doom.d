@@ -847,6 +847,8 @@ Now, we just identify the files in question.
         "mw"
         ;; LaTeX - pdfx
         "pdfa.xmpi"
+        ;; python
+        "pyc"
         ))
 (setq treemacs-file-ignore-globs
       '(;; LaTeX
@@ -1609,20 +1611,22 @@ but more convenient, like =;=.
   (setq lsp-pylsp-configuration-sources "[\'flake8\']"
         lsp-pylsp-plugins-autopep8-enabled t
         lsp-pylsp-plugins-jedi-use-pyenv-environment t
-        lsp-pylsp-plugins-pylint-enabled t
-        lsp-pylsp-plugins-flake8-ignore "Q000, D107"
+        lsp-pylsp-plugins-pylint-enabled nil
+        lsp-pylsp-plugins-flake8-ignore "Q000, D107, RST304, N806"
         lsp-pylsp-plugins-pydocstyle-ignore "D107"
+        lsp-pylsp-plugins-pydocstyle-enabled nil
         ))
 
-
 (use-package! numpydoc
-  :config (setq numpydoc-insertion-style 'yas
+  :config (setq numpydoc-insertion-style nil
                 numpydoc-insert-examples-bloc nil))
-
-(map! :after python
-      :map python-mode-map
-      :localleader "n" 'numpydoc-generate)
 #+end_src
+* C & C++
+#+begin_src emacs-lisp
+ (add-hook 'cuda-mode-local-vars-hook #'ccls)
 
-* C/C++/CUDA
+(after! (lsp-clangd)
+(add-to-list 'lsp-clients-clangd-args "--query-driver=/usr/bin/**"))
+
+#+end_src
 * Snippets
