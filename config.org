@@ -1617,9 +1617,9 @@ but more convenient, like =;=.
         lsp-pylsp-plugins-autopep8-enabled t
         lsp-pylsp-plugins-jedi-use-pyenv-environment t
         lsp-pylsp-plugins-pylint-enabled nil
-        lsp-pylsp-plugins-flake8-ignore "Q000, D107, RST304, N806"
-        lsp-pylsp-plugins-pydocstyle-ignore "D107"
-        lsp-pylsp-plugins-pydocstyle-enabled nil
+        lsp-pylsp-plugins-flake8-ignore "Q000, D107, RST304, N806, DAR"
+        lsp-pylsp-plugins-pydocstyle-enabled t
+        lsp-pylsp-plugins-pydocstyle-convention "numpy"
         ))
 
 (use-package! numpydoc
