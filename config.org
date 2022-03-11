@@ -1,5 +1,5 @@
 #+title: Doom Emacs config
-#+author: paquiteau
+#+author: Pierre-Antoine Comby
 
 #+property: header-args:emacs-lisp :tangle yes :comments link
 #+property: header-args:elisp :exports code
@@ -13,6 +13,10 @@
 ** Headers for tangle
 #+begin_src emacs-lisp :comments no
 ;;; config.el -*- lexical-binding: t; -*-
+#+end_src
+
+#+begin_src emacs-lisp :tangle "packages.el" :comments no
+;; -*- no-byte-compile: t; -*-
 #+end_src
 
 #+begin_src shell :exports none :comments no :tangle-mode (identity #o755)
@@ -75,9 +79,12 @@ Then, we'll pull up ~ivy~
 #+begin_src emacs-lisp
 (defadvice! prompt-for-buffer (&rest _)
   :after '(evil-window-split evil-window-vsplit)
-  (consult/buffer))
+  (consult-buffer))
 #+end_src
-
+*** Dashboard
+#+begin_src emacs-lisp
+(setq doom-fallback-buffer-name "*dashboard*")
+#+end_src
 ** Visual Settings
 #+begin_src emacs-lisp
 (use-package! mixed-pitch
@@ -132,12 +139,6 @@ then =ESC 12 <UP>= gets you exactly where you think.
 #+begin_src emacs-lisp
 (setq display-line-numbers-type 'relative)
 #+end_src
-
-I'd like some slightly nicer default buffer names
-#+begin_src emacs-lisp
-(setq doom-fallback-buffer-name "► Doom"
-      +doom-dashboard-name "► Doom")
-#+end_src
 *** Window title
 I'd like to have just the buffer name, then if applicable the project folder
 #+begin_src emacs-lisp
@@ -153,123 +154,6 @@ I'd like to have just the buffer name, then if applicable the project folder
          (let ((project-name (projectile-project-name)))
            (unless (string= "-" project-name)
              (format (if (buffer-modified-p)  " ◉ %s" "  ●  %s") project-name))))))
-#+end_src
-*** Startup screen
-#+begin_src emacs-lisp
-(defvar fancy-splash-image-template
-  (expand-file-name "misc/splash/emacs-e-template.svg" doom-private-dir)
-  "Default template svg used for the splash image, with substitutions from ")
-
-(defvar fancy-splash-sizes
-  `((:height 300 :min-height 50 :padding (0 . 2))
-    (:height 250 :min-height 42 :padding (2 . 4))
-    (:height 200 :min-height 35 :padding (3 . 3))
-    (:height 150 :min-height 28 :padding (3 . 3))
-    (:height 100 :min-height 20 :padding (2 . 2))
-    (:height 75  :min-height 15 :padding (2 . 1))
-    (:height 50  :min-height 10 :padding (1 . 0))
-    (:height 1   :min-height 0  :padding (0 . 0)))
-  "list of plists with the following properties
-  :height the height of the image
-  :min-height minimum `frame-height' for image
-  :padding `+doom-dashboard-banner-padding' (top . bottom) to apply
-  :template non-default template file
-  :file file to use instead of template")
-
-(defvar fancy-splash-template-colours
-  '(("$colour1" . keywords) ("$colour2" . type) ("$colour3" . base5) ("$colour4" . base8))
-  "list of colour-replacement alists of the form (\"$placeholder\" . 'theme-colour) which applied the template")
-
-(unless (file-exists-p (expand-file-name "theme-splashes" doom-cache-dir))
-  (make-directory (expand-file-name "theme-splashes" doom-cache-dir) t))
-
-(defun fancy-splash-filename (theme-name height)
-  (expand-file-name (concat (file-name-as-directory "theme-splashes")
-                            theme-name
-                            "-" (number-to-string height) ".svg")
-                    doom-cache-dir))
-
-(defun fancy-splash-clear-cache ()
-  "Delete all cached fancy splash images"
-  (interactive)
-  (delete-directory (expand-file-name "theme-splashes" doom-cache-dir) t)
-  (message "Cache cleared!"))
-
-(defun fancy-splash-generate-image (template height)
-  "Read TEMPLATE and create an image if HEIGHT with colour substitutions as
-   described by `fancy-splash-template-colours' for the current theme"
-  (with-temp-buffer
-    (insert-file-contents template)
-    (re-search-forward "$height" nil t)
-    (replace-match (number-to-string height) nil nil)
-    (dolist (substitution fancy-splash-template-colours)
-      (goto-char (point-min))
-      (while (re-search-forward (car substitution) nil t)
-        (replace-match (doom-color (cdr substitution)) nil nil)))
-    (write-region nil nil
-                  (fancy-splash-filename (symbol-name doom-theme) height) nil nil)))
-
-(defun fancy-splash-generate-images ()
-  "Perform `fancy-splash-generate-image' in bulk"
-  (dolist (size fancy-splash-sizes)
-    (unless (plist-get size :file)
-      (fancy-splash-generate-image (or (plist-get size :template)
-                                       fancy-splash-image-template)
-                                   (plist-get size :height)))))
-
-(defun ensure-theme-splash-images-exist (&optional height)
-  (unless (file-exists-p (fancy-splash-filename
-                          (symbol-name doom-theme)
-                          (or height
-                              (plist-get (car fancy-splash-sizes) :height))))
-    (fancy-splash-generate-images)))
-
-(defun get-appropriate-splash ()
-  (let ((height (frame-height)))
-    (cl-some (lambda (size) (when (>= height (plist-get size :min-height)) size))
-             fancy-splash-sizes)))
-
-(setq fancy-splash-last-size nil)
-(setq fancy-splash-last-theme nil)
-(defun set-appropriate-splash (&rest _)
-  (let ((appropriate-image (get-appropriate-splash)))
-    (unless (and (equal appropriate-image fancy-splash-last-size)
-                 (equal doom-theme fancy-splash-last-theme)))
-    (unless (plist-get appropriate-image :file)
-      (ensure-theme-splash-images-exist (plist-get appropriate-image :height)))
-    (setq fancy-splash-image
-          (or (plist-get appropriate-image :file)
-              (fancy-splash-filename (symbol-name doom-theme) (plist-get appropriate-image :height))))
-    (setq +doom-dashboard-banner-padding (plist-get appropriate-image :padding))
-    (setq fancy-splash-last-size appropriate-image)
-    (setq fancy-splash-last-theme doom-theme)
-    (+doom-dashboard-reload)))
-
-(add-hook 'window-size-change-functions #'set-appropriate-splash)
-(add-hook 'doom-load-theme-hook #'set-appropriate-splash)
-#+end_src
-
-ascii banner for terminal use
-#+begin_src emacs-lisp
-(defun doom-dashboard-draw-ascii-emacs-banner-fn ()
-  (let* ((banner
-          '(",---.,-.-.,---.,---.,---."
-            "|---'| | |,---||    `---."
-            "`---'` ' '`---^`---'`---'"))
-         (longest-line (apply #'max (mapcar #'length banner))))
-    (put-text-property
-     (point)
-     (dolist (line banner (point))
-       (insert (+doom-dashboard--center
-                +doom-dashboard--width
-                (concat
-                 line (make-string (max 0 (- longest-line (length line)))
-                                   32)))
-               "\n"))
-     'face 'doom-dashboard-banner)))
-
-(unless (display-graphic-p) ; for some reason this messes up the graphical splash screen atm
-  (setq +doom-dashboard-ascii-banner-fn #'doom-dashboard-draw-ascii-emacs-banner-fn))
 #+end_src
 ** Emacs Deamon
 For running a systemd service for a Emacs server I have the following
@@ -324,7 +208,7 @@ When the config is updated, then it is as simple as a  =systemctl restart emacs.
   (require 'org)
 (when (daemonp)
   (add-hook 'emacs-startup-hook #'greedily-do-daemon-setup)
-  (add-hook! 'server-after-make-frame-hook (switch-to-buffer +doom-dashboard-name))))
+  (add-hook! 'server-after-make-frame-hook (switch-to-buffer doom-fallback-buffer-name))))
 #+end_src
 
 *** Emacs client wrapper
@@ -425,94 +309,6 @@ alias mt="m -t"
 alias et="e -t"
 #+end_src
 
-* Extra Packages
-:PROPERTIES:
-:header-args:emacs-lisp: :tangle "packages.el" :comments no
-:END:
-This file shouldn't be byte compiled.
-#+begin_src emacs-lisp :tangle "packages.el" :comments no
-;; -*- no-byte-compile: t; -*-
-#+end_src
-** Info colors colors
-This makes manual pages nicer to look at :)
-Variable pitch fontification + colouring
-#+begin_src emacs-lisp
-(package! info-colors :pin "47ee73cc19b1049eef32c9f3e264ea7ef2aaf8a5")
-#+end_src
-#+begin_src emacs-lisp :tangle yes
-(use-package! info-colors
-  :commands (info-colors-fontify-node))
-
-(add-hook 'Info-selection-hook 'info-colors-fontify-node)
-#+end_src
-** OrgMode
-Org tables aren't the prettiest thing to look at. This package is supposed to
-redraw them in the buffer with box-drawing characters. Sounds like an
-improvement to me! We'll make use of this with =writeroom-mode=.
-#+begin_src emacs-lisp
-(package! org-pretty-table
-  :recipe (:host github :repo "Fuco1/org-pretty-table"))
-#+end_src
-#+begin_src emacs-lisp :tangle yes
-(use-package! org-pretty-table
-  :commands (org-pretty-table-mode global-org-pretty-table-mode))
-#+end_src
-
-For automatically toggling LaTeX fragment previews as the cursor moves in and
-out of them there's this nice package
-#+begin_src emacs-lisp
-(package! org-fragtog)
-#+end_src
-
-Then for showing org formatting markers (=*/=~=)  when inside such a region, we
-have =org-appear=.
-#+begin_src emacs-lisp
-(package! org-appear :recipe (:host github :repo "awth13/org-appear")
-  :pin "6ee49875f8bdefafbde849f5628d673e9740cf8c")
-#+end_src
-
-~org-superstar-mode~ is great. While we're at it we may as well make tags prettier as well 🙂
-#+begin_src emacs-lisp
-(package! org-pretty-tags)
-#+end_src
-
-Now and then citations need to happen
-#+begin_src emacs-lisp
-(package! org-ref
-  :recipe (:host github :repo "jkitchin/org-ref" )
-  :pin "37b64e6cc1068c1b7ffe579851a345aa57772333")
-(package! citeproc)
-(package! org-roam-bibtex
-  :recipe (:host github :repo "org-roam/org-roam-bibtex"))
-
-;; When using org-roam via the `+roam` flag
-(unpin! org-roam company-org-roam)
-;; When using bibtex-completion via the `biblio` module
-(unpin! bibtex-completion helm-bibtex ivy-bibtex)
-#+end_src
-Org roam ui is fantastic:
-#+begin_src emacs-lisp
-(unpin! org-roam)
-(package! websocket)
-(package! org-roam-ui :recipe (:host github :repo "org-roam/org-roam-ui" :files ("*.el" "out")))
-#+end_src
-#+begin_src emacs-lisp :tangle yes
-(use-package! websocket
-    :after org-roam)
-
-(use-package! org-roam-ui
-    :after org-roam ;; or :after org
-;;         normally we'd recommend hooking orui after org-roam, but since org-roam does not have
-;;         a hookable mode anymore, you're advised to pick something yourself
-;;         if you don't care about startup time, use
-;;  :hook (after-init . org-roam-ui-mode)
-    :config
-    (setq org-roam-ui-sync-theme t
-          org-roam-ui-follow t
-          org-roam-ui-update-on-save t
-          org-roam-ui-open-on-start t))
-#+end_src
-Speaking of headlines, a nice package
 ** Custom functions
 #+begin_src emacs-lisp :tangle yes
 (defun pac/concat-newline ( &rest lines)
@@ -525,32 +321,6 @@ than having to call `add-to-list' multiple times."
   (interactive)
   (dolist (item to-add)
     (add-to-list l item)))
-#+end_src
-** Mathpix
-#+begin_src emacs-lisp
-(package! mathpix
-  :recipe (:host github :repo "jethrokuan/mathpix.el"))
-#+end_src
-#+begin_src emacs-lisp :tangle yes
-(use-package! mathpix.el
-  :custom ((mathpix-app-id paquiteau-mathpix-id)
-           (mathpix-app-key paquiteau-mathpix-key))
-  :bind
-  ("C-x m" . mathpix-screenshot))
-
-#+end_src
-** Python
-#+begin_src emacs-lisp
-(package! numpydoc)
-#+end_src
-** String Inflection
-#+begin_src emacs-lisp
-(package! string-inflection)
-#+end_src
-** Treemacs dired
-To have color icons in dired buffer. It only works in graphical session.
-#+begin_src emacs-lisp
-(package! treemacs-icons-dired)
 #+end_src
 * Package configuration
 ** Abbrev
@@ -600,6 +370,27 @@ let's improve that memory.
     company-files
     company-yasnippet))
 #+end_src
+** Dashboard
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! dashboard)
+#+end_src
+#+begin_src emacs-lisp
+(use-package! dashboard
+  :config
+  (dashboard-setup-startup-hook))
+(setq dashboard-center-content t                  ; center content
+      dashboard-startup-banner 2                  ; ascii banner
+      dashboard-banner-logo-title "Welcome back!"
+      dashboard-show-shortcuts nil                ; declutter
+      dashboard-items '((recents  . 5)
+                        (projects . 5)
+                        ;;(agenda . 5)
+                        )
+      dashboard-set-heading-icons t
+      dashboard-set-file-icons t
+
+      dashboard-projects-switch-function 'projectile-persp-switch-project)
+#+end_src
 ** Deft
 The org-roam metadata clutters the deft menu, let's fix that.
 #+begin_src emacs-lisp
@@ -625,11 +416,6 @@ The org-roam metadata clutters the deft menu, let's fix that.
   )
 #+end_src
 ** Dired
-#+begin_src emacs-lisp
-(use-package! treemacs-icons-dired
-  :after treemacs dired
-  :config (treemacs-icons-dired-mode))
-#+end_src
 
 ** Doom modeline
 Very nice and pretty, however I think the PDF modeline could do with tweaking.
@@ -746,6 +532,18 @@ add package src directories to projectile. This isn't desirable in my opinion.
  "<<" ">>"
  :actions '(insert))
 #+end_src
+** Info colors colors
+This makes manual pages nicer to look at :)
+Variable pitch fontification + colouring
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! info-colors :pin "47ee73cc19b1049eef32c9f3e264ea7ef2aaf8a5")
+#+end_src
+#+begin_src emacs-lisp
+(use-package! info-colors
+  :commands (info-colors-fontify-node))
+
+(add-hook 'Info-selection-hook 'info-colors-fontify-node)
+#+end_src
 ** Magit
 
 Let's add personal forges:
@@ -755,9 +553,23 @@ Let's add personal forges:
                 )
 #+end_src
 
+** Mathpix
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! mathpix
+  :recipe (:host github :repo "jethrokuan/mathpix.el"))
+#+end_src
+#+begin_src emacs-lisp
+(use-package! mathpix.el
+  :custom ((mathpix-app-id paquiteau-mathpix-id)
+           (mathpix-app-key paquiteau-mathpix-key))
+  :bind
+  ("C-x m" . mathpix-screenshot))
+
+#+end_src
 ** Projectile
 #+begin_src emacs-lisp
 (setq projectile-ignored-projects '("~/" "/tmp" "~/.emacs.d/.local/straight/repos/"))
+(setq projectile-project-search-path '("~/gits/nsp/" "~/gits/rep/"))
 (defun projectile-ignored-project-function (filepath)
   "Return t if FILEPATH is within any of `projectile-ignored-projects'"
   (or (mapcar (lambda (p) (s-starts-with-p p filepath)) projectile-ignored-projects)))
@@ -765,6 +577,10 @@ Let's add personal forges:
 (setq +workspaces-switch-project-function #'magit-status)
 #+end_src
 ** String Inflection
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! string-inflection)
+#+end_src
+
 #+begin_src emacs-lisp
 (use-package! string-inflection
   :commands (string-inflection-all-cycle
@@ -878,7 +694,6 @@ let's change that, and do a few other similar tweaks while we're at it.
 #+begin_src emacs-lisp
 (add-hook! writegood-mode #'writegood-passive-voice-turn-off)
 #+end_src
-** YASnippet
 
 * OrgMode
 #+begin_src emacs-lisp
@@ -890,12 +705,14 @@ let's change that, and do a few other similar tweaks while we're at it.
       org-catch-invisible-edits 'smart            ; try not to accidently do weird stuff in invisible regions
       org-pretty-entities-include-sub-superscripts nil ; Don't hide the _ and ^
       org-startup-with-latex-preview  t
-      org-export-with-sub-superscripts '{})       ; don't treat lone _ / ^ as sub/superscripts, require _{} / ^{}
-;; (add-hook 'org-mode-hook 'turn-on-flyspell)
-#+end_src
-I think it makes sense to have list bullets change with depth
-#+begin_src emacs-lisp
-(setq org-list-demote-modify-bullet '(("+" . "-") ("-" . "+") ("*" . "+") ("1." . "a.")))
+      org-fontify-quote-and-verse-blocks t        ; /italic/ for quotes.
+      org-export-with-sub-superscripts '{}       ; don't treat lone _ / ^ as sub/superscripts, require _{} / ^{}
+      org-list-demote-modify-bullet '(("+" . "-")
+                                      ("-" . "+")
+                                      ("*" . "+")
+                                      ("1." . "a.")
+                                      )
+      )
 #+end_src
 ** CdLaTeX
 It's also nice to be able to use ~cdlatex~.
@@ -946,7 +763,7 @@ functionality as in LaTeX. Let's try viewing possible output files with this.
 *** Font Display
 Mixed pitch is great. As is ~+org-pretty-mode~, let's use them.
 #+begin_src emacs-lisp
-;(add-hook 'org-mode-hook #'+org-pretty-mode)
+(add-hook 'org-mode-hook #'+org-pretty-mode)
 #+end_src
 
 Let's make headings a bit bigger
@@ -956,15 +773,10 @@ Let's make headings a bit bigger
   '(outline-2 :weight bold :height 1.15)
   '(outline-3 :weight bold :height 1.12)
   '(outline-4 :weight semi-bold :height 1.09)
-  '(outline-5 :weight semi-bold :height 1.06)
+  '(outl    ine-5 :weight semi-bold :height 1.06)
   '(outline-6 :weight semi-bold :height 1.03)
   '(outline-8 :weight semi-bold)
-  '(outline-9 :weight semi-bold))
-#+end_src
-
-And the same with the title.
-#+begin_src emacs-lisp
-(custom-set-faces!
+  '(outline-9 :weight semi-bold)
   '(org-document-title :height 1.2))
 #+end_src
 
@@ -977,16 +789,13 @@ It seems reasonable to have deadlines in the error face when they're passed.
         (0.0 . org-upcoming-distant-deadline)))
 #+end_src
 
-We can then have quote blocks stand out a bit more by making them /italic/.
-#+begin_src emacs-lisp
-(setq org-fontify-quote-and-verse-blocks t)
-#+end_src
-
 While ~org-hide-emphasis-markers~ is very nice, it can sometimes make edits which
 occur at the border a bit more fiddley. We can improve this situation without
 sacrificing visual amenities with the =org-appear= package.
+
 #+begin_src emacs-lisp
 (use-package! org-appear
+  :after org
   :hook (org-mode . org-appear-mode)
   :config
   (setq org-appear-autoemphasis t
@@ -1015,6 +824,11 @@ Apparently this causes issues with some people, but I haven't noticed anything
 problematic beyond the expected slight delay in some fontification, so until I
 do I'll use the above.
 *** Symbols
+~org-superstar-mode~ is great. While we're at it we may as well make tags prettier as well 🙂
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! org-pretty-tags)
+#+end_src
+
 #+begin_src emacs-lisp
 (after! org-superstar
   (setq org-superstar-headline-bullets-list '("◉" "○" "✸" "✿" "✤" "✜" "◆" "▶")
@@ -1053,18 +867,31 @@ do I'll use the above.
   (setq org-superstar-special-todo-items t)
   (setq org-superstar-todo-bullet-alist
         '(("TODO" . ?☐)
-          ("WAITING" . ?☕)
-          ("CANCELLED" . ?✘)
+          ("WAIT" . ?☕)
+          ("ABORT" . ?✘)
           ("DONE" . ?✔)))
   (org-superstar-restart))
 #+end_src
 
-*** LateX fragments
+** LaTeX fragments
 First off, we want those fragments to look good.
 #+begin_src emacs-lisp
 (setq org-highlight-latex-and-related '(native script entities))
 #+end_src
 
+For automatically toggling LaTeX fragment previews as the cursor moves in and
+out of them there's this nice package
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! org-fragtog)
+;;(package! org-auctex :recipe (:host github :repo "karthink/org-auctex" :files ("*.el")))
+#+end_src
+
+#+begin_src emacs-lisp
+;; (use-package! org-auctex
+;;   :after org
+;;   :hook (org-mode . org-auctex-mode)
+;;   )
+#+end_src
 However, by using =native= highlighting the =org-block= face is added, and that
 doesn't look too great --- particularly when the fragments are previewed.
 
@@ -1084,12 +911,14 @@ have this be performed automatically with =org-fragtog=.
 #+begin_src emacs-lisp
 (use-package! org-fragtog
   :hook (org-mode . org-fragtog-mode))
+
+(setq +org-latex-preview-scale 1.0)
+(setq org-preview-latex-default-process 'dvisvgm ;No blur when scaling
+      org-format-latex-options (plist-put org-format-latex-options :scale +org-latex-preview-scale))
 #+end_src
 It's nice to customise the look of LaTeX fragments so they fit better in the
 text --- like this \(\sqrt{\beta^2+3}-\sum_{\phi=1}^\infty \frac{x^\phi-1}{\Gamma(a)}\).
-Let's start by adding a sans font. I'd also like to use some of the
-functionality from =bmc-maths=, so we'll load that too.
-
+#+name: org-latex-preamble
 #+begin_src emacs-lisp
 (setq org-format-latex-header "\\documentclass{article}
 \\usepackage[usenames]{xcolor}
@@ -1116,63 +945,194 @@ functionality from =bmc-maths=, so we'll load that too.
 \\usepackage{mathrsfs}
 \\usepackage{bm}
 \\usepackage{ntheorem}
-\\theoremstyle{break}
-\\usepackage[capitalize,nameinlink]{cleveref}
-\\newtheorem{Assumption}{Assumption}
-\\newtheorem{Definition}{Definition}
-\\newtheorem{Lemma}{Lemma}
-\\newtheorem{Proposition}{Proposition}
-\\newtheorem{Theorem}{Theorem}
-\\newtheorem{Corollary}{Corollary}
-
-\\newenvironment{proof}[1][]{{\\par \\noindent\\textit{{\\proofname#1}}: \\par}}{\\hfill$\\blacksquare$}
-
 \\DeclareMathOperator*{\\argmin}{arg\\,min}
 \\DeclareMathOperator*{\\diag}{diag}
 
 \\newcommand{\\prox}{\\operatorname{prox}}
 \\newcommand{\\dom}{\\operatorname{dom}}
 \\newcommand{\\Fix}{\\operatorname{Fix}}
-\\renewcommand{\\Ker}{\\operatorname{Ker}}
+\\newcommand{\\Ker}{\\operatorname{Ker}}
 \\newcommand{\\Zer}{\\operatorname{Zer}}
                 ")
 #+end_src
-** Capture
+
+from https://karthinks.com/software/scaling-latex-previews-in-emacs/]
+
+Also , lets update the ~org-format-latex-option~
+#+begin_src emacs-lisp
+(defun my/text-scale-adjust-latex-previews ()
+  "Adjust the size of latex preview fragments when changing the
+buffer's text scale."
+
+  (pcase major-mode
+    ('latex-mode
+     (dolist (ov (overlays-in (point-min) (point-max)))
+       (if (eq (overlay-get ov 'category)
+               'preview-overlay)
+           (my/text-scale--resize-fragment ov))))
+    ('org-mode
+     (dolist (ov (overlays-in (point-min) (point-max)))
+       (if (eq (overlay-get ov 'org-overlay-type)
+               'org-latex-overlay)
+           (my/text-scale--resize-fragment ov)))))
+  ;; (setq org-format-latex-options (plist-put
+  ;;                                 org-format-latex-options
+  ;;                                 :scale (* +org-latex-preview-scale (expt text-scale-mode-step text-scale-mode-amount))))
+;;(setq-default 'preview-scale-function (* +org-latex-preview-scale (expt text-scale-mode-step text-scale-mode-amount)))
+
+  )
+
+(defun my/text-scale--resize-fragment (ov)
+  (overlay-put
+   ov 'display
+   (cons 'image
+         (plist-put
+          (cdr (overlay-get ov 'display))
+          :scale  (* +org-latex-preview-scale(expt text-scale-mode-step text-scale-mode-amount))))
+  ))
+
+;; (add-hook 'text-scale-mode-hook #'org-auctex-preview-buffer)
+(add-hook 'text-scale-mode-hook #'my/text-scale-adjust-latex-previews)
+#+end_src
+*** Numbered equations
+#+begin_src emacs-lisp
+;; From https://github.com/jkitchin/scimax
+;; Numbered equations all have (1) as the number for fragments with vanilla
+;; org-mode. This code injects the correct numbers into the previews so they
+;; look good.
+(defun my/org-renumber-environment (orig-func &rest args)
+  "A function to inject numbers in LaTeX fragment previews."
+  (let ((results '())
+    (counter -1)
+    (numberp))
+    (setq results (cl-loop for (begin .  env) in
+               (org-element-map (org-element-parse-buffer) 'latex-environment
+                 (lambda (env)
+                   (cons
+                    (org-element-property :begin env)
+                    (org-element-property :value env))))
+               collect
+               (cond
+                ((and (string-match "\\\\begin{equation}" env)
+                      (not (string-match "\\\\tag{" env)))
+                 (cl-incf counter)
+                 (cons begin counter))
+                ((string-match "\\\\begin{align}" env)
+                 (prog2
+                     (cl-incf counter)
+                     (cons begin counter)
+                   (with-temp-buffer
+                     (insert env)
+                     (goto-char (point-min))
+                     ;; \\ is used for a new line. Each one leads to a number
+                     (cl-incf counter (count-matches "\\\\$"))
+                     ;; unless there are nonumbers.
+                     (goto-char (point-min))
+                     (cl-decf counter (count-matches "\\nonumber")))))
+                (t
+                 (cons begin nil)))))
+
+    (when (setq numberp (cdr (assoc (point) results)))
+      (setf (car args)
+        (concat
+         (format "\\setcounter{equation}{%s}\n" numberp)
+         (car args)))))
+
+  (apply orig-func args))
+
+(defun my/toggle-latex-equation-numbering ()
+  "Toggle whether LaTeX fragments are numbered."
+  (interactive)
+  (if (not (get 'my/org-renumber-environment 'enabled))
+      (progn
+    (advice-add 'org-create-formula-image :around #'my/org-renumber-environment)
+    (put 'my/org-renumber-environment 'enabled t)
+    (message "Latex numbering enabled"))
+    (advice-remove 'org-create-formula-image #'my/org-renumber-environment)
+    (put 'my/org-renumber-environment 'enabled nil)
+    (message "Latex numbering disabled.")))
+#+end_src
+
+** Capture and GTD
 #+begin_src emacs-lisp
 (defvar +org-capture-inbox-file "~/org/inbox.org")
+(after! org
+  (setq org-todo-keywords '((sequence "TODO(t)" "WAIT(w)" "|" "DONE(d)" "ABORT(a)")
+                           (sequence "[ ](T)" "[?](W)" "|" "[X](D)")))
+  (setq org-capture-templates
+        '(("t" "Todo" entry (file+headline +org-capture-inbox-file "Tasks")
+           "* TODO %?\n  %i\n  %a")))
+  )
+
 #+end_src
 ** Org-Roam
-#+begin_src emacs-lisp
-
-;; (after! org-roam
-(require 'org-roam-dailies)
-(setq org-roam-directory "~/org/roam/"
-      org-roam-dailies-directory "~/org/roam/journal/")
-
-(setq org-roam-capture-templates
-      '(("d" "default" plain "%?" :target
-         (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n")
-         :unnarrowed t)
-        ("c" "config" plain "%?" :target
-         (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n #+filetag: config \n\n")
-         :unnarrowed t)
-        ))
-(setq org-roam-dailies-capture-templates
-      '(("d" "default" plain
-         "%?"
-         :target (file+head "%<%Y-%m-%d>.org"
-                            "#+title: %<%Y-%m-%d>\n* Neurospin\n "))
-        ("m" "Meeting" entry
-         "* %?"
-         :target (file+head "%<%Y-%m-%d>.org"
-                            "#+title: %<%Y-%m-%d>\n* Neurospin\n"))
-        ))
-
-;;)
+Org roam ui is fantastic:
+#+begin_src emacs-lisp :tangle "packages.el"
+(unpin! org-roam company-org-roam)
+(package! websocket)
+(package! org-roam-ui :recipe (:host github :repo "org-roam/org-roam-ui" :files ("*.el" "out")))
 #+end_src
 
-Insert without capturing. do not block flow.
+#+begin_src emacs-lisp
+(use-package! websocket
+    :after org-roam)
 
+(use-package! org-roam-ui
+    :after org-roam ;; or :after org
+;;         normally we'd recommend hooking orui after org-roam, but since org-roam does not have
+;;         a hookable mode anymore, you're advised to pick something yourself
+;;         if you don't care about startup time, use
+;;  :hook (after-init . org-roam-ui-mode)
+    :config
+    (setq org-roam-ui-sync-theme t
+          org-roam-ui-follow t
+          org-roam-ui-update-on-save t
+          org-roam-ui-open-on-start t))
+#+end_src
+
+#+begin_src emacs-lisp
+(after! org-roam
+  (setq org-roam-directory "~/org/roam/"
+        org-roam-dailies-directory "~/org/roam/journal"
+        org-roam-dailies-capture-templates
+        '(("w" " Daily Work Notes" Entry
+           "* %?"
+           :target (file+head "work/%<%Y-%m-%d>.org"
+                              "#+title: %<%Y-%m-%d>-Work\n#+filetags: work")
+           :unnarrowed t)
+          ("h" "Daily Personal Notes" Entry
+           "* %?"
+           :target (file+head "personal/%<%Y-%m-%d>.org"
+                              "#+title: %<%Y-%m-%d>-Personal\n#+filetags: perso"
+                              )
+           :unnarrowed t)
+          )
+        ))
+#+end_src
+#+begin_src emacs-lisp
+(setq my/org-roam-excluded-dirs '("journal"))
+
+(setq org-roam-db-node-include-function (lambda ()
+                                          (let* ((file-path (buffer-file-name (buffer-base-buffer)))
+                                                 (rel-file-path (f-relative file-path org-roam-directory))
+                                                 (parent-directories (butlast (f-split rel-file-path))))
+                                            (if (cl-intersection my/org-roam-excluded-dirs parent-directories :test #'string=) nil t))))
+(after! citar
+  (setq! citar-bibliography "~/org/library.bib")
+  (setq citar-library-paths '("~/Zotero/")
+        citar-notes-paths '("~/org/roam/bib/")
+        citar-file-note-org-include '(org-id org-roam-ref)
+        citar-symbols `((file ,(all-the-icons-faicon "file-o" :face 'all-the-icons-green :v-adjust -0.1) . " ")
+                        (note ,(all-the-icons-material "speaker_notes" :face 'all-the-icons-blue :v-adjust -0.3) . " ")
+                        (link ,(all-the-icons-octicon "link" :face 'all-the-icons-orange :v-adjust 0.01) . " "))
+        citar-symbol-separator " ")
+  (map! :leader :prefix "n"
+        "b" #'citar-insert-citation))
+
+#+end_src
+*** Extra Behaviour
+Insert without capturing. do not block flow.
+#+name: insert immediate
 #+begin_src emacs-lisp
 (after! org-roam
 (defun org-roam-node-insert-immediate (arg &rest args)
@@ -1183,7 +1143,7 @@ Insert without capturing. do not block flow.
     (apply #'org-roam-node-insert args)))
 )
 #+end_src
-
+#+name: screenshot
 #+begin_src emacs-lisp
 (defvar +org-roam-image-directory "~/org/roam/images/")
 
@@ -1212,66 +1172,27 @@ Insert without capturing. do not block flow.
     (org-display-inline-images)
   )
 #+end_src
+Lets add convenients
+#+name: maps
 #+begin_src emacs-lisp
 (map! :leader
       :prefix-map ("n" . "notes")
-       :desc "Bibliographic entries"  "b" #'helm-bibtex ;; helm is clearly superior here
       (:prefix ("r" . "roam ")
        :desc "Insert node Immediatly" "I" #'org-roam-node-insert-immediate
        :desc "Insert screenshot" "c" #'pac/screenshot-to-roam))
 #+end_src
-** Bibliography
-I use Zotero and the BetterBibTex plugins to gather all the references. It keep up-to-date a biblatex file.
-The MVP here is org-roam-bibtex which connect the bib search interface ~helm-bibtex~ and ~org-roam~ it also tweak ~org-ref~ to behave nicely. In particular, there is no need to configure the =bibtex-completion-notes= file template, as we are going to use the one provided by org-roam.
-
-#+begin_src emacs-lisp
-(defvar pac-bibliography "~/org/library.bib")
-(use-package! bibtex-completion
-  :config
-  (setq bibtex-completion-bibliography pac-bibliography
-        bibtex-completion-notes-path "~/org/roam/bib/"
-        bibtex-completion-library-path "~/Zotero"))
-(use-package! org-roam-bibtex
-  :after org-roam
-  :custom
-  (orb-note-actions-interface 'helm)
-  :commands
-  (org-roam-bibtex-mode
-   orb-note-actions
-   orb-insert-link)
-  :config
-  (setq orb-insert-interface 'helm-bibtex)
-  (setq orb-preformat-keywords
-        '("citekey" "title" "url" "author-or-editor" "keywords" "file")
-        orb-process-file-keyword t
-        orb-file-field-extensions '("pdf"))
-  (add-to-list
-               'org-roam-capture-templates
-               '("r" "Bib Ref" plain (file "~/org/roam/templates/bib.org") :target
-                 (file+head "bib/${citekey}.org" "#+title:${citekey}")
-                 :unnarrowed t)
-               t)
-
-  )
-
-;; Alternatively, call `org-roam-bibtex-mode' interactively
-(org-roam-bibtex-mode)
-
-#+end_src
-
-Lets take some notes on pdf with org noter
-#+begin_src emacs-lisp
-
-#+end_src
 ** Agenda Configuration
 #+begin_src emacs-lisp
 (setq
-      org-agenda-files '("~/org/calendar.org")
+      org-agenda-files '("~/org/calendar.org" "~/org/habits.org")
       org-agenda-skip-scheduled-if-done t
       org-agenda-skip-deadline-if-done t
       org-agenda-include-deadlines t
       org-agenda-compact-blocks t)
 #+end_src
+
+
+*** Build Agenda from notes.
 Build Agenda from Roam Notes: Every note which has a Project tag will be parsed for Todo.
 
 #+begin_src emacs-lisp
@@ -1346,8 +1267,6 @@ Build Agenda from Roam Notes: Every note which has a Project tag will be parsed 
 #+begin_src emacs-lisp
 (setq org-latex-pdf-process '("latexmk -f -pdf -%latex -shell-escape -interaction=nonstopmode -output-directory=%o %f"))
 #+end_src
-
-
 * LaTeX
 #+begin_src emacs-lisp
 (setq TeX-save-query nil
@@ -1573,7 +1492,6 @@ Such special cases should be remapped to another value, as given in `string-offs
   (if (string-match-p "^\\\\?\\w+$" teststring) t nil))
 #+end_src
 ** CD LaTeX
-
 The symbols and modifies are very nice by default, but could do with a bit of
 fleshing out. Let's change the prefix to a key which is similarly rarely used,
 but more convenient, like =;=.
@@ -1600,21 +1518,25 @@ but more convenient, like =;=.
      (?*    ("\\times" "\\star" "\\ast")))
    cdlatex-math-modify-alist
    '( ;; my own stuff
-     (?B    "\\mathbb"        nil          t    nil  nil)
-     (?a    "\\abs"           nil          t    nil  nil))))
+     (?B    "\\mathbb"   nil t    nil  nil)
+     (?b    "\\bm"       nil t    nil  nil)
+     (?a    "\\abs"      nil t    nil  nil))))
 #+end_src
 
 * Python
-
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! numpydoc)
+#+end_src
 #+begin_src emacs-lisp
 (after! lsp-mode
   (setq lsp-pylsp-configuration-sources "[\'flake8\']"
         lsp-pylsp-plugins-autopep8-enabled t
         lsp-pylsp-plugins-jedi-use-pyenv-environment t
-        lsp-pylsp-plugins-pylint-enabled nil
+        lsp-pylsp-plugins-pylint-enabled t
         lsp-pylsp-plugins-flake8-ignore "Q000, D107, RST304, N806"
         lsp-pylsp-plugins-pydocstyle-ignore "D107"
-        lsp-pylsp-plugins-pydocstyle-enabled nil
+        lsp-pylsp-plugins-pydocstyle-enabled t
+        lsp-pylsp-plugins-pydocstyle-convention "numpy"
         ))
 
 (use-package! numpydoc
