@@ -622,13 +622,29 @@ And add some custom functions provided by =blamer= author:
   :recipe (:host github :repo "jethrokuan/mathpix.el"))
 #+end_src
 #+begin_src emacs-lisp
+
 (use-package! mathpix.el
   :custom ((mathpix-app-id paquiteau-mathpix-id)
            (mathpix-app-key paquiteau-mathpix-key))
-  :bind
-  ("C-x m" . mathpix-screenshot))
-
+  )
 #+end_src
+
+#+begin_src emacs-lisp
+(defun pac/mathpix-insert (mathdelim)
+  (unless (texmathp)
+    (insert mathdelim)
+    (backward-char 2))
+  (mathpix-screenshot)
+  (forward-char 2)
+  )
+
+(map! :leader
+      :prefix "i"
+       "m" (lambda! (pac/mathpix-insert "\\(\\)"))
+       "M" (lambda! (interactive) (pac/mathpix-insert "\\[\\]"))
+      )
+#+end_src
+
 ** Projectile
 #+begin_src emacs-lisp
 (setq projectile-ignored-projects '("~/" "/tmp" "~/.emacs.d/.local/straight/repos/"))
