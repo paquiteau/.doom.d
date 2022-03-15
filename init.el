@@ -170,6 +170,7 @@
         +roam2
         +dragndrop
         +hugo
+        +gnuplot
         +noter
         +present
         +pretty
