@@ -608,8 +608,8 @@ And add some custom functions provided by =blamer= author:
 
 (map! :leader
       :prefix "i"
-       "m" (lambda! (pac/mathpix-insert "\\(\\)"))
-       "M" (lambda! (interactive) (pac/mathpix-insert "\\[\\]"))
+       "m" (cmd! (pac/mathpix-insert "\\(\\)"))
+       "M" (cmd! (interactive) (pac/mathpix-insert "\\[\\]"))
       )
 #+end_src
 ** Projectile
@@ -1244,7 +1244,7 @@ Lets add convenients key bindings for theses functions
        :desc "Insert node Immediatly" "I" #'org-roam-node-insert-immediate
        :desc "Insert node" "i" #'pac/org-roam-node-insert-space
        :desc "Insert screenshot" "c" #'pac/screenshot-to-roam
-       :desc "kill all roam buffers" "k" (lambda! () (pac/kill-roam-buffer))))
+       :desc "kill all roam buffers" "k" (cmd! () (pac/kill-roam-buffer))))
 #+end_src
 ** Agenda Configuration
 #+begin_src emacs-lisp
