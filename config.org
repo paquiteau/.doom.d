@@ -81,10 +81,6 @@ Then, we'll pull up ~ivy~
   :after '(evil-window-split evil-window-vsplit)
   (consult-buffer))
 #+end_src
-*** Dashboard
-#+begin_src emacs-lisp
-(setq doom-fallback-buffer-name "*dashboard*")
-#+end_src
 ** Visual Settings
 #+begin_src emacs-lisp
 (use-package! mixed-pitch
@@ -370,27 +366,6 @@ let's improve that memory.
     company-files
     company-yasnippet))
 #+end_src
-** Dashboard
-#+begin_src emacs-lisp :tangle "packages.el"
-(package! dashboard)
-#+end_src
-#+begin_src emacs-lisp
-(use-package! dashboard
-  :config
-  (dashboard-setup-startup-hook))
-(setq dashboard-center-content t                  ; center content
-      dashboard-startup-banner 2                  ; ascii banner
-      dashboard-banner-logo-title "Welcome back!"
-      dashboard-show-shortcuts nil                ; declutter
-      dashboard-items '((recents  . 5)
-                        (projects . 5)
-                        ;;(agenda . 5)
-                        )
-      dashboard-set-heading-icons t
-      dashboard-set-file-icons t
-
-      dashboard-projects-switch-function 'projectile-persp-switch-project)
-#+end_src
 ** Deft
 The org-roam metadata clutters the deft menu, let's fix that.
 #+begin_src emacs-lisp
@@ -545,7 +520,6 @@ Variable pitch fontification + colouring
 (add-hook 'Info-selection-hook 'info-colors-fontify-node)
 #+end_src
 ** Magit
-
 Let's add personal forges:
 #+begin_src emacs-lisp
 (after! forge
@@ -644,7 +618,6 @@ And add some custom functions provided by =blamer= author:
        "M" (lambda! (interactive) (pac/mathpix-insert "\\[\\]"))
       )
 #+end_src
-
 ** Projectile
 #+begin_src emacs-lisp
 (setq projectile-ignored-projects '("~/" "/tmp" "~/.emacs.d/.local/straight/repos/"))
