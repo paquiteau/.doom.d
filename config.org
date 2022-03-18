@@ -81,10 +81,6 @@ Then, we'll pull up ~ivy~
   :after '(evil-window-split evil-window-vsplit)
   (consult-buffer))
 #+end_src
-*** Dashboard
-#+begin_src emacs-lisp
-(setq doom-fallback-buffer-name "*dashboard*")
-#+end_src
 ** Visual Settings
 #+begin_src emacs-lisp
 (use-package! mixed-pitch
@@ -370,27 +366,6 @@ let's improve that memory.
     company-files
     company-yasnippet))
 #+end_src
-** Dashboard
-#+begin_src emacs-lisp :tangle "packages.el"
-(package! dashboard)
-#+end_src
-#+begin_src emacs-lisp
-(use-package! dashboard
-  :config
-  (dashboard-setup-startup-hook))
-(setq dashboard-center-content t                  ; center content
-      dashboard-startup-banner 2                  ; ascii banner
-      dashboard-banner-logo-title "Welcome back!"
-      dashboard-show-shortcuts nil                ; declutter
-      dashboard-items '((recents  . 5)
-                        (projects . 5)
-                        ;;(agenda . 5)
-                        )
-      dashboard-set-heading-icons t
-      dashboard-set-file-icons t
-
-      dashboard-projects-switch-function 'projectile-persp-switch-project)
-#+end_src
 ** Deft
 The org-roam metadata clutters the deft menu, let's fix that.
 #+begin_src emacs-lisp
@@ -545,26 +520,97 @@ Variable pitch fontification + colouring
 (add-hook 'Info-selection-hook 'info-colors-fontify-node)
 #+end_src
 ** Magit
-
 Let's add personal forges:
 #+begin_src emacs-lisp
 (after! forge
   (add-to-list 'forge-alist '("gitlab.crans.org" "gitlab.crans.org/api/v4" "gitlab.crans.org" forge-gitlab-repository))
                 )
 #+end_src
-
-** Mathpix
+*** Blamer
+Lets directly blame others
 #+begin_src emacs-lisp :tangle "packages.el"
-(package! mathpix
-  :recipe (:host github :repo "jethrokuan/mathpix.el"))
+(package! blamer :recipe (:host github :repo "artawower/blamer.el"))
 #+end_src
 #+begin_src emacs-lisp
-(use-package! mathpix.el
-  :custom ((mathpix-app-id paquiteau-mathpix-id)
-           (mathpix-app-key paquiteau-mathpix-key))
-  :bind
-  ("C-x m" . mathpix-screenshot))
+(use-package blamer
+  :bind (("s-i" . blamer-show-commit-info))
+  :defer 20
+  :custom
+  (blamer-idle-time 0.3)
+  (blamer-min-offset 70)
+  :custom-face
+  (blamer-face ((t :foreground "#7a88cf"
+                    :background nil
+                    :height 140
+                    :italic t)))
+  :config
+  (setq blamer-author-formatter " ✎ %s "
+        blamer-datetime-formatter "[%s]"
+        blamer-commit-formatter " ● %s"
+        blamer-idle-time 1
+        blamer-prettify-time-p t
+        blamer-max-lines 30
+        blamer-uncommitted-changes-message "UNCOMMITTED")
 
+  (global-blamer-mode 1))
+#+end_src
+
+And add some custom functions provided by =blamer= author:
+#+begin_src emacs-lisp
+(defun blamer-callback-show-commit-diff (commit-info)
+  (interactive)
+  (let ((commit-hash (plist-get commit-info :commit-hash)))
+    (when commit-hash
+      (magit-show-commit commit-hash))))
+
+(defun blamer-callback-open-remote (commit-info)
+  (interactive)
+  (let ((commit-hash (plist-get commit-info :commit-hash)))
+    (when commit-hash
+      (message commit-hash)
+      (forge-browse-commit commit-hash))))
+
+(setq blamer-bindings '(("<mouse-3>" . blamer-callback-open-remote)
+                        ("<mouse-1>" . blamer-callback-show-commit-diff)))
+
+(defun blamer-callback-magit-log-file (commit-info)
+  (interactive)
+  (magit-log-buffer-file)
+  (let ((commit-hash (plist-get commit-info :commit-hash)))
+    (when commit-hash
+      (run-with-idle-timer 1 nil (lambda (commit-hash)
+                                   (goto-char (point-min))
+                                   (search-forward (substring commit-hash 0 7))
+                                   (set-mark (point-at-bol))
+                                   (goto-char (point-at-eol)))
+                           commit-hash))))
+
+(defun blamer-callback-timemachine (commit-info)
+  (interactive)
+  (git-timemachine))
+#+end_src
+
+** Mathpix
+#+begin_src emacs-lisp
+(load! "mathpix.el")
+(setq-default mathpix-app-id paquiteau-mathpix-id
+              mathpix-app-key paquiteau-mathpix-key)
+#+end_src
+
+#+begin_src emacs-lisp
+(defun pac/mathpix-insert (mathdelim)
+  (unless (texmathp)
+    (insert mathdelim)
+    (backward-char 2))
+  (mathpix-screenshot)
+  (forward-char 2)
+  )
+
+(map! :leader
+      :prefix "i"
+       "m" (lambda! (pac/mathpix-insert "\\(\\)"))
+       "M" (lambda! (interactive) (pac/mathpix-insert "\\[\\]"))
+      )
 #+end_src
 ** Projectile
 #+begin_src emacs-lisp
@@ -1095,16 +1141,13 @@ Org roam ui is fantastic:
   (setq org-roam-directory "~/org/roam/"
         org-roam-dailies-directory "~/org/roam/journal"
         org-roam-dailies-capture-templates
-        '(("w" " Daily Work Notes" Entry
-           "* %?"
-           :target (file+head "work/%<%Y-%m-%d>.org"
-                              "#+title: %<%Y-%m-%d>-Work\n#+filetags: work")
+        '(("w" "Daily Work Notes" plain
+           "%?"
+           :target (file+datetree "work.org" "+title: Work")
            :unnarrowed t)
-          ("h" "Daily Personal Notes" Entry
-           "* %?"
-           :target (file+head "personal/%<%Y-%m-%d>.org"
-                              "#+title: %<%Y-%m-%d>-Personal\n#+filetags: perso"
-                              )
+          ("p" "Daily Personal Notes" plain
+           "%?"
+           :target (file+datetree "perso.org" "+title: Perso")
            :unnarrowed t)
           )
         ))
@@ -1126,7 +1169,8 @@ Org roam ui is fantastic:
                         (note ,(all-the-icons-material "speaker_notes" :face 'all-the-icons-blue :v-adjust -0.3) . " ")
                         (link ,(all-the-icons-octicon "link" :face 'all-the-icons-orange :v-adjust 0.01) . " "))
         citar-symbol-separator " ")
-  (map! :leader :prefix "n"
+  (map! :leader
+        :prefix "n"
         "b" #'citar-insert-citation))
 
 #+end_src
@@ -1135,14 +1179,25 @@ Insert without capturing. do not block flow.
 #+name: insert immediate
 #+begin_src emacs-lisp
 (after! org-roam
+
+(defun pac/org-roam-node-insert-space (arg &rest args)
+  (interactive "P")
+  (let ((args (cons arg args)))
+  (unless (eq " " (char-before))
+     (insert " "))
+  (apply #'org-roam-node-insert args)))
+
 (defun org-roam-node-insert-immediate (arg &rest args)
   (interactive "P")
   (let ((args (cons arg args))
         (org-roam-capture-templates (list (append (car org-roam-capture-templates)
                                                   '(:immediate-finish t)))))
-    (apply #'org-roam-node-insert args)))
+    (apply #'pac/org-roam-node-insert-space args)))
 )
+
 #+end_src
+
+
 #+name: screenshot
 #+begin_src emacs-lisp
 (defvar +org-roam-image-directory "~/org/roam/images/")
@@ -1172,14 +1227,24 @@ Insert without capturing. do not block flow.
     (org-display-inline-images)
   )
 #+end_src
-Lets add convenients
+Lets add convenients key bindings for theses functions
+#+begin_src emacs-lisp
+(defun pac/kill-roam-buffer ()
+  (interactive)
+  (dolist (buf (buffer-list))
+    (if (string-match (expand-file-name org-roam-directory)
+                      (expand-file-name (or (buffer-file-name buf) "")))
+        (kill-buffer buf))))
+#+end_src
 #+name: maps
 #+begin_src emacs-lisp
 (map! :leader
       :prefix-map ("n" . "notes")
       (:prefix ("r" . "roam ")
        :desc "Insert node Immediatly" "I" #'org-roam-node-insert-immediate
-       :desc "Insert screenshot" "c" #'pac/screenshot-to-roam))
+       :desc "Insert node" "i" #'pac/org-roam-node-insert-space
+       :desc "Insert screenshot" "c" #'pac/screenshot-to-roam
+       :desc "kill all roam buffers" "k" (lambda! () (pac/kill-roam-buffer))))
 #+end_src
 ** Agenda Configuration
 #+begin_src emacs-lisp
