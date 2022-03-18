@@ -1141,16 +1141,13 @@ Org roam ui is fantastic:
   (setq org-roam-directory "~/org/roam/"
         org-roam-dailies-directory "~/org/roam/journal"
         org-roam-dailies-capture-templates
-        '(("w" " Daily Work Notes" Entry
-           "* %?"
-           :target (file+head "work/%<%Y-%m-%d>.org"
-                              "#+title: %<%Y-%m-%d>-Work\n#+filetags: work")
+        '(("w" "Daily Work Notes" plain
+           "%?"
+           :target (file+datetree "work.org" "+title: Work")
            :unnarrowed t)
-          ("h" "Daily Personal Notes" Entry
-           "* %?"
-           :target (file+head "personal/%<%Y-%m-%d>.org"
-                              "#+title: %<%Y-%m-%d>-Personal\n#+filetags: perso"
-                              )
+          ("p" "Daily Personal Notes" plain
+           "%?"
+           :target (file+datetree "perso.org" "+title: Perso")
            :unnarrowed t)
           )
         ))
@@ -1172,7 +1169,8 @@ Org roam ui is fantastic:
                         (note ,(all-the-icons-material "speaker_notes" :face 'all-the-icons-blue :v-adjust -0.3) . " ")
                         (link ,(all-the-icons-octicon "link" :face 'all-the-icons-orange :v-adjust 0.01) . " "))
         citar-symbol-separator " ")
-  (map! :leader :prefix "n"
+  (map! :leader
+        :prefix "n"
         "b" #'citar-insert-citation))
 
 #+end_src
@@ -1181,14 +1179,25 @@ Insert without capturing. do not block flow.
 #+name: insert immediate
 #+begin_src emacs-lisp
 (after! org-roam
+
+(defun pac/org-roam-node-insert-space (arg &rest args)
+  (interactive "P")
+  (let ((args (cons arg args)))
+  (unless (eq " " (char-before))
+     (insert " "))
+  (apply #'org-roam-node-insert args)))
+
 (defun org-roam-node-insert-immediate (arg &rest args)
   (interactive "P")
   (let ((args (cons arg args))
         (org-roam-capture-templates (list (append (car org-roam-capture-templates)
                                                   '(:immediate-finish t)))))
-    (apply #'org-roam-node-insert args)))
+    (apply #'pac/org-roam-node-insert-space args)))
 )
+
 #+end_src
+
+
 #+name: screenshot
 #+begin_src emacs-lisp
 (defvar +org-roam-image-directory "~/org/roam/images/")
@@ -1218,14 +1227,24 @@ Insert without capturing. do not block flow.
     (org-display-inline-images)
   )
 #+end_src
-Lets add convenients
+Lets add convenients key bindings for theses functions
+#+begin_src emacs-lisp
+(defun pac/kill-roam-buffer ()
+  (interactive)
+  (dolist (buf (buffer-list))
+    (if (string-match (expand-file-name org-roam-directory)
+                      (expand-file-name (or (buffer-file-name buf) "")))
+        (kill-buffer buf))))
+#+end_src
 #+name: maps
 #+begin_src emacs-lisp
 (map! :leader
       :prefix-map ("n" . "notes")
       (:prefix ("r" . "roam ")
        :desc "Insert node Immediatly" "I" #'org-roam-node-insert-immediate
-       :desc "Insert screenshot" "c" #'pac/screenshot-to-roam))
+       :desc "Insert node" "i" #'pac/org-roam-node-insert-space
+       :desc "Insert screenshot" "c" #'pac/screenshot-to-roam
+       :desc "kill all roam buffers" "k" (lambda! () (pac/kill-roam-buffer))))
 #+end_src
 ** Agenda Configuration
 #+begin_src emacs-lisp
