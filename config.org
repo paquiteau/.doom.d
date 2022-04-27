@@ -45,6 +45,8 @@ the following:
  x-stretch-cursor t)                              ; Stretch cursor to the glyph width
 
 (setq undo-limit 80000000                         ; Raise undo-limit to 80Mb
+      gc-cons-threshold (* 1024 1024 1024)
+      read-process-output-max (* 1024 1024)
       evil-want-fine-undo t                       ; By default while in insert all changes are one big blob. Be more granular
       auto-save-default t                         ; Nobody likes to loose work, I certainly don't
       truncate-string-ellipsis "…"                ; Unicode ellispis are nicer than "...", and also save /precious/ space
@@ -318,6 +320,13 @@ than having to call `add-to-list' multiple times."
   (dolist (item to-add)
     (add-to-list l item)))
 #+end_src
+** TRAMP
+#+begin_src emacs-lisp
+(after! tramp
+ (add-to-list 'tramp-remote-path 'tramp-own-remote-path)
+)
+(setq explicit-shell-file-name "/bin/bash")
+#+end_src
 * Package configuration
 ** Abbrev
 #+begin_src emacs-lisp
@@ -589,10 +598,28 @@ And add some custom functions provided by =blamer= author:
   (interactive)
   (git-timemachine))
 #+end_src
+#+begin_src emacs-lisp
+
+(setq auto-revert-buffer-list-filter
+      'magit-auto-revert-repository-buffer-p)
+#+end_src
+** Markdown
+#+begin_src emacs-lisp
+(after! markdown
+  (setq markdown-fontify-code-blocks-natively t)
+)
+(custom-set-faces!
+  '(markdown-header-face-1 :height 1.25 :weight extra-bold :inherit markdown-header-face)
+  '(markdown-header-face-2 :height 1.15 :weight bold       :inherit markdown-header-face)
+  '(markdown-header-face-3 :height 1.08 :weight bold       :inherit markdown-header-face)
+  '(markdown-header-face-4 :height 1.00 :weight bold       :inherit markdown-header-face)
+  '(markdown-header-face-5 :height 0.90 :weight bold       :inherit markdown-header-face)
+  '(markdown-header-face-6 :height 0.75 :weight extra-bold :inherit markdown-header-face))
+#+end_src
 
 ** Mathpix
 #+begin_src emacs-lisp
-(load! "mathpix.el")
+(load! "lisp/mathpix.el")
 (setq-default mathpix-app-id paquiteau-mathpix-id
               mathpix-app-key paquiteau-mathpix-key)
 #+end_src
@@ -608,8 +635,8 @@ And add some custom functions provided by =blamer= author:
 
 (map! :leader
       :prefix "i"
-       "m" (lambda! (pac/mathpix-insert "\\(\\)"))
-       "M" (lambda! (interactive) (pac/mathpix-insert "\\[\\]"))
+       "m" (cmd! (pac/mathpix-insert "\\(\\)"))
+       "M" (cmd! (interactive) (pac/mathpix-insert "\\[\\]"))
       )
 #+end_src
 ** Projectile
@@ -656,6 +683,14 @@ And add some custom functions provided by =blamer= author:
       (setq evil-repeat-info '([?g ?~])))
     (define-key evil-normal-state-map (kbd "g~") 'evil-operator-string-inflection)))
 #+end_src
+** Scad
+Open scad is a programming language to create 3d parametric objects.
+#+begin_src emacs-lisp
+(load! "lisp/scad-mode.el")
+(autoload 'scad-mode "scad-mode" "A major mode for editing OpenSCAD code." t)
+(add-to-list 'auto-mode-alist '("\\.scad$" . scad-mode))
+#+end_src
+
 ** Treemacs
 Quite often there are superfluous files I'm not that interested in. There's no
 good reason for them to take up space. Let's add a mechanism to ignore them.
@@ -1244,7 +1279,7 @@ Lets add convenients key bindings for theses functions
        :desc "Insert node Immediatly" "I" #'org-roam-node-insert-immediate
        :desc "Insert node" "i" #'pac/org-roam-node-insert-space
        :desc "Insert screenshot" "c" #'pac/screenshot-to-roam
-       :desc "kill all roam buffers" "k" (lambda! () (pac/kill-roam-buffer))))
+       :desc "kill all roam buffers" "k" (cmd! () (pac/kill-roam-buffer))))
 #+end_src
 ** Agenda Configuration
 #+begin_src emacs-lisp
@@ -1598,6 +1633,7 @@ but more convenient, like =;=.
         lsp-pylsp-plugins-autopep8-enabled t
         lsp-pylsp-plugins-jedi-use-pyenv-environment t
         lsp-pylsp-plugins-pylint-enabled t
+        lsp-pylsp-plugins-pylint-args "--good-names=op"
         lsp-pylsp-plugins-flake8-ignore "Q000, D107, RST304, N806"
         lsp-pylsp-plugins-pydocstyle-ignore "D107"
         lsp-pylsp-plugins-pydocstyle-enabled t
@@ -1607,6 +1643,16 @@ but more convenient, like =;=.
 (use-package! numpydoc
   :config (setq numpydoc-insertion-style nil
                 numpydoc-insert-examples-bloc nil))
+#+end_src
+
+#+begin_src emacs-lisp
+(after! lsp-mode
+  (lsp-register-client
+    (make-lsp-client :new-connection (lsp-tramp-connection "pylsp")
+                     :major-modes '(python-mode)
+                     :remote? t
+                     :server-id 'pylsp-remote))
+)
 #+end_src
 * C & C++
 #+begin_src emacs-lisp
