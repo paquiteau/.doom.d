@@ -23,7 +23,9 @@
         +childframe)
        ;;helm              ; the *other* search engine for love and life
        ;;ido               ; the other *other* search engine...
-       (vertico +icons)
+       (vertico
+        +childframe
+        +icons)
        :ui
        deft              ; notational velocity for Emacs
        doom              ; what makes DOOM look the way it does
