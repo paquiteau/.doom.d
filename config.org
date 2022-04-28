@@ -8,8 +8,7 @@
 #+options: coverpage:yes
 #+startup: fold
 
-
-* Basic setup
+* Simple Configuration
 ** Headers for tangle
 #+begin_src emacs-lisp :comments no
 ;;; config.el -*- lexical-binding: t; -*-
@@ -22,135 +21,160 @@
 #+begin_src shell :exports none :comments no :tangle-mode (identity #o755)
 #!/bin/bash
 #+end_src
-** Personal Information
-It's useful to have some basic personal information
+
 #+begin_src emacs-lisp
-(setq user-full-name "Pierre-Antoine Comby"
-      user-mail-address "comby@crans.org")
+(load! "lisp/mathpix.el")
 (load! "secrets.el")
-(setq auth-sources '("~/.authinfo.gpg")
-      auth-source-cache-expiry nil)
-#+end_src
-
-** Better defaults
-*** Simple settings
-Browsing the web and seeing [[https://github.com/angrybacon/dotemacs/blob/master/dotemacs.org#use-better-defaults][angrybacon/dotemacs]] and comparing with the values
-shown by =SPC h v= and selecting what I thought looks good, I've ended up adding
-the following:
-
-#+begin_src emacs-lisp
-(setq-default
- delete-by-moving-to-trash t                      ; Delete files to trash
- window-combination-resize t                      ; take new window space from all other windows (not just current)
- x-stretch-cursor t)                              ; Stretch cursor to the glyph width
-
-(setq undo-limit 80000000                         ; Raise undo-limit to 80Mb
-      gc-cons-threshold (* 1024 1024 1024)
-      read-process-output-max (* 1024 1024)
-      evil-want-fine-undo t                       ; By default while in insert all changes are one big blob. Be more granular
-      auto-save-default t                         ; Nobody likes to loose work, I certainly don't
-      truncate-string-ellipsis "…"                ; Unicode ellispis are nicer than "...", and also save /precious/ space
-      password-cache-expiry nil                   ; I can trust my computers ... can't I?
-      scroll-margin 2)                            ; It's nice to maintain a little margin
-
-(global-subword-mode 1)                           ; Iterate through CamelCase words
-#+end_src
-*** Auto-customizations
-By default changes made via a customization interface are added to =init.el=.
-I prefer the idea of using a separate file for this. We just need to change a
-setting, and load it if it exists.
-#+begin_src emacs-lisp
-(setq-default custom-file (expand-file-name ".custom.el" doom-private-dir))
 (when (file-exists-p custom-file)
   (load custom-file))
 #+end_src
-*** Windows
-I find it rather handy to be asked which buffer I want to see after splitting
-the window. Let's make that happen.
-
-First, we'll enter the new window
+** Config Variables
+Behold, the big =setq=
 #+begin_src emacs-lisp
-(setq evil-vsplit-window-right t
-      evil-split-window-below t)
+(setq
+ +latex-viewers '(pdf-tools zathura okular skim sumatrapdf)
+ +org-latex-preview-scale 1.0
+ +workspaces-switch-project-function #'magit-status
+ auth-source-cache-expiry nil
+ auth-sources '("~/.authinfo.gpg")
+ auto-save-default t                         ; Nobody likes to loose work, I certainly don't
+ display-line-numbers-type 'relative
+ display-time-default-load-average nil
+ doom-modeline-height 10
+ doom-modeline-icon t
+ doom-modeline-persp-icon t
+ doom-modeline-persp-name t
+ doom-modeline-major-mode-icon t
+ doom-modeline-major-mode-color-icon t
+ doom-theme 'doom-one
+ doom-big-font (font-spec :family "FiraCode" :size 26)
+ doom-font (font-spec :family "FiraCode" :size 18 :weight 'light)
+ doom-serif-font (font-spec :family "IBM Plex Mono" :weight 'light)
+ doom-unicode-font (font-spec :family "Symbola")
+ doom-variable-pitch-font (font-spec :family "Roboto" :size  18 :weight 'normal)
+ evil-split-window-below t
+ evil-vsplit-window-right t
+ evil-want-fine-undo t                       ; By default while in insert all changes are one big blob. Be more granular
+ explicit-shell-file-name "/bin/bash"
+ gc-cons-threshold (* 1024 1024 1024)
+ org-agenda-compact-blocks t
+ org-agenda-deadline-faces '((1.001 . error) (1.0 . org-warning) (0.5 . org-upcoming-deadline) (0.0 . org-upcoming-distant-deadline))
+ org-agenda-files '("~/org/calendar.org" "~/org/habits.org")
+ org-agenda-include-deadlines t
+ org-agenda-skip-deadline-if-done t
+ org-agenda-skip-scheduled-if-done t
+ org-catch-invisible-edits 'smart            ; try not to accidently do weird stuff in invisible regions
+ org-directory "~/org"                      ; let's put files here
+ org-ellipsis " ▾ "
+ org-export-in-background t                  ; run export processes in external emacs process
+ org-export-with-sub-superscripts '{}       ; don't treat lone _ / ^ as sub/superscripts, require _{} / ^{}
+ org-fontify-quote-and-verse-blocks t        ; /italic/ for quotes.
+ org-hide-leading-stars nil
+ org-highlight-latex-and-related '(native script entities)
+ org-latex-pdf-process '("latexmk -f -pdf -%latex -shell-escape -interaction=nonstopmode -output-directory=%o %f")
+ org-list-allow-alphabetical t               ; have a. A. a) A) list bullets
+ org-list-demote-modify-bullet '(("+" . "-") ("-" . "+") ("*" . "+") ("1." . "a."))
+ org-log-done 'time                          ; having the time a item is done sounds convenient
+ org-pretty-entities-include-sub-superscripts nil ; Don't hide the _ and ^
+ org-preview-latex-default-process 'dvisvgm ;No blur when scaling
+ org-priority-faces '((?A . 'all-the-icons-red) (?B . 'all-the-icons-orange) (?C . 'all-the-icons-yellow)  (?D . 'all-the-icons-green) (?E . 'all-the-icons-blue))
+ org-priority-highest ?A
+ org-priority-lowest ?E
+ org-startup-with-latex-preview  t
+ org-use-property-inheritance t              ; it's convenient to have properties inherited
+ password-cache-expiry nil                   ; I can trust my computers ... can't I?
+ projectile-ignored-projects '("~/" "/tmp" "~/.emacs.d/.local/straight/repos/")
+ projectile-ignored-projects '("~/" "/tmp" "~/.emacs.d/.local/straight/repos/")
+ projectile-project-search-path '("~/gits/nsp/" "~/gits/rep/")
+ read-process-output-max (* 1024 1024)
+ scroll-margin 2
+ TeX-save-query nil
+ TeX-show-compilation t
+ TeX-command-extra-options "-shell-escape"
+ truncate-string-ellipsis "…"                ; Unicode ellispis are nicer than "...", and also save /precious/ space
+ undo-limit 80000000                         ; Raise undo-limit to 80Mb
+ user-full-name "Pierre-Antoine Comby"
+ user-mail-address "comby@crans.org"
+ which-key-allow-multiple-replacements t
+ which-key-idle-delay 0.2                   ; I need the help, I really do
+ )
+(setq frame-title-format '(""
+                           (:eval
+                            (if (s-contains-p org-roam-directory (or buffer-file-name ""))
+                                (replace-regexp-in-string
+                                 ".*/[0-9]*-?" "☰ "
+                                 (subst-char-in-string ?_ ?  buffer-file-name))
+                              "%b"))
+                           (:eval
+                            (let ((project-name (projectile-project-name)))
+                              (unless (string= "-" project-name)
+                                (format (if (buffer-modified-p)  " ◉ %s" "  ●  %s") project-name))))))
 #+end_src
 
-Then, we'll pull up ~ivy~
+#+begin_src  emacs-lisp
+(setq-default
+ org-export-with-todo-keywords nil
+ delete-by-moving-to-trash t                      ; Delete files to trash
+ window-combination-resize t                      ; take new window space from all other windows (not just current)
+ x-stretch-cursor t
+ custom-file (expand-file-name ".custom.el" doom-private-dir)
+ display-time-24hr-format t                 ; Be european.
+ history-length 1000
+ prescient-history-length 1000)
+#+end_src
+
+#+begin_src emacs-lisp
+(custom-set-faces!
+  '(doom-modeline-buffer-modified :foreground "orange")
+  '(mode-line :family "Noto Sans" :height 0.9)
+  '(mode-line-inactive :family "Noto Sans" :height 0.9)
+  '(markdown-header-face-1 :height 1.25 :weight extra-bold :inherit markdown-header-face)
+  '(markdown-header-face-2 :height 1.15 :weight bold       :inherit markdown-header-face)
+  '(markdown-header-face-3 :height 1.08 :weight bold       :inherit markdown-header-face)
+  '(markdown-header-face-4 :height 1.00 :weight bold       :inherit markdown-header-face)
+  '(markdown-header-face-5 :height 0.90 :weight bold       :inherit markdown-header-face)
+  '(markdown-header-face-6 :height 0.75 :weight extra-bold :inherit markdown-header-face)
+  '(outline-1 :weight extra-bold :height 1.25)
+  '(outline-2 :weight bold :height 1.15)
+  '(outline-3 :weight bold :height 1.12)
+  '(outline-4 :weight semi-bold :height 1.09)
+  '(outline-5 :weight semi-bold :height 1.06)
+  '(outline-6 :weight semi-bold :height 1.03)
+  '(outline-8 :weight semi-bold)
+  '(outline-9 :weight semi-bold)
+  '(org-document-title :height 1.2)
+)
+#+end_src
+
+** Functions
 #+begin_src emacs-lisp
 (defadvice! prompt-for-buffer (&rest _)
   :after '(evil-window-split evil-window-vsplit)
   (consult-buffer))
 #+end_src
-** Visual Settings
-#+begin_src emacs-lisp
-(use-package! mixed-pitch
-  :hook (org-mode . mixed-pitch-mode)
-  :config
-  (setq mixed-pitch-face 'variable-pitch))
-#+end_src
-#+begin_src emacs-lisp
-(setq doom-font (font-spec :family "FiraCode" :size 18 :weight 'light)
-      doom-big-font (font-spec :family "Fira Code" :size 26)
-      doom-variable-pitch-font (font-spec :family "Roboto" :size  18 :weight 'normal)
-      doom-unicode-font (font-spec :family "Symbola")
-      doom-serif-font (font-spec :family "IBM Plex Mono" :weight 'light))
-#+end_src
-This a sample text for instance
-And LaTeX looks always like this:   $\sum \alpha_{i}^{\gamma}$
-*** Theme and modeline
+
 ~doom-one~ is nice and all, but I find the ~vibrant~ variant nicer. Oh, and with the
 nice selection doom provides there's no reason for me to want the defaults.
 #+begin_src emacs-lisp
-(setq doom-theme 'doom-vibrant)
 (remove-hook 'window-setup-hook #'doom-init-theme-h)
 (add-hook 'after-init-hook #'doom-init-theme-h 'append)
 (delq! t custom-theme-load-path)
 #+end_src
-However, by default ~red~ text is used in the ~modeline~, so let's make that orange
-so I don't feel like something's gone /wrong/ when editing files.
-#+begin_src emacs-lisp
-(custom-set-faces!
-  '(doom-modeline-buffer-modified :foreground "orange"))
-(setq doom-modeline-height 10)
-(custom-set-faces!
-  '(mode-line :family "Noto Sans" :height 0.9)
-  '(mode-line-inactive :family "Noto Sans" :height 0.9))
-#+end_src
 
-#+begin_src emacs-lisp
-(display-time-mode 1)                             ; Enable time in the mode-line
-(display-battery-mode 1)                          ; it's nice to know how much power you have
-(setq doom-modeline-major-mode-icon t
-      doom-modeline-major-mode-color-icon t
-      doom-modeline-persp-name t
-      doom-modeline-persp-icon t
-      doom-modeline-icon t
-      display-time-default-load-average nil
-      display-time-24hr-format t                 ; Be european.
-      )
+** Custom functions
+#+begin_src emacs-lisp :tangle yes
+(defun pac/concat-newline ( &rest lines)
+  "concat with newline between each strings"
+  (mapconcat 'identity lines "\n"))
+(defun pac/add-to-list-multiple (l to-add)
+  "Adds multiple items to LIST.
+Allows for adding a sequence of items to the same list, rather
+than having to call `add-to-list' multiple times."
+  (interactive)
+  (dolist (item to-add)
+    (add-to-list l item)))
 #+end_src
-*** Miscellaneous
-Relative line numbers are fantastic for knowing how far away line numbers are,
-then =ESC 12 <UP>= gets you exactly where you think.
-#+begin_src emacs-lisp
-(setq display-line-numbers-type 'relative)
-#+end_src
-*** Window title
-I'd like to have just the buffer name, then if applicable the project folder
-#+begin_src emacs-lisp
-(setq frame-title-format
-      '(""
-        (:eval
-         (if (s-contains-p org-roam-directory (or buffer-file-name ""))
-             (replace-regexp-in-string
-              ".*/[0-9]*-?" "☰ "
-              (subst-char-in-string ?_ ?  buffer-file-name))
-           "%b"))
-        (:eval
-         (let ((project-name (projectile-project-name)))
-           (unless (string= "-" project-name)
-             (format (if (buffer-modified-p)  " ◉ %s" "  ●  %s") project-name))))))
-#+end_src
-** Emacs Deamon
+** Emacs Daemon
 For running a systemd service for a Emacs server I have the following
 #+name: emacsclient service
 #+begin_src conf :tangle ~/.config/systemd/user/emacs.service :mkdirp yes
@@ -205,7 +229,6 @@ When the config is updated, then it is as simple as a  =systemctl restart emacs.
   (add-hook 'emacs-startup-hook #'greedily-do-daemon-setup)
   (add-hook! 'server-after-make-frame-hook (switch-to-buffer doom-fallback-buffer-name))))
 #+end_src
-
 *** Emacs client wrapper
 I frequently want to make use of Emacs while in a terminal emulator. To make
 this easier, I can construct a few handy aliases.
@@ -304,26 +327,6 @@ alias mt="m -t"
 alias et="e -t"
 #+end_src
 
-** Custom functions
-#+begin_src emacs-lisp :tangle yes
-(defun pac/concat-newline ( &rest lines)
-  "concat with newline between each strings"
-  (mapconcat 'identity lines "\n"))
-(defun pac/add-to-list-multiple (l to-add)
-  "Adds multiple items to LIST.
-Allows for adding a sequence of items to the same list, rather
-than having to call `add-to-list' multiple times."
-  (interactive)
-  (dolist (item to-add)
-    (add-to-list l item)))
-#+end_src
-** TRAMP
-#+begin_src emacs-lisp
-(after! tramp
- (add-to-list 'tramp-remote-path 'tramp-own-remote-path)
-)
-(setq explicit-shell-file-name "/bin/bash")
-#+end_src
 * Package configuration
 ** Abbrev
 #+begin_src emacs-lisp
@@ -342,7 +345,7 @@ than Objective-C. As such, it'll be switching the icon associated with =.m=.
           (cdr (assoc "matlab" all-the-icons-extension-icon-alist))))
 #+end_src
 
-**  Company
+** Company
 It's nice to have completions almost all the time, in my opinion. Key strokes
 are just waiting to be saved!
 #+begin_src emacs-lisp
@@ -356,11 +359,6 @@ are just waiting to be saved!
 #+end_src
 Now, the improvements from ~precedent~ are mostly from remembering history, so
 let's improve that memory.
-#+begin_src emacs-lisp
-(setq-default history-length 1000)
-(setq-default prescient-history-length 1000)
-#+end_src
-*** Plain Text
 ~Ispell~ is nice, let's have it in ~text~, ~markdown~, and ~GFM~.
 #+begin_src emacs-lisp
 (set-company-backend!
@@ -396,8 +394,6 @@ The org-roam metadata clutters the deft menu, let's fix that.
   (advice-add 'deft-parse-title :override #'cm/deft-parse-title)
   )
 #+end_src
-** Dired
-
 ** Ispell
 **** Downloading dictionaries
 Let's get a nice big dictionary from [[http://app.aspell.net/create][SCOWL Custom List/Dictionary Creator]] with
@@ -449,16 +445,7 @@ it, either by command or in a capture template.
 (use-package! org-chef
   :commands (org-chef-insert-recipe org-chef-get-recipe-from-url))
 #+end_src
-*** Projectile
-Looking at documentation via =SPC h f= and =SPC h v= and looking at the source can
-add package src directories to projectile. This isn't desirable in my opinion.
-#+begin_src emacs-lisp
-(setq projectile-ignored-projects '("~/" "/tmp" "~/.emacs.d/.local/straight/repos/"))
-(defun projectile-ignored-project-function (filepath)
-  "Return t if FILEPATH is within any of `projectile-ignored-projects'"
-  (or (mapcar (lambda (p) (s-starts-with-p p filepath)) projectile-ignored-projects)))
-#+end_src
-*** Smart Parentheses
+** Smart Parentheses
 #+begin_src emacs-lisp
 (sp-local-pair
  '(org-mode)
@@ -557,15 +544,7 @@ And add some custom functions provided by =blamer= author:
 (after! markdown
   (setq markdown-fontify-code-blocks-natively t)
 )
-(custom-set-faces!
-  '(markdown-header-face-1 :height 1.25 :weight extra-bold :inherit markdown-header-face)
-  '(markdown-header-face-2 :height 1.15 :weight bold       :inherit markdown-header-face)
-  '(markdown-header-face-3 :height 1.08 :weight bold       :inherit markdown-header-face)
-  '(markdown-header-face-4 :height 1.00 :weight bold       :inherit markdown-header-face)
-  '(markdown-header-face-5 :height 0.90 :weight bold       :inherit markdown-header-face)
-  '(markdown-header-face-6 :height 0.75 :weight extra-bold :inherit markdown-header-face))
 #+end_src
-
 ** Mathpix
 #+begin_src emacs-lisp
 (load! "lisp/mathpix.el")
@@ -588,15 +567,19 @@ And add some custom functions provided by =blamer= author:
        "M" (cmd! (interactive) (pac/mathpix-insert "\\[\\]"))
       )
 #+end_src
+** Mixed-pitch
+#+begin_src emacs-lisp
+(use-package! mixed-pitch
+  :hook (org-mode . mixed-pitch-mode)
+  :config
+  (setq mixed-pitch-face 'variable-pitch))
+#+end_src
 ** Projectile
 #+begin_src emacs-lisp
-(setq projectile-ignored-projects '("~/" "/tmp" "~/.emacs.d/.local/straight/repos/"))
-(setq projectile-project-search-path '("~/gits/nsp/" "~/gits/rep/"))
 (defun projectile-ignored-project-function (filepath)
   "Return t if FILEPATH is within any of `projectile-ignored-projects'"
   (or (mapcar (lambda (p) (s-starts-with-p p filepath)) projectile-ignored-projects)))
 
-(setq +workspaces-switch-project-function #'magit-status)
 #+end_src
 ** String Inflection
 #+begin_src emacs-lisp :tangle "packages.el"
@@ -640,6 +623,12 @@ Open scad is a programming language to create 3d parametric objects.
 (add-to-list 'auto-mode-alist '("\\.scad$" . scad-mode))
 #+end_src
 
+** TRAMP
+#+begin_src emacs-lisp
+(after! tramp
+ (add-to-list 'tramp-remote-path 'tramp-own-remote-path)
+)
+#+end_src
 ** Treemacs
 Quite often there are superfluous files I'm not that interested in. There's no
 good reason for them to take up space. Let's add a mechanism to ignore them.
@@ -705,14 +694,9 @@ Now, we just identify the files in question.
         "*/_region_.tex"))
 #+end_src
 ** Which-key
-Let's make this popup a bit faster
-#+begin_src emacs-lisp
-(setq which-key-idle-delay 0.2) ;; I need the help, I really do
-#+end_src
 I also think that having =evil-= appear in so many popups is a bit too verbose,
 let's change that, and do a few other similar tweaks while we're at it.
 #+begin_src emacs-lisp
-(setq which-key-allow-multiple-replacements t)
 (after! which-key
   (pushnew!
    which-key-replacement-alist
@@ -724,26 +708,7 @@ let's change that, and do a few other similar tweaks while we're at it.
 #+begin_src emacs-lisp
 (add-hook! writegood-mode #'writegood-passive-voice-turn-off)
 #+end_src
-
 * OrgMode
-#+begin_src emacs-lisp
-(setq org-directory "~/org"                      ; let's put files here
-      org-use-property-inheritance t              ; it's convenient to have properties inherited
-      org-log-done 'time                          ; having the time a item is done sounds convenient
-      org-list-allow-alphabetical t               ; have a. A. a) A) list bullets
-      org-export-in-background t                  ; run export processes in external emacs process
-      org-catch-invisible-edits 'smart            ; try not to accidently do weird stuff in invisible regions
-      org-pretty-entities-include-sub-superscripts nil ; Don't hide the _ and ^
-      org-startup-with-latex-preview  t
-      org-fontify-quote-and-verse-blocks t        ; /italic/ for quotes.
-      org-export-with-sub-superscripts '{}       ; don't treat lone _ / ^ as sub/superscripts, require _{} / ^{}
-      org-list-demote-modify-bullet '(("+" . "-")
-                                      ("-" . "+")
-                                      ("*" . "+")
-                                      ("1." . "a.")
-                                      )
-      )
-#+end_src
 ** CdLaTeX
 It's also nice to be able to use ~cdlatex~.
 #+begin_src emacs-lisp
@@ -790,35 +755,6 @@ functionality as in LaTeX. Let's try viewing possible output files with this.
   "File formats that should be opened externally.")
 #+end_src
 ** Visual
-*** Font Display
-Mixed pitch is great. As is ~+org-pretty-mode~, let's use them.
-#+begin_src emacs-lisp
-(add-hook 'org-mode-hook #'+org-pretty-mode)
-#+end_src
-
-Let's make headings a bit bigger
-#+begin_src emacs-lisp
-(custom-set-faces!
-  '(outline-1 :weight extra-bold :height 1.25)
-  '(outline-2 :weight bold :height 1.15)
-  '(outline-3 :weight bold :height 1.12)
-  '(outline-4 :weight semi-bold :height 1.09)
-  '(outl    ine-5 :weight semi-bold :height 1.06)
-  '(outline-6 :weight semi-bold :height 1.03)
-  '(outline-8 :weight semi-bold)
-  '(outline-9 :weight semi-bold)
-  '(org-document-title :height 1.2))
-#+end_src
-
-It seems reasonable to have deadlines in the error face when they're passed.
-#+begin_src emacs-lisp
-(setq org-agenda-deadline-faces
-      '((1.001 . error)
-        (1.0 . org-warning)
-        (0.5 . org-upcoming-deadline)
-        (0.0 . org-upcoming-distant-deadline)))
-#+end_src
-
 While ~org-hide-emphasis-markers~ is very nice, it can sometimes make edits which
 occur at the border a bit more fiddley. We can improve this situation without
 sacrificing visual amenities with the =org-appear= package.
@@ -862,18 +798,19 @@ do I'll use the above.
 #+begin_src emacs-lisp
 (after! org-superstar
   (setq org-superstar-headline-bullets-list '("◉" "○" "✸" "✿" "✤" "✜" "◆" "▶")
-        org-superstar-prettify-item-bullets t ))
-
-(setq org-ellipsis " ▾ "
-      org-hide-leading-stars nil
-      org-priority-highest ?A
-      org-priority-lowest ?E
-      org-priority-faces
-      '((?A . 'all-the-icons-red)
-        (?B . 'all-the-icons-orange)
-        (?C . 'all-the-icons-yellow)
-        (?D . 'all-the-icons-green)
-        (?E . 'all-the-icons-blue)))
+        org-superstar-prettify-item-bullets t )
+ (setq org-superstar-item-bullet-alist
+        '((?* . ?•)
+          (?+ . ?➤)
+          (?- . ?➤)))
+  (setq org-superstar-special-todo-items t)
+  (setq org-superstar-todo-bullet-alist
+        '(("TODO" . ?☐)
+          ("WAIT" . ?☕)
+          ("ABORT" . ?✘)
+          ("DONE" . ?✔)))
+ (org-superstar-restart)
+ )
 #+end_src
 *** TODOs
 #+begin_src emacs-lisp
@@ -885,52 +822,14 @@ do I'll use the above.
               ("WAITING" :foreground "orange" :weight bold)
               ("HOLD" :foreground "magenta" :weight bold)
               ("CANCELLED" :foreground "forest green" :weight bold))))
-
-;; I don't wan't the keywords in my exports
-(setq-default org-export-with-todo-keywords nil)
-(after! org-superstar
-  ;; (setq org-superstar-headline-bullets-list '(?\s))
-  (setq org-superstar-item-bullet-alist
-        '((?* . ?•)
-          (?+ . ?➤)
-          (?- . ?➤)))
-  (setq org-superstar-special-todo-items t)
-  (setq org-superstar-todo-bullet-alist
-        '(("TODO" . ?☐)
-          ("WAIT" . ?☕)
-          ("ABORT" . ?✘)
-          ("DONE" . ?✔)))
-  (org-superstar-restart))
 #+end_src
-
 ** LaTeX fragments
-First off, we want those fragments to look good.
-#+begin_src emacs-lisp
-(setq org-highlight-latex-and-related '(native script entities))
-#+end_src
-
 For automatically toggling LaTeX fragment previews as the cursor moves in and
 out of them there's this nice package
 #+begin_src emacs-lisp :tangle "packages.el"
 (package! org-fragtog)
 ;;(package! org-auctex :recipe (:host github :repo "karthink/org-auctex" :files ("*.el")))
 #+end_src
-
-#+begin_src emacs-lisp
-;; (use-package! org-auctex
-;;   :after org
-;;   :hook (org-mode . org-auctex-mode)
-;;   )
-#+end_src
-However, by using =native= highlighting the =org-block= face is added, and that
-doesn't look too great --- particularly when the fragments are previewed.
-
-Ideally ~org-src-font-lock-fontify-block~ wouldn't add the =org-block= face, but we
-can avoid advising that entire function by just adding another face with
-=:inherit default= which will override the background colour.
-
-Inspecting ~org-do-latex-and-related~ shows that ="latex"= is the language argument
-passed, and so we can override the background as discussed above.
 #+begin_src emacs-lisp
 (require 'org-src)
 (add-to-list 'org-src-block-faces '("latex" (:inherit default :extend t)))
@@ -942,9 +841,6 @@ have this be performed automatically with =org-fragtog=.
 (use-package! org-fragtog
   :hook (org-mode . org-fragtog-mode))
 
-(setq +org-latex-preview-scale 1.0)
-(setq org-preview-latex-default-process 'dvisvgm ;No blur when scaling
-      org-format-latex-options (plist-put org-format-latex-options :scale +org-latex-preview-scale))
 #+end_src
 It's nice to customise the look of LaTeX fragments so they fit better in the
 text --- like this \(\sqrt{\beta^2+3}-\sum_{\phi=1}^\infty \frac{x^\phi-1}{\Gamma(a)}\).
@@ -1230,18 +1126,7 @@ Lets add convenients key bindings for theses functions
        :desc "Insert screenshot" "c" #'pac/screenshot-to-roam
        :desc "kill all roam buffers" "k" (cmd! () (pac/kill-roam-buffer))))
 #+end_src
-** Agenda Configuration
-#+begin_src emacs-lisp
-(setq
-      org-agenda-files '("~/org/calendar.org" "~/org/habits.org")
-      org-agenda-skip-scheduled-if-done t
-      org-agenda-skip-deadline-if-done t
-      org-agenda-include-deadlines t
-      org-agenda-compact-blocks t)
-#+end_src
-
-
-*** Build Agenda from notes.
+** Build Agenda from notes.
 Build Agenda from Roam Notes: Every note which has a Project tag will be parsed for Todo.
 
 #+begin_src emacs-lisp
@@ -1306,27 +1191,12 @@ Build Agenda from Roam Notes: Every note which has a Project tag will be parsed 
       calendar-week-start-day 1
       calendar-mark-diary-entries-flag nil)
 #+end_src
-*** Agenda views
-#+begin_src emacs-lisp
-(setq org-agenda-custom-commands
-      '(("c" "Simple agenda view" ((agenda "")(alltodo "")))))
-#+end_src
-
-** LaTeX Export
-#+begin_src emacs-lisp
-(setq org-latex-pdf-process '("latexmk -f -pdf -%latex -shell-escape -interaction=nonstopmode -output-directory=%o %f"))
-#+end_src
 * LaTeX
 #+begin_src emacs-lisp
-(setq TeX-save-query nil
-      TeX-show-compilation t
-      TeX-command-extra-options "-shell-escape")
 (after! latex
   (add-to-list 'TeX-command-list '("XeLaTeX" "%`xelatex%(mode)%' %t" TeX-run-TeX nil t)))
 (add-to-list 'auto-mode-alist '("\\.tikz" . LaTeX-mode))
 (add-to-list 'auto-mode-alist '("\\.pgf" . LaTeX-mode))
-
-(setq +latex-viewers '(pdf-tools zathura okular skim sumatrapdf))
 #+end_src
 *** Template
 For use in the new-file template, let's set out a nice preamble we may want to use.
@@ -1545,7 +1415,6 @@ The symbols and modifies are very nice by default, but could do with a bit of
 fleshing out. Let's change the prefix to a key which is similarly rarely used,
 but more convenient, like =;=.
 #+begin_src emacs-lisp
-(setq  cdlatex-math-symbol-prefix ?\;)
 (after! cdlatex
   (setq  cdlatex-math-symbol-prefix ?\;
    cdlatex-math-symbol-alist
@@ -1571,7 +1440,6 @@ but more convenient, like =;=.
      (?b    "\\bm"       nil t    nil  nil)
      (?a    "\\abs"      nil t    nil  nil))))
 #+end_src
-
 * Python
 #+begin_src emacs-lisp :tangle "packages.el"
 (package! numpydoc)
@@ -1582,7 +1450,6 @@ but more convenient, like =;=.
         lsp-pylsp-plugins-autopep8-enabled t
         lsp-pylsp-plugins-jedi-use-pyenv-environment t
         lsp-pylsp-plugins-pylint-enabled t
-        lsp-pylsp-plugins-pylint-args "--good-names=op"
         lsp-pylsp-plugins-flake8-ignore "Q000, D107, RST304, N806"
         lsp-pylsp-plugins-pydocstyle-ignore "D107"
         lsp-pylsp-plugins-pydocstyle-enabled t
