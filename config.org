@@ -1457,9 +1457,7 @@ but more convenient, like =;=.
         lsp-pyright-typechecking-mode "off"
         )
    )
-(after! pyenv
-  (setq! pyenv-mode-mode-line-format nil)
-  )
+(setq! pyenv-mode-mode-line-format nil)
 (use-package! numpydoc
   :config (setq numpydoc-insertion-style nil
                 numpydoc-insert-examples-bloc nil))
