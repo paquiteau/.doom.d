@@ -182,6 +182,7 @@
        ;;purescript        ; javascript, but functional
        (python            ; beautiful is better than ugly
         +lsp
+        +pyright
         +pyenv
         +cython
         )

@@ -708,7 +708,7 @@ let's change that, and do a few other similar tweaks while we're at it.
 #+begin_src emacs-lisp
 (add-hook! writegood-mode #'writegood-passive-voice-turn-off)
 #+end_src
-* OrgMode
+* Org-mode
 ** CdLaTeX
 It's also nice to be able to use ~cdlatex~.
 #+begin_src emacs-lisp
@@ -842,7 +842,7 @@ have this be performed automatically with =org-fragtog=.
   :hook (org-mode . org-fragtog-mode))
 
 #+end_src
-It's nice to customise the look of LaTeX fragments so they fit better in the
+It's nice to customize the look of LaTeX fragments so they fit better in the
 text --- like this \(\sqrt{\beta^2+3}-\sum_{\phi=1}^\infty \frac{x^\phi-1}{\Gamma(a)}\).
 #+name: org-latex-preamble
 #+begin_src emacs-lisp
@@ -1229,7 +1229,7 @@ Then let's bind the content to a function, and define some nice helpers.
   (if (equal tec/yas-latex-class-choice "article") 'nil
     (eq (read-char-choice "Include default preamble? [Type y/n]" '(?y ?n)) ?y)))
 #+end_src
-*** Deliminators Deliminator
+*** Deliminator
 #+begin_src emacs-lisp
 (after! tex
   (defvar tec/tex-last-delim-char nil
@@ -1445,30 +1445,14 @@ but more convenient, like =;=.
 (package! numpydoc)
 #+end_src
 #+begin_src emacs-lisp
-(after! lsp-mode
-  (setq lsp-pylsp-configuration-sources "[\'flake8\']"
-        lsp-pylsp-plugins-autopep8-enabled t
-        lsp-pylsp-plugins-jedi-use-pyenv-environment t
-        lsp-pylsp-plugins-pylint-enabled t
-        lsp-pylsp-plugins-flake8-ignore "Q000, D107, RST304, N806"
-        lsp-pylsp-plugins-pydocstyle-ignore "D107"
-        lsp-pylsp-plugins-pydocstyle-enabled t
-        lsp-pylsp-plugins-pydocstyle-convention "numpy"
-        ))
-
+(after! lsp-pyright
+  (setq lsp-log-io t
+        lsp-pyright-typechecking-mode "off"
+        )
+  )
 (use-package! numpydoc
   :config (setq numpydoc-insertion-style nil
                 numpydoc-insert-examples-bloc nil))
-#+end_src
-
-#+begin_src emacs-lisp
-(after! lsp-mode
-  (lsp-register-client
-    (make-lsp-client :new-connection (lsp-tramp-connection "pylsp")
-                     :major-modes '(python-mode)
-                     :remote? t
-                     :server-id 'pylsp-remote))
-)
 #+end_src
 * C & C++
 #+begin_src emacs-lisp
