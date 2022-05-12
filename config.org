@@ -1445,30 +1445,14 @@ but more convenient, like =;=.
 (package! numpydoc)
 #+end_src
 #+begin_src emacs-lisp
-(after! lsp-mode
-  (setq lsp-pylsp-configuration-sources "[\'flake8\']"
-        lsp-pylsp-plugins-autopep8-enabled t
-        lsp-pylsp-plugins-jedi-use-pyenv-environment t
-        lsp-pylsp-plugins-pylint-enabled t
-        lsp-pylsp-plugins-flake8-ignore "Q000, D107, RST304, N806"
-        lsp-pylsp-plugins-pydocstyle-ignore "D107"
-        lsp-pylsp-plugins-pydocstyle-enabled t
-        lsp-pylsp-plugins-pydocstyle-convention "numpy"
-        ))
-
+(after! lsp-pyright
+  (setq lsp-log-io t
+        lsp-pyright-typechecking-mode "off"
+        )
+  )
 (use-package! numpydoc
   :config (setq numpydoc-insertion-style nil
                 numpydoc-insert-examples-bloc nil))
-#+end_src
-
-#+begin_src emacs-lisp
-(after! lsp-mode
-  (lsp-register-client
-    (make-lsp-client :new-connection (lsp-tramp-connection "pylsp")
-                     :major-modes '(python-mode)
-                     :remote? t
-                     :server-id 'pylsp-remote))
-)
 #+end_src
 * C & C++
 #+begin_src emacs-lisp
