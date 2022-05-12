@@ -394,6 +394,13 @@ The org-roam metadata clutters the deft menu, let's fix that.
   (advice-add 'deft-parse-title :override #'cm/deft-parse-title)
   )
 #+end_src
+** Doom Modeline
+#+begin_src emacs-lisp
+(after! doom-modeline
+  (doom-modeline-def-modeline 'main
+    '(bar matches buffer-info remote-host buffer-position parrot selection-info)
+    '(misc-info minor-modes checker input-method buffer-encoding major-mode process vcs "    "))) ;; padding on the right.
+#+end_src
 ** Ispell
 **** Downloading dictionaries
 Let's get a nice big dictionary from [[http://app.aspell.net/create][SCOWL Custom List/Dictionary Creator]] with
@@ -1449,6 +1456,9 @@ but more convenient, like =;=.
   (setq lsp-log-io t
         lsp-pyright-typechecking-mode "off"
         )
+   )
+(after! pyenv
+  (setq! pyenv-mode-mode-line-format nil)
   )
 (use-package! numpydoc
   :config (setq numpydoc-insertion-style nil
