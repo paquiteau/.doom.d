@@ -746,10 +746,13 @@ functionality as in LaTeX. Let's try viewing possible output files with this.
   "File formats that should be opened externally.")
 #+end_src
 ** Visual
+
 While ~org-hide-emphasis-markers~ is very nice, it can sometimes make edits which
 occur at the border a bit more fiddley. We can improve this situation without
 sacrificing visual amenities with the =org-appear= package.
-
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! org-appear)
+#+end_src
 #+begin_src emacs-lisp
 (use-package! org-appear
   :after org
@@ -781,27 +784,39 @@ Apparently this causes issues with some people, but I haven't noticed anything
 problematic beyond the expected slight delay in some fontification, so until I
 do I'll use the above.
 *** Symbols
-~org-superstar-mode~ is great. While we're at it we may as well make tags prettier as well 🙂
+lets have nice Unicode alternative to LaTeX.
 #+begin_src emacs-lisp :tangle "packages.el"
-(package! org-pretty-tags)
+(package! org-modern)
 #+end_src
 
 #+begin_src emacs-lisp
-(after! org-superstar
-  (setq org-superstar-headline-bullets-list '("◉" "○" "✸" "✿" "✤" "✜" "◆" "▶")
-        org-superstar-prettify-item-bullets t )
- (setq org-superstar-item-bullet-alist
-        '((?* . ?•)
-          (?+ . ?➤)
-          (?- . ?➤)))
-  (setq org-superstar-special-todo-items t)
-  (setq org-superstar-todo-bullet-alist
-        '(("TODO" . ?☐)
-          ("WAIT" . ?☕)
-          ("ABORT" . ?✘)
-          ("DONE" . ?✔)))
- (org-superstar-restart)
- )
+(after! org
+  (setq org-highlight-latex-and-related '(native script entities)))
+(global-org-modern-mode)
+#+end_src
+#+begin_src emacs-lisp
+(after! org-modern
+  (setq org-modern-table-vertical 2
+        org-modern-table nil ;; TODO Table rendering is broken for now
+        org-modern-horizontal-rule nil))
+#+end_src
+
+#+begin_src emacs-lisp
+;; (after! org-superstar
+;;   (setq org-superstar-headline-bullets-list '("◉" "○" "✸" "✿" "✤" "✜" "◆" "▶")
+;;         org-superstar-prettify-item-bullets t )
+;;  (setq org-superstar-item-bullet-alist
+;;         '((?* . ?•)
+;;           (?+ . ?➤)
+;;           (?- . ?➤)))
+;;   (setq org-superstar-special-todo-items t)
+;;   (setq org-superstar-todo-bullet-alist
+;;         '(("TODO" . ?☐)
+;;           ("WAIT" . ?☕)
+;;           ("ABORT" . ?✘)
+;;           ("DONE" . ?✔)))
+;;  (org-superstar-restart)
+;;  )
 #+end_src
 *** TODOs
 #+begin_src emacs-lisp
