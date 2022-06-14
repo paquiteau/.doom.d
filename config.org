@@ -1123,9 +1123,38 @@ To clean the note taking session
                       (expand-file-name (or (buffer-file-name buf) "")))
         (kill-buffer buf))))
 #+end_src
+****  Open an empty node
+#+begin_src emacs-lisp
+
+(defun pac/org-roam-empty-node-list (&optional n)
+  "Return a list of org-roam file with less than n words"
+  (unless n (setq n 10))
+  (let ((raw-output (split-string (shell-command-to-string (concat "wc -w " org-roam-directory "*.org | head -n -1"))))
+        (selected-files 'nil))
+    (while raw-output ;; raw output is ("10" "filename" "283" "filename2") where the first element is the number of word in the next one.
+      (when ( < (string-to-number (pop raw-output)) n)
+        (push (car raw-output) selected-files)
+        )
+      (pop raw-output)
+      )
+    selected-files)
+  )
+
+(defun pac/org-roam-open-empty-random ()
+  (interactive)
+  (let ((selected-files (pac/org-roam-empty-node-list)))
+    (if selected-files
+      (find-file (nth (random (length selected-files)) selected-files))
+      (message "No empty files found"))
+    )
+  )
+
+#+end_src
+**** Binding
+Lets add convenients key bindings for the functions aboves
 #+name: maps
 #+begin_src emacs-lisp
-(map! :leader
+        (map! :leader
       :prefix-map ("n" . "notes")
       (:prefix ("r" . "roam ")
        :desc "Insert node Immediatly" "I" #'org-roam-node-insert-immediate
