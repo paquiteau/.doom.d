@@ -1178,22 +1178,22 @@ This makes sure that org-roam buffer are open in a dedicated workspace, to preve
 Build Agenda from Roam Notes: Every note which has a Project tag will be parsed for Todo.
 
 #+begin_src emacs-lisp
-(defun my/org-roam-filter-by-tag (tag-name)
+(defun pac/org-roam-filter-by-tag (tag-name)
   (lambda (node)
     (member tag-name (org-roam-node-tags node))))
 
-(defun my/org-roam-list-notes-by-tag (tag-name)
+(defun pac/org-roam-list-notes-by-tag (tag-name)
   (mapcar #'org-roam-node-file
           (seq-filter
-           (my/org-roam-filter-by-tag tag-name)
+           (pac/org-roam-filter-by-tag tag-name)
            (org-roam-node-list))))
 
-(defun my/org-roam-refresh-agenda-list ()
+(defun pac/org-roam-refresh-agenda-list ()
   (interactive)
-  (pac/add-to-list-multiple 'org-agenda-files (my/org-roam-list-notes-by-tag "Project")))
+  (pac/add-to-list-multiple 'org-agenda-files (pac/org-roam-list-notes-by-tag "Project")))
 
 ;; Build the agenda list the first time for the session
-(my/org-roam-refresh-agenda-list)
+(pac/org-roam-refresh-agenda-list)
 #+end_src
 
 #+name: holidays settings
