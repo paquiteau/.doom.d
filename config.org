@@ -1082,8 +1082,8 @@ Insert without capturing. do not block flow.
 )
 
 #+end_src
-
-
+**** Image Capture
+This makes easy to add screenshot(s) to a node, and take care of the naming.
 #+name: screenshot
 #+begin_src emacs-lisp
 (defvar +org-roam-image-directory "~/org/roam/images/")
@@ -1113,7 +1113,8 @@ Insert without capturing. do not block flow.
     (org-display-inline-images)
   )
 #+end_src
-Lets add convenients key bindings for theses functions
+**** Kill all roam buffers
+To clean the note taking session
 #+begin_src emacs-lisp
 (defun pac/kill-roam-buffer ()
   (interactive)
