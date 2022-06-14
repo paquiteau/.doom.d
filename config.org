@@ -420,7 +420,7 @@ The org-roam metadata clutters the deft menu, let's fix that.
 (add-hook! org-mode #'guess-language-mode)
 #+end_src
 
-*** Org Chef
+** Org Chef
 Loading after org seems a bit premature. Let's just load it when we try to use
 it, either by command or in a capture template.
 #+begin_src emacs-lisp
@@ -1061,7 +1061,11 @@ Org roam ui is fantastic:
 
 #+end_src
 *** Extra Behaviour
-Insert without capturing. do not block flow.
+
+**** Insert node immediatly
+This make the node linking less painfull by two means:
+ - Insert a  white space before the node link if it was not present
+ - Add the possibility to create an new node without opening its buffer.
 #+name: insert immediate
 #+begin_src emacs-lisp
 (after! org-roam
@@ -1573,4 +1577,3 @@ Adapted and improve from https://gist.github.com/fleimgruber/cd2386d8326fad3e0e2
 (add-to-list 'lsp-clients-clangd-args "--query-driver=/usr/bin/**"))
 
 #+end_src
-* Snippets
