@@ -1162,6 +1162,18 @@ Lets add convenients key bindings for the functions aboves
        :desc "Insert screenshot" "c" #'pac/screenshot-to-roam
        :desc "kill all roam buffers" "k" (cmd! () (pac/kill-roam-buffer))))
 #+end_src
+**** Dedicated org-roam workspace
+This makes sure that org-roam buffer are open in a dedicated workspace, to prevent them to spread in others.
+#+begin_src emacs-lisp
+(defadvice! yeet/org-roam-in-own-workspace-a (&rest _)
+  "Open all roam buffers in there own workspace."
+  :before #'org-roam-node-find
+  :before #'org-roam-node-random
+  :before #'org-roam-buffer-display-dedicated
+  :before #'org-roam-buffer-toggle
+  (when (featurep! :ui workspaces)
+    (+workspace-switch "*roam*" t)))
+#+end_src
 ** Build Agenda from notes.
 Build Agenda from Roam Notes: Every note which has a Project tag will be parsed for Todo.
 
