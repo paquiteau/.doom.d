@@ -704,7 +704,16 @@ want to edit them afterwards though, so let's make that happen by default.
   :after #'org-cdlatex-environment-indent
   (org-edit-latex-environment))
 #+end_src
-** View exported file
+** Exports
+*** Latex Export
+#+begin_src emacs-lisp
+(setq org-latex-listings 'minted
+      org-latex-packages-alist '(("" "minted") ("margin=1cm" "geometry" nil))
+      org-latex-pdf-process
+      '("latexmk -shell-escape  -jobname=%O %f"))
+
+#+end_src
+*** View exported file
 ='localeader v= has no pre-existing binding, so I may as well use it with the same
 functionality as in LaTeX. Let's try viewing possible output files with this.
 #+begin_src emacs-lisp
