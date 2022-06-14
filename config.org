@@ -59,7 +59,7 @@ Behold, the big =setq=
  gc-cons-threshold (* 1024 1024 1024)
  org-agenda-compact-blocks t
  org-agenda-deadline-faces '((1.001 . error) (1.0 . org-warning) (0.5 . org-upcoming-deadline) (0.0 . org-upcoming-distant-deadline))
- org-agenda-files '("~/org/calendar.org" "~/org/habits.org")
+ org-agenda-files '("~/org/calendar.org" "~/org/habits.org" "~/org/inbox.org")
  org-agenda-include-deadlines t
  org-agenda-skip-deadline-if-done t
  org-agenda-skip-scheduled-if-done t
