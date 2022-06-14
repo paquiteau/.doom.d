@@ -1507,7 +1507,64 @@ but more convenient, like =;=.
 ;;   :config (setq numpydoc-insertion-style nil
 ;;                 numpydoc-insert-examples-bloc nil))
 #+end_src
+
+** Edit Docstring in rst-mode in separate buffer
+#+begin_src emacs-lisp
+(setq numpy-doc-keywords
+  `(
+    ("^\\([a-z_][a-zA-Z_0-9]*\\)\s?:" . font-lock-keyword-face)
+    (,(regexp-opt '("int" "float" "numpy.ndarray" "array" "ndarray" "None" "tuple" "list" "iterable" "class" "object" "type" "str" "set" "complex" "dict" "slice" "range"))
+     . font-lock-type-face)
+    )
+  )
+
+(define-derived-mode numpy-doc-mode rst-mode "NumpyDoc"
+  "A major mode to edi rst docstring using the numpy convention."
+  )
 #+end_src
+
+Adapted and improve from https://gist.github.com/fleimgruber/cd2386d8326fad3e0e2b99ebc2f05739
+#+begin_src emacs-lisp
+(after! edit-indirect
+(defun edit-indirect-rst-set-mode (_parent _beg _end)
+  (rst-mode))
+
+(setq edit-indirect-guess-mode-function #'edit-indirect-rst-set-mode)
+(defun edit-indirect-rst-remove-spaces()
+  (defvar-local pac-indent-level 0)
+  (save-excursion
+    (setq pac-indent-level (indent-rigidly--current-indentation (point-min) (point-max)))
+    (indent-rigidly (point-min) (point-max) (- pac-indent-level ))
+    )
+  (font-lock-add-keywords nil numpy-doc-keywords)
+  (font-lock-add-keywords nil rst-font-lock-keywords)
+)
+(defun edit-indirect-rst-add-spaces()
+  (save-excursion
+    (indent-rigidly (point-min) (point-max) pac-indent-level))
+  (kill-local-variable 'pac-indent-level))
+
+(add-to-list 'edit-indirect-after-creation-hook #'edit-indirect-rst-remove-spaces)
+(add-to-list 'edit-indirect-before-commit-hook #'edit-indirect-rst-add-spaces)
+
+(defun edit-indirect-region-wrap-rst (s e o)
+  (edit-indirect-region s e o))
+
+(defun edit-indirect-rst ()
+  (interactive)
+  (let ((pt (point)))
+    (progn
+      (save-excursion
+        (setq s (re-search-backward "\\(\"\"\".*\n\\)" nil t)
+              region-start (match-end 0))
+        (goto-char pt)
+        (setq e (re-search-forward "\\(\n\s+\"\"\"\\)" nil t)
+              region-end (match-beginning 0))
+        (and s e (< s pt e))))
+    (edit-indirect-region-wrap-rst region-start region-end t)))
+)
+#+end_src
+
 * C & C++
 #+begin_src emacs-lisp
  (add-hook 'cuda-mode-local-vars-hook #'ccls)
