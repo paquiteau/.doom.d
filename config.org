@@ -1491,6 +1491,7 @@ but more convenient, like =;=.
 * Python
 #+begin_src emacs-lisp :tangle "packages.el"
 (package! numpydoc)
+(package! docstr)
 #+end_src
 #+begin_src emacs-lisp
 (after! lsp-pyright
@@ -1499,9 +1500,13 @@ but more convenient, like =;=.
         )
    )
 (setq! pyenv-mode-mode-line-format nil)
-(use-package! numpydoc
-  :config (setq numpydoc-insertion-style nil
-                numpydoc-insert-examples-bloc nil))
+(use-package! docstr
+  :config (setq docstr-python-style 'numpy))
+
+;; (use-package! numpydoc
+;;   :config (setq numpydoc-insertion-style nil
+;;                 numpydoc-insert-examples-bloc nil))
+#+end_src
 #+end_src
 * C & C++
 #+begin_src emacs-lisp
