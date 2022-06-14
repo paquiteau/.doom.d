@@ -401,48 +401,23 @@ The org-roam metadata clutters the deft menu, let's fix that.
     '(bar matches buffer-info remote-host buffer-position parrot selection-info)
     '(misc-info minor-modes checker input-method buffer-encoding major-mode process vcs "    "))) ;; padding on the right.
 #+end_src
-** Ispell
-**** Downloading dictionaries
-Let's get a nice big dictionary from [[http://app.aspell.net/create][SCOWL Custom List/Dictionary Creator]] with
-the following configuration
-- size :: 80 (huge)
-- spellings :: British(-ise) and US
-- spelling variants level :: 0
-- diacritics :: keep
-- extra lists :: hacker, roman numerals
-
-***** Hunspell
-#+begin_src shell :tangle (if (file-exists-p "/usr/share/myspell/en-custom.dic") "no" "setup.sh")
-cd /tmp
-curl -o "hunspell-en-custom.zip" 'http://app.aspell.net/create?max_size=80&spelling=GBs&spelling=US&max_variant=0&diacritic=keep&special=hacker&special=roman-numerals&encoding=utf-8&format=inline&download=hunspell'
-unzip "hunspell-en-custom.zip"
-
-sudo chown root:root en-custom.*
-sudo mv en-custom.{aff,dic} /usr/share/myspell/
-#+end_src
-***** Aspell
-#+begin_src shell :tangle (if (file-expand-wildcards "/usr/lib64/aspell*/en-custom.multi") "no" "setup.sh")
-cd /tmp
-curl -o "aspell6-en-custom.tar.bz2" 'http://app.aspell.net/create?max_size=80&spelling=GBs&spelling=US&max_variant=0&diacritic=keep&special=hacker&special=roman-numerals&encoding=utf-8&format=inline&download=aspell'
-tar -xjf "aspell6-en-custom.tar.bz2"
-
-cd aspell6-en-custom
-./configure && make && sudo make install
-#+end_src
-**** Configuration
-#+begin_src emacs-lisp
-
-;; (setq ispell-dictionary "en-custom")
-#+end_src
-Oh, and by the way, if ~company-ispell-dictionary~ is ~nil~, then
-~ispell-complete-word-dict~ is used instead, which once again when ~nil~ is
-~ispell-alternate-dictionary~, which at the moment maps to a plaintext version of
-the above.
-
-It seems reasonable to want to keep an eye on my personal dict, let's have it
-nearby (also means that if I change the 'main' dictionary I keep my addition).
+** Spell
 #+begin_src emacs-lisp
 (setq ispell-personal-dictionary (expand-file-name ".ispell_personal" doom-private-dir))
+#+end_src
+*** Guess-languages
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! guess-language)
+(package! flyspell-lazy :disable t)
+#+end_src
+#+begin_src emacs-lisp
+(setq guess-language-languages '(en fr))
+(setq guess-language-min-paragraph-length 35)
+(setq guess-language-langcodes
+  '((en . ("en_US" "English" "US" "English"))
+    (fr . ("fr_FR" "French" "FR" "French"))))
+
+(add-hook! org-mode #'guess-language-mode)
 #+end_src
 
 *** Org Chef
