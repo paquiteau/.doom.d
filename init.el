@@ -89,7 +89,7 @@
        (spell
         +flyspell
         ;+everywhere
-        +hunspell) ; tasing you for misspelling mispelling
+        ) ; tasing you for misspelling mispelling
        grammar           ; tasing grammar mistake every you make
 
        :tools
@@ -176,7 +176,6 @@
         +gnuplot
         +noter
         +present
-        +pretty
         )
        ;;php               ; perl's insecure younger brother
        ;;plantuml          ; diagrams for confusing people more
