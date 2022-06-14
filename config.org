@@ -1057,7 +1057,7 @@ Org roam ui is fantastic:
         citar-symbol-separator " ")
   (map! :leader
         :prefix "n"
-        "b" #'citar-insert-citation))
+        "b" #'citar-open))
 
 #+end_src
 *** Extra Behaviour
