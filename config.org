@@ -66,7 +66,7 @@ Behold, the big =setq=
  org-catch-invisible-edits 'smart            ; try not to accidently do weird stuff in invisible regions
  org-directory "~/org"                      ; let's put files here
  org-ellipsis " ▾ "
- org-export-in-background t                  ; run export processes in external emacs process
+ org-export-in-background nil                  ; run export processes in external emacs process
  org-export-with-sub-superscripts '{}       ; don't treat lone _ / ^ as sub/superscripts, require _{} / ^{}
  org-fontify-quote-and-verse-blocks t        ; /italic/ for quotes.
  org-hide-leading-stars nil
@@ -370,6 +370,10 @@ let's improve that memory.
     company-files
     company-yasnippet))
 #+end_src
+** Coverage
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! cov)
+#+end_src
 ** Deft
 The org-roam metadata clutters the deft menu, let's fix that.
 #+begin_src emacs-lisp
@@ -445,6 +449,11 @@ Variable pitch fontification + colouring
   :commands (info-colors-fontify-node))
 
 (add-hook 'Info-selection-hook 'info-colors-fontify-node)
+#+end_src
+
+** LSP
+#+begin_src emacs-lisp
+(setq lsp-use-plists "true")
 #+end_src
 ** Magit
 Let's add personal forges:
@@ -711,7 +720,6 @@ want to edit them afterwards though, so let's make that happen by default.
       org-latex-packages-alist '(("" "minted") ("margin=1cm" "geometry" nil))
       org-latex-pdf-process
       '("latexmk -shell-escape  -jobname=%O %f"))
-
 #+end_src
 *** View exported file
 ='localeader v= has no pre-existing binding, so I may as well use it with the same
@@ -801,23 +809,6 @@ lets have nice Unicode alternative to LaTeX.
         org-modern-horizontal-rule nil))
 #+end_src
 
-#+begin_src emacs-lisp
-;; (after! org-superstar
-;;   (setq org-superstar-headline-bullets-list '("◉" "○" "✸" "✿" "✤" "✜" "◆" "▶")
-;;         org-superstar-prettify-item-bullets t )
-;;  (setq org-superstar-item-bullet-alist
-;;         '((?* . ?•)
-;;           (?+ . ?➤)
-;;           (?- . ?➤)))
-;;   (setq org-superstar-special-todo-items t)
-;;   (setq org-superstar-todo-bullet-alist
-;;         '(("TODO" . ?☐)
-;;           ("WAIT" . ?☕)
-;;           ("ABORT" . ?✘)
-;;           ("DONE" . ?✔)))
-;;  (org-superstar-restart)
-;;  )
-#+end_src
 *** TODOs
 #+begin_src emacs-lisp
 (setq org-todo-keywords '((sequence "TODO(t)" | "DONE(d)")
@@ -876,7 +867,6 @@ text --- like this \(\sqrt{\beta^2+3}-\sum_{\phi=1}^\infty \frac{x^\phi-1}{\Gamm
 \\usepackage{amssymb}
 \\usepackage{mathrsfs}
 \\usepackage{bm}
-\\usepackage{ntheorem}
 \\DeclareMathOperator*{\\argmin}{arg\\,min}
 \\DeclareMathOperator*{\\diag}{diag}
 
@@ -998,7 +988,8 @@ buffer's text scale."
 
 #+end_src
 ** Org-Roam
-Org roam ui is fantastic:
+*** Org Roam UI
+A nice graph of knowledge.
 #+begin_src emacs-lisp :tangle "packages.el"
 (unpin! org-roam company-org-roam)
 (package! websocket)
@@ -1021,7 +1012,7 @@ Org roam ui is fantastic:
           org-roam-ui-update-on-save t
           org-roam-ui-open-on-start t))
 #+end_src
-
+*** Org Roam Basic Configuration
 #+begin_src emacs-lisp
 (after! org-roam
   (setq org-roam-directory "~/org/roam/"
@@ -1036,8 +1027,19 @@ Org roam ui is fantastic:
            :target (file+datetree "perso.org" "+title: Perso")
            :unnarrowed t)
           )
-        ))
+
+        org-roam-capture-templates
+        '(("d" "default" plain "%?"
+           :target (file+head "%<%Y%m%d%H%M%S>-${slug}.org"
+                              "#+title: ${title}\n")
+           :unnarrowed t)
+          ("p" "people" entry
+           "* ${title}\n %^{BIRTHDAY}p %^{MAIL}p %^{ORGANIZATION}p %?"
+        :target (file "peoples.org")
+)))
+  )
 #+end_src
+
 #+begin_src emacs-lisp
 (setq my/org-roam-excluded-dirs '("journal"))
 
@@ -1061,7 +1063,6 @@ Org roam ui is fantastic:
 
 #+end_src
 *** Extra Behaviour
-
 **** Insert node immediatly
 This make the node linking less painfull by two means:
  - Insert a  white space before the node link if it was not present
@@ -1178,6 +1179,44 @@ This makes sure that org-roam buffer are open in a dedicated workspace, to preve
   (when (featurep! :ui workspaces)
     (+workspace-switch "*roam*" t)))
 #+end_src
+****
+** Org-Noter
+#+begin_src emacs-lisp
+(after! org-noter
+  (setq org-noter-notes-search-path (list (expand-file-name "bib/" org-roam-directory)))
+  )
+#+end_src
+
+The template provided by citar is hard coded, so we rewrite =citar-org-format-note-default= to add org noter properties
+#+begin_src emacs-lisp
+
+(defun pac/citar-org-format-note (key entry filepath)
+  "Format a note FILEPATH from KEY and ENTRY."
+    (let* ((template (citar--get-template 'note))
+           (note-meta
+            (when template
+              (citar--format-entry-no-widths
+               entry
+               template)))
+           ;; get the first matching file
+           (noter-document (car (citar-file--parse-file-field entry "file" )))
+           (buffer (find-file filepath)))
+      (with-current-buffer buffer
+        ;; This just overrides other template insertion.
+        (erase-buffer)
+        (citar-org-roam-make-preamble key)
+        ;;My addition:
+        (org-entry-put 0 "NOTER_DOCUMENT" noter-document)
+        (insert "#+title: ")
+        (when template (insert note-meta))
+        (insert "\n\n|\n\n#+print_bibliography:")
+        (search-backward "|")
+        (delete-char 1)
+        (when (fboundp 'evil-insert)
+          (evil-insert 1)))))
+(setq citar-create-note-function 'pac/citar-org-format-note)
+#+end_src
+
 ** Build Agenda from notes.
 Build Agenda from Roam Notes: Every note which has a Project tag will be parsed for Todo.
 
@@ -1249,37 +1288,6 @@ Build Agenda from Roam Notes: Every note which has a Project tag will be parsed 
   (add-to-list 'TeX-command-list '("XeLaTeX" "%`xelatex%(mode)%' %t" TeX-run-TeX nil t)))
 (add-to-list 'auto-mode-alist '("\\.tikz" . LaTeX-mode))
 (add-to-list 'auto-mode-alist '("\\.pgf" . LaTeX-mode))
-#+end_src
-*** Template
-For use in the new-file template, let's set out a nice preamble we may want to use.
-#+name: latex-nice-preamble
-#+begin_src latex :tangle no
-\\usepackage[pdfa,unicode=true,hidelinks]{hyperref}
-\\usepackage[dvipsnames,svgnames,table,hyperref]{xcolor}
-\\usepackage[utf8]{inputenc} % encodage
-\\usepackage[T1]{fontenc}
-\\usepackage{mathtools}
-\\usepackage{amssymb}
-\\usepackage[margin=2cm]{geometry}
-\\usepackage[activate={true,nocompatibility},final,tracking=true,kerning=true,spacing=true,factor=2000]{microtype}
-% microtype makes text look nicer
-\\usepackage{graphicx} % include graphics
-\\usepackage{booktabs} % nice table rules
-#+end_src
-Then let's bind the content to a function, and define some nice helpers.
-#+begin_src emacs-lisp :noweb no-export
-(setq tec/yas-latex-template-preamble "
-<<latex-nice-preamble>>
-")
-
-(defun tec/yas-latex-get-class-choice ()
-  "Prompt user for LaTeX class choice"
-  (setq tec/yas-latex-class-choice (ivy-read "Select document class: " '("article" "scrartcl" "book") :def "article")))
-
-(defun tec/yas-latex-preamble-if ()
-  "Based on class choice prompt for insertion of default preamble"
-  (if (equal tec/yas-latex-class-choice "article") 'nil
-    (eq (read-char-choice "Include default preamble? [Type y/n]" '(?y ?n)) ?y)))
 #+end_src
 *** Deliminator
 #+begin_src emacs-lisp
@@ -1496,6 +1504,7 @@ but more convenient, like =;=.
 #+begin_src emacs-lisp :tangle "packages.el"
 (package! numpydoc)
 (package! docstr)
+(package! python-black)
 #+end_src
 #+begin_src emacs-lisp
 (after! lsp-pyright
@@ -1503,9 +1512,15 @@ but more convenient, like =;=.
         lsp-pyright-typechecking-mode "off"
         )
    )
+
+
 (setq! pyenv-mode-mode-line-format nil)
 (use-package! docstr
   :config (setq docstr-python-style 'numpy))
+
+(use-package! python-black
+  :after python
+  :hook (python-mode . python-black-on-save-mode-enable-dwim))
 
 ;; (use-package! numpydoc
 ;;   :config (setq numpydoc-insertion-style nil
@@ -1567,6 +1582,10 @@ Adapted and improve from https://gist.github.com/fleimgruber/cd2386d8326fad3e0e2
         (and s e (< s pt e))))
     (edit-indirect-region-wrap-rst region-start region-end t)))
 )
+
+(map! :map python-mode-map
+      :localleader
+      :desc "Edit docstring in RST" "d" #'edit-indirect-rst)
 #+end_src
 
 * C & C++
