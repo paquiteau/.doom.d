@@ -5,7 +5,6 @@
 #+property: header-args:elisp :exports code
 #+property: header-args:shell :tangle "setup.sh"
 #+property: header-args :tangle no :results silent :eval no-export
-#+options: coverpage:yes
 #+startup: fold
 
 #+begin_src emacs-lisp :comments no
