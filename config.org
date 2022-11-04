@@ -1,4 +1,4 @@
-#+title: Doom Emacs config
+#+title: Doom Emacs Literate configuration
 #+author: Pierre-Antoine Comby
 
 #+property: header-args:emacs-lisp :tangle yes :comments link
@@ -8,8 +8,6 @@
 #+options: coverpage:yes
 #+startup: fold
 
-* Simple Configuration
-** Headers for tangle
 #+begin_src emacs-lisp :comments no
 ;;; config.el -*- lexical-binding: t; -*-
 #+end_src
@@ -22,24 +20,30 @@
 #!/bin/bash
 #+end_src
 
+* Simple Configuration
+** Headers for tangle
+
 #+begin_src emacs-lisp
-(load! "lisp/mathpix.el")
 (load! "secrets.el")
+
+(setq-default custom-file (expand-file-name ".custom.el" doom-private-dir))
 (when (file-exists-p custom-file)
   (load custom-file))
 #+end_src
-** Config Variables
+** Configuration Variables
 Behold, the big =setq=
+
 #+begin_src emacs-lisp
 (setq
- +latex-viewers '(pdf-tools zathura okular skim sumatrapdf)
- +org-latex-preview-scale 1.0
  +workspaces-switch-project-function #'magit-status
  auth-source-cache-expiry nil
  auth-sources '("~/.authinfo.gpg")
  auto-save-default t                         ; Nobody likes to loose work, I certainly don't
- display-line-numbers-type 'relative
- display-time-default-load-average nil
+ display-line-numbers-type nil
+ display-time-default-load-average t
+ display-time-mode t
+ display-time-24hr-format t
+ ;; doom modeline
  doom-modeline-height 10
  doom-modeline-icon t
  doom-modeline-persp-icon t
@@ -47,68 +51,47 @@ Behold, the big =setq=
  doom-modeline-major-mode-icon t
  doom-modeline-major-mode-color-icon t
  doom-theme 'doom-one
+ ;; font configuration
  doom-big-font (font-spec :family "FiraCode" :size 26)
  doom-font (font-spec :family "FiraCode" :size 18 :weight 'light)
  doom-serif-font (font-spec :family "IBM Plex Mono" :weight 'light)
  doom-unicode-font (font-spec :family "Symbola")
  doom-variable-pitch-font (font-spec :family "Roboto" :size  18 :weight 'normal)
+
  evil-split-window-below t
  evil-vsplit-window-right t
  evil-want-fine-undo t                       ; By default while in insert all changes are one big blob. Be more granular
  explicit-shell-file-name "/bin/bash"
  gc-cons-threshold (* 1024 1024 1024)
- org-agenda-compact-blocks t
- org-agenda-deadline-faces '((1.001 . error) (1.0 . org-warning) (0.5 . org-upcoming-deadline) (0.0 . org-upcoming-distant-deadline))
- org-agenda-files '("~/org/calendar.org" "~/org/habits.org" "~/org/inbox.org")
- org-agenda-include-deadlines t
- org-agenda-skip-deadline-if-done t
- org-agenda-skip-scheduled-if-done t
- org-catch-invisible-edits 'smart            ; try not to accidently do weird stuff in invisible regions
- org-directory "~/org"                      ; let's put files here
- org-ellipsis " ▾ "
- org-export-in-background nil                  ; run export processes in external emacs process
- org-export-with-sub-superscripts '{}       ; don't treat lone _ / ^ as sub/superscripts, require _{} / ^{}
- org-fontify-quote-and-verse-blocks t        ; /italic/ for quotes.
- org-hide-leading-stars nil
- org-highlight-latex-and-related '(native script entities)
- org-latex-pdf-process '("latexmk -f -pdf -%latex -shell-escape -interaction=nonstopmode -output-directory=%o %f")
- org-list-allow-alphabetical t               ; have a. A. a) A) list bullets
- org-list-demote-modify-bullet '(("+" . "-") ("-" . "+") ("*" . "+") ("1." . "a."))
- org-log-done 'time                          ; having the time a item is done sounds convenient
- org-pretty-entities-include-sub-superscripts nil ; Don't hide the _ and ^
- org-preview-latex-default-process 'dvisvgm ;No blur when scaling
- org-priority-faces '((?A . 'all-the-icons-red) (?B . 'all-the-icons-orange) (?C . 'all-the-icons-yellow)  (?D . 'all-the-icons-green) (?E . 'all-the-icons-blue))
- org-priority-highest ?A
- org-priority-lowest ?E
- org-startup-with-latex-preview  t
- org-use-property-inheritance t              ; it's convenient to have properties inherited
  password-cache-expiry nil                   ; I can trust my computers ... can't I?
  projectile-ignored-projects '("~/" "/tmp" "~/.emacs.d/.local/straight/repos/")
  projectile-ignored-projects '("~/" "/tmp" "~/.emacs.d/.local/straight/repos/")
  projectile-project-search-path '("~/gits/nsp/" "~/gits/rep/")
  read-process-output-max (* 1024 1024)
  scroll-margin 2
+ system-time-locale "C"
  TeX-save-query nil
  TeX-show-compilation t
- TeX-command-extra-options "-shell-escape"
+ TeX-command-extra-options "-shell-escape -outdir=/tmp"
  truncate-string-ellipsis "…"                ; Unicode ellispis are nicer than "...", and also save /precious/ space
  undo-limit 80000000                         ; Raise undo-limit to 80Mb
  user-full-name "Pierre-Antoine Comby"
  user-mail-address "comby@crans.org"
- which-key-allow-multiple-replacements t
- which-key-idle-delay 0.2                   ; I need the help, I really do
  )
-(setq frame-title-format '(""
-                           (:eval
-                            (if (s-contains-p org-roam-directory (or buffer-file-name ""))
-                                (replace-regexp-in-string
-                                 ".*/[0-9]*-?" "☰ "
-                                 (subst-char-in-string ?_ ?  buffer-file-name))
-                              "%b"))
-                           (:eval
-                            (let ((project-name (projectile-project-name)))
-                              (unless (string= "-" project-name)
-                                (format (if (buffer-modified-p)  " ◉ %s" "  ●  %s") project-name))))))
+(display-time-mode)
+(setq frame-title-format
+      '(""
+        (:eval
+         (if (s-contains-p org-roam-directory (or buffer-file-name ""))
+             (replace-regexp-in-string
+              ".*/[0-9]*-?" "☰ "
+              (subst-char-in-string ?_ ?  buffer-file-name))
+           "%b"))
+        (:eval
+         (let ((project-name (projectile-project-name)))
+           (unless (string= "-" project-name)
+             (format (if (buffer-modified-p)  " ◉ %s" "  ●  %s")
+                     project-name))))))
 #+end_src
 
 #+begin_src  emacs-lisp
@@ -152,15 +135,6 @@ Behold, the big =setq=
   :after '(evil-window-split evil-window-vsplit)
   (consult-buffer))
 #+end_src
-
-~doom-one~ is nice and all, but I find the ~vibrant~ variant nicer. Oh, and with the
-nice selection doom provides there's no reason for me to want the defaults.
-#+begin_src emacs-lisp
-(remove-hook 'window-setup-hook #'doom-init-theme-h)
-(add-hook 'after-init-hook #'doom-init-theme-h 'append)
-(delq! t custom-theme-load-path)
-#+end_src
-
 ** Custom functions
 #+begin_src emacs-lisp :tangle yes
 (defun pac/concat-newline ( &rest lines)
@@ -173,61 +147,6 @@ than having to call `add-to-list' multiple times."
   (interactive)
   (dolist (item to-add)
     (add-to-list l item)))
-#+end_src
-** Emacs Daemon
-For running a systemd service for a Emacs server I have the following
-#+name: emacsclient service
-#+begin_src conf :tangle ~/.config/systemd/user/emacs.service :mkdirp yes
-[Unit]
-Description=Emacs server daemon
-Documentation=info:emacs man:emacs(1) https://gnu.org/software/emacs/
-
-[Service]
-Type=forking
-ExecStart=sh -c 'emacs --daemon && emacsclient -c --eval "(delete-frame)"'
-ExecStop=/usr/bin/emacsclient --no-wait --eval "(progn (setq kill-emacs-hook nil) (kill emacs))"
-Restart=on-failure
-
-[Install]
-WantedBy=default.target
-#+end_src
-
-which is then enabled by
-#+begin_src shell :tangle (if (string= "enabled\n" (shell-command-to-string "systemctl --user is-enabled emacs.service")) "no" "setup.sh")
-systemctl --user enable emacs.service
-#+end_src
-
-For some reason if a frame isn't opened early in the initialisation process, the
-daemon doesn't seem to like opening frames later --- hence the ~&& emacsclient~
-part of the =ExecStart= value.
-
-It can now be nice to use this as a 'default app' for opening files. If we add
-an appropriate desktop entry, and enable it in the desktop environment.
-
-#+begin_src conf :tangle ~/.local/share/applications/emacs-client.desktop :mkdirp yes
-[Desktop Entry]
-Name=Doom Emacs
-GenericName=Text Editor
-Comment=A flexible platform for end-user applications
-MimeType=text/english;text/plain;text/x-makefile;text/x-c++hdr;text/x-c++src;text/x-chdr;text/x-csrc;text/x-java;text/x-moc;text/x-pascal;text/x-tcl;text/x-tex;application/x-shellscript;text/x-c;text/x-c++;
-Exec=emacsclient -create-frame --alternate-editor="" --no-wait %F
-Icon=doom-icons.png
-Type=Application
-Terminal=false
-Categories=TextEditor;Utility;
-StartupWMClass="Emacs","emacs"
-Keywords=Text;Editor;
-#+end_src
-
-When the config is updated, then it is as simple as a  =systemctl restart emacs.service=
-
-#+name: daemon initialisation
-#+begin_src emacs-lisp
-(defun greedily-do-daemon-setup ()
-  (require 'org)
-(when (daemonp)
-  (add-hook 'emacs-startup-hook #'greedily-do-daemon-setup)
-  (add-hook! 'server-after-make-frame-hook (switch-to-buffer doom-fallback-buffer-name))))
 #+end_src
 *** Emacs client wrapper
 I frequently want to make use of Emacs while in a terminal emulator. To make
@@ -326,7 +245,6 @@ alias m='e --eval "(progn (magit-status) (delete-other-windows))"'
 alias mt="m -t"
 alias et="e -t"
 #+end_src
-
 * Package configuration
 ** Abbrev
 #+begin_src emacs-lisp
@@ -351,9 +269,7 @@ are just waiting to be saved!
 #+begin_src emacs-lisp
 (after! company
   (setq company-idle-delay 0.1
-        company-minimum-prefix-length 2
-        company-show-numbers t
-        )
+        company-minimum-prefix-length 2)
   (add-hook 'evil-normal-state-entry-hook #'company-abort)) ;; make aborting less annoying
 
 #+end_src
@@ -371,32 +287,9 @@ let's improve that memory.
     company-yasnippet))
 #+end_src
 ** Coverage
+
 #+begin_src emacs-lisp :tangle "packages.el"
 (package! cov)
-#+end_src
-** Deft
-The org-roam metadata clutters the deft menu, let's fix that.
-#+begin_src emacs-lisp
-(defun cm/deft-parse-title (file contents)
-  "Parse the given FILE and CONTENTS and determine the title.
-  If `deft-use-filename-as-title' is nil, the title is taken to
-  be the first non-empty line of the FILE.  Else the base name of the FILE is
-  used as title."
-  (let ((begin (string-match "^#\\+[tT][iI][tT][lL][eE]: .*$" contents)))
-    (if begin
-        (string-trim (substring contents begin (match-end 0)) "#\\+[tT][iI][tT][lL][eE]: *" "[\n\t ]+")
-      (deft-base-filename file))))
-(after! deft
-  (setq deft-directory "~/org/roam/")
-  (setq deft-recursive t)
-  (setq deft-strip-summary-regexp
-        (concat "\\("
-                "^:.+:.*\n" ; any line with a :SOMETHING:
-                "\\|^#\\+.*\n" ; anyline starting with a #+
-                "\\|^\\*.+.*\n" ; anyline where an asterisk starts the line
-                "\\)"))
-  (advice-add 'deft-parse-title :override #'cm/deft-parse-title)
-  )
 #+end_src
 ** Doom Modeline
 #+begin_src emacs-lisp
@@ -451,10 +344,6 @@ Variable pitch fontification + colouring
 (add-hook 'Info-selection-hook 'info-colors-fontify-node)
 #+end_src
 
-** LSP
-#+begin_src emacs-lisp
-(setq lsp-use-plists "true")
-#+end_src
 ** Magit
 Let's add personal forges:
 #+begin_src emacs-lisp
@@ -462,7 +351,7 @@ Let's add personal forges:
   (add-to-list 'forge-alist '("gitlab.crans.org" "gitlab.crans.org/api/v4" "gitlab.crans.org" forge-gitlab-repository))
                 )
 #+end_src
-*** Blamer
+** Blamer
 Lets directly blame others
 #+begin_src emacs-lisp :tangle "packages.el"
 (package! blamer :recipe (:host github :repo "artawower/blamer.el"))
@@ -537,6 +426,7 @@ And add some custom functions provided by =blamer= author:
 )
 #+end_src
 ** Mathpix
+Mathpix has move to an pay per call api , we need to find an alternative.
 #+begin_src emacs-lisp
 (load! "lisp/mathpix.el")
 (setq-default mathpix-app-id paquiteau-mathpix-id
@@ -564,14 +454,85 @@ And add some custom functions provided by =blamer= author:
   :hook (org-mode . mixed-pitch-mode)
   :config
   (setq mixed-pitch-face 'variable-pitch))
-#+end_src
-** Projectile
-#+begin_src emacs-lisp
-(defun projectile-ignored-project-function (filepath)
-  "Return t if FILEPATH is within any of `projectile-ignored-projects'"
-  (or (mapcar (lambda (p) (s-starts-with-p p filepath)) projectile-ignored-projects)))
+
+(defvar mixed-pitch-modes '(org-mode markdown-mode gfm-mode Info-mode)
+  "Modes that `mixed-pitch-mode' should be enabled in, but only after UI initialisation.")
+(defun init-mixed-pitch-h ()
+  "Hook `mixed-pitch-mode' into each mode in `mixed-pitch-modes'.
+Also immediately enables `mixed-pitch-modes' if currently in one of the modes."
+  (when (memq major-mode mixed-pitch-modes)
+    (mixed-pitch-mode 1))
+  (dolist (hook mixed-pitch-modes)
+    (add-hook (intern (concat (symbol-name hook) "-hook")) #'mixed-pitch-mode)))
+(add-hook 'doom-init-ui-hook #'init-mixed-pitch-h)
 
 #+end_src
+** PDF viewing with continuous scroll
+Based on https://github.com/dalanicolai/image-roll.el
+Dont use the pdf package of =init.el=
+
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! pdf-tools :recipe
+          (:host github
+                 :repo "dalanicolai/pdf-tools"
+                 :branch "pdf-roll"
+                 :files ("lisp/*.el"
+                         "README"
+                         ("build" "Makefile")
+                         ("build" "server")
+                         (:exclude "lisp/tablist.el" "lisp/tablist-filter.el"))))
+
+(package! image-roll :recipe
+          (:host github
+                 :repo "dalanicolai/image-roll.el"))
+                 #+end_src
+#+begin_src emacs-lisp
+;;; tools/pdf/config.el -*- lexical-binding: t; -*-
+(use-package! pdf-tools
+  :mode ("\\.pdf\\'" . pdf-view-mode)
+  :magic ("%PDF" . pdf-view-mode)
+  :init
+  (after! pdf-annot
+    (defun +pdf-cleanup-windows-h ()
+      "Kill left-over annotation buffers when the document is killed."
+      (when (buffer-live-p pdf-annot-list-document-buffer)
+        (pdf-info-close pdf-annot-list-document-buffer))
+      (when (buffer-live-p pdf-annot-list-buffer)
+        (kill-buffer pdf-annot-list-buffer))
+      (let ((contents-buffer (get-buffer "*Contents*")))
+        (when (and contents-buffer (buffer-live-p contents-buffer))
+          (kill-buffer contents-buffer))))
+    (add-hook! 'pdf-view-mode-hook
+      (add-hook 'kill-buffer-hook #'+pdf-cleanup-windows-h nil t)))
+
+  :config
+  ;; For consistency with other special modes
+  (map! :map pdf-view-mode-map :gn "q" #'kill-current-buffer)
+
+  (setq-default pdf-view-display-size 'fit-page)
+  ;; Enable hiDPI support, but at the cost of memory! See politza/pdf-tools#51
+  (setq pdf-view-use-scaling t
+        pdf-view-use-imagemagick nil)
+
+  ;; Handle PDF-tools related popups better
+  (set-popup-rules!
+    '(("^\\*Outline*" :side right :size 40 :select nil)
+      ("^\\*Edit Annotation " :quit nil)
+      ("\\(?:^\\*Contents\\|'s annots\\*$\\)" :ignore t)))
+
+  ;; The mode-line does serve any useful purpose is annotation windows
+  (add-hook 'pdf-annot-list-mode-hook #'hide-mode-line-mode)
+
+  ;; HACK Fix #1107: flickering pdfs when evil-mode is enabled
+  (setq-hook! 'pdf-view-mode-hook evil-normal-state-cursor (list nil))
+
+  ;; Silence "File *.pdf is large (X MiB), really open?" prompts for pdfs
+  (defadvice! +pdf-suppress-large-file-prompts-a (fn size op-type filename &optional offer-raw)
+    :around #'abort-if-file-too-large
+    (unless (string-match-p "\\.pdf\\'" filename)
+      (funcall fn size op-type filename offer-raw))))
+#+end_src
+
 ** String Inflection
 #+begin_src emacs-lisp :tangle "packages.el"
 (package! string-inflection)
@@ -613,81 +574,32 @@ Open scad is a programming language to create 3d parametric objects.
 (autoload 'scad-mode "scad-mode" "A major mode for editing OpenSCAD code." t)
 (add-to-list 'auto-mode-alist '("\\.scad$" . scad-mode))
 #+end_src
+** Singularity
+#+begin_src emacs-lisp
+(load! "lisp/singularity.el")
+(autoload 'singularity "singularity-mode" "A major mode for editing Apptainer/Singularity recipies" t)
+(add-to-list 'auto-mode-alist '("\\.rec$" . singularity-mode))
+#+end_src
 
 ** TRAMP
 #+begin_src emacs-lisp
 (after! tramp
  (add-to-list 'tramp-remote-path 'tramp-own-remote-path)
+ (connection-local-set-profile-variables 'remote-path-with-bin
+   '((tramp-remote-path . ("~/.local/bin" "~/.pyenv/bin" tramp-default-remote-path))))
+ (connection-local-set-profiles
+   '(:application tramp :machine "zachs") 'remote-path-with-bin)
 )
-#+end_src
-** Treemacs
-Quite often there are superfluous files I'm not that interested in. There's no
-good reason for them to take up space. Let's add a mechanism to ignore them.
-#+begin_src emacs-lisp
-(after! treemacs
-  (defvar treemacs-file-ignore-extensions '()
-    "File extension which `treemacs-ignore-filter' will ensure are ignored")
-  (defvar treemacs-file-ignore-globs '()
-    "Globs which will are transformed to `treemacs-file-ignore-regexps' which `treemacs-ignore-filter' will ensure are ignored")
-  (defvar treemacs-file-ignore-regexps '()
-    "RegExps to be tested to ignore files, generated from `treeemacs-file-ignore-globs'")
-  (defun treemacs-file-ignore-generate-regexps ()
-    "Generate `treemacs-file-ignore-regexps' from `treemacs-file-ignore-globs'"
-    (setq treemacs-file-ignore-regexps (mapcar 'dired-glob-regexp treemacs-file-ignore-globs)))
-  (if (equal treemacs-file-ignore-globs '()) nil (treemacs-file-ignore-generate-regexps))
-  (defun treemacs-ignore-filter (file full-path)
-    "Ignore files specified by `treemacs-file-ignore-extensions', and `treemacs-file-ignore-regexps'"
-    (or (member (file-name-extension file) treemacs-file-ignore-extensions)
-        (let ((ignore-file nil))
-          (dolist (regexp treemacs-file-ignore-regexps ignore-file)
-            (setq ignore-file (or ignore-file (if (string-match-p regexp full-path) t nil)))))))
-  (add-to-list 'treemacs-ignored-file-predicates #'treemacs-ignore-filter))
-
-(after! treemacs
-  (setq doom-themes-treemacs-theme "doom-colors"))
-(with-eval-after-load 'lsp-treemacs
-          (doom-themes-treemacs-config))
-#+end_src
-
-
-Now, we just identify the files in question.
-#+begin_src emacs-lisp
-(setq treemacs-file-ignore-extensions
-      '(;; LaTeX
-        "aux"
-        "ptc"
-        "fdb_latexmk"
-        "fls"
-        "synctex.gz"
-        "toc"
-        ;; LaTeX - glossary
-        "glg"
-        "glo"
-        "gls"
-        "glsdefs"
-        "ist"
-        "acn"
-        "acr"
-        "alg"
-        ;; LaTeX - pgfplots
-        "mw"
-        ;; LaTeX - pdfx
-        "pdfa.xmpi"
-        ;; python
-        "pyc"
-        ))
-(setq treemacs-file-ignore-globs
-      '(;; LaTeX
-        "*/_minted-*"
-        ;; AucTeX
-        "*/.auctex-auto"
-        "*/_region_.log"
-        "*/_region_.tex"))
 #+end_src
 ** Which-key
 I also think that having =evil-= appear in so many popups is a bit too verbose,
 let's change that, and do a few other similar tweaks while we're at it.
 #+begin_src emacs-lisp
+(setq
+ which-key-allow-multiple-replacements t
+ which-key-idle-delay 0.2                   ; I need the help, I really do
+ )
+
 (after! which-key
   (pushnew!
    which-key-replacement-alist
@@ -695,33 +607,47 @@ let's change that, and do a few other similar tweaks while we're at it.
    '(("\\`g s" . "\\`evilem--?motion-\\(.*\\)") . (nil . "◃\\1"))
    ))
 #+end_src
-** Writegoodmode
-#+begin_src emacs-lisp
-(add-hook! writegood-mode #'writegood-passive-voice-turn-off)
-#+end_src
 * Org-mode
-** CdLaTeX
-It's also nice to be able to use ~cdlatex~.
+** Global config
 #+begin_src emacs-lisp
+(after! org
+  (setq
+   org-agenda-compact-blocks t
+   org-agenda-deadline-faces '((1.001 . error)
+                               (1.0 . org-warning)
+                               (0.5 . org-upcoming-deadline)
+                               (0.0 . org-upcoming-distant-deadline))
+   org-catch-invisible-edits 'smart            ; try not to accidently do weird stuff in invisible regions
+   org-directory "~/org"                      ; let's put files here
+   org-ellipsis " ▾ "
+   org-export-in-background t                  ; run export processes in external emacs process
+   org-use-sub-superscripts t       ; don't treat lone _ / ^ as sub/superscripts, require _{} / ^{}
+   org-fontify-quote-and-verse-blocks t        ; /italic/ for quotes.
+   org-highlight-latex-and-related '(native script entities)
+   org-latex-pdf-process '("latexmk -f -pdf -%latex -shell-escape -interaction=nonstopmode -output-directory=%o %f")
+   org-latex-listings 'minted
+   org-latex-packages-alist '(("" "minted") ("margin=1cm" "geometry" nil))
+   org-list-allow-alphabetical t               ; have a. A. a) A) list bullets
+   org-list-demote-modify-bullet '(("+" . "-") ("-" . "+") ("*" . "+") ("1." . "a."))
+   org-log-done 'time                          ; having the time a item is done sounds convenient
+   org-pretty-entities-include-sub-superscripts nil ; Don't hide the _ and ^
+   org-preview-latex-default-process 'dvisvgm   ;No blur when scaling
+   org-startup-indented nil
+   org-startup-with-latex-preview  t
+   org-use-property-inheritance t              ; it's convenient to have properties inherited
+   +org-latex-preview-scale 0.66
+   )
+  )
+(after! org
+  (load! "org-wc.el"))
+; cd-latex support
 (add-hook 'org-mode-hook 'turn-on-org-cdlatex)
-#+end_src
-
-It's handy to be able to quickly insert environments with =C-c }=. I almost always
-want to edit them afterwards though, so let's make that happen by default.
-#+begin_src emacs-lisp
+; enter the environment after C-c }
 (defadvice! org-edit-latex-emv-after-insert ()
   :after #'org-cdlatex-environment-indent
   (org-edit-latex-environment))
 #+end_src
-** Exports
-*** Latex Export
-#+begin_src emacs-lisp
-(setq org-latex-listings 'minted
-      org-latex-packages-alist '(("" "minted") ("margin=1cm" "geometry" nil))
-      org-latex-pdf-process
-      '("latexmk -shell-escape  -jobname=%O %f"))
-#+end_src
-*** View exported file
+** View exported file
 ='localeader v= has no pre-existing binding, so I may as well use it with the same
 functionality as in LaTeX. Let's try viewing possible output files with this.
 #+begin_src emacs-lisp
@@ -753,83 +679,13 @@ functionality as in LaTeX. Let's try viewing possible output files with this.
 (defvar org-view-external-file-extensions '("html")
   "File formats that should be opened externally.")
 #+end_src
-** Visual
-
-While ~org-hide-emphasis-markers~ is very nice, it can sometimes make edits which
-occur at the border a bit more fiddley. We can improve this situation without
-sacrificing visual amenities with the =org-appear= package.
-#+begin_src emacs-lisp :tangle "packages.el"
-(package! org-appear)
-#+end_src
-#+begin_src emacs-lisp
-(use-package! org-appear
-  :after org
-  :hook (org-mode . org-appear-mode)
-  :config
-  (setq org-appear-autoemphasis t
-        org-appear-autosubmarkers t
-        org-appear-autolinks nil)
-  ;; for proper first-time setup, `org-appear--set-elements'
-  ;; needs to be run after other hooks have acted.
-  (run-at-time nil nil #'org-appear--set-elements))
-#+end_src
-
-Org files can be rather nice to look at, particularly with some of the
-customisations here. This comes at a cost however, expensive font-lock.
-Feeling like you're typing through molasses in large files is no fun, but there
-is a way I can defer font-locking when typing to make the experience more
-responsive.
-#+begin_src emacs-lisp
-(defun locally-defer-font-lock ()
-  "Set jit-lock defer and stealth, when buffer is over a certain size."
-  (when (> (buffer-size) 50000)
-    (setq-local jit-lock-defer-time 0.05
-                jit-lock-stealth-time 1)))
-
-(add-hook 'org-mode-hook #'locally-defer-font-lock)
-#+end_src
-Apparently this causes issues with some people, but I haven't noticed anything
-problematic beyond the expected slight delay in some fontification, so until I
-do I'll use the above.
-*** Symbols
-lets have nice Unicode alternative to LaTeX.
-#+begin_src emacs-lisp :tangle "packages.el"
-(package! org-modern)
-#+end_src
-
-#+begin_src emacs-lisp
-(after! org
-  (setq org-highlight-latex-and-related '(native script entities)))
-(global-org-modern-mode)
-#+end_src
-#+begin_src emacs-lisp
-(after! org-modern
-  (setq org-modern-table-vertical 2
-        org-modern-table nil ;; TODO Table rendering is broken for now
-        org-modern-horizontal-rule nil))
-#+end_src
-
-*** TODOs
-#+begin_src emacs-lisp
-(setq org-todo-keywords '((sequence "TODO(t)" | "DONE(d)")
-                          (sequence "WAITING(w@/!)" | "CANCELLED(c@/!)")))
-(setq org-todo-keyword-faces
-      (quote (("TODO" :foreground "indian red" :weight bold)
-              ("DONE" :foreground "forest green" :weight bold)
-              ("WAITING" :foreground "orange" :weight bold)
-              ("HOLD" :foreground "magenta" :weight bold)
-              ("CANCELLED" :foreground "forest green" :weight bold))))
-#+end_src
-** LaTeX fragments
+**  LaTeX fragments
 For automatically toggling LaTeX fragment previews as the cursor moves in and
 out of them there's this nice package
 #+begin_src emacs-lisp :tangle "packages.el"
 (package! org-fragtog)
+(package! texfrag)
 ;;(package! org-auctex :recipe (:host github :repo "karthink/org-auctex" :files ("*.el")))
-#+end_src
-#+begin_src emacs-lisp
-(require 'org-src)
-(add-to-list 'org-src-block-faces '("latex" (:inherit default :extend t)))
 #+end_src
 
 What's better than syntax-highlighted LaTeX is /rendered/ LaTeX though, and we can
@@ -877,8 +733,7 @@ text --- like this \(\sqrt{\beta^2+3}-\sum_{\phi=1}^\infty \frac{x^\phi-1}{\Gamm
 \\newcommand{\\Zer}{\\operatorname{Zer}}
                 ")
 #+end_src
-
-from https://karthinks.com/software/scaling-latex-previews-in-emacs/]
+*** Fragment scaling
 
 Also , lets update the ~org-format-latex-option~
 #+begin_src emacs-lisp
@@ -910,7 +765,7 @@ buffer's text scale."
    (cons 'image
          (plist-put
           (cdr (overlay-get ov 'display))
-          :scale  (* +org-latex-preview-scale(expt text-scale-mode-step text-scale-mode-amount))))
+          :scale  (* +org-latex-preview-scale (expt text-scale-mode-step text-scale-mode-amount))))
   ))
 
 ;; (add-hook 'text-scale-mode-hook #'org-auctex-preview-buffer)
@@ -977,19 +832,23 @@ buffer's text scale."
     (message "Latex numbering disabled.")))
 #+end_src
 
-** Capture and GTD
-#+begin_src emacs-lisp
-(defvar +org-capture-inbox-file "~/org/inbox.org")
-(after! org
-  (setq org-todo-keywords '((sequence "TODO(t)" "WAIT(w)" "|" "DONE(d)" "ABORT(a)")
-                           (sequence "[ ](T)" "[?](W)" "|" "[X](D)")))
-  (setq org-capture-templates
-        '(("t" "Todo" entry (file+headline +org-capture-inbox-file "Tasks")
-           "* TODO %?\n  %i\n  %a")))
-  )
-
+** Visuals Style
+*** Org-Modern
+Rincing Org easily
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! org-modern)
 #+end_src
-** Org-Roam
+#+begin_src emacs-lisp
+(after! org
+  (setq org-highlight-latex-and-related '(native script entities)))
+(global-org-modern-mode)
+#+end_src
+#+begin_src emacs-lisp
+(after! org-modern
+  (setq org-modern-table-vertical 2
+        org-modern-table nil ;; TODO Table rendering is broken for now
+        org-modern-horizontal-rule nil))
+#+end_src
 *** Org Roam UI
 A nice graph of knowledge.
 #+begin_src emacs-lisp :tangle "packages.el"
@@ -1014,6 +873,18 @@ A nice graph of knowledge.
           org-roam-ui-update-on-save t
           org-roam-ui-open-on-start t))
 #+end_src
+** Org-Roam
+This makes sure that org-roam buffer are open in a dedicated workspace, to prevent them to spread in others.
+#+begin_src emacs-lisp
+(defadvice! yeet/org-roam-in-own-workspace-a (&rest _)
+  "Open all roam buffers in there own workspace."
+  :before #'org-roam-node-find
+  :before #'org-roam-node-random
+  :before #'org-roam-buffer-display-dedicated
+  :before #'org-roam-buffer-toggle
+  (when (featurep! :ui workspaces)
+    (+workspace-switch "*roam*" t)))
+#+end_src
 *** Org Roam Basic Configuration
 #+begin_src emacs-lisp
 (after! org-roam
@@ -1033,39 +904,55 @@ A nice graph of knowledge.
         org-roam-capture-templates
         '(("d" "default" plain "%?"
            :target (file+head "%<%Y%m%d%H%M%S>-${slug}.org"
+                              "#+title: ${title}\n#+filetags: :draft:empty:\n"
+                                                  )
+           :unnarrowed t)
+          ("p" "project" plain "%?"
+           :target (file+head "project/${slug}.org"
                               "#+title: ${title}\n")
            :unnarrowed t)
-          ("p" "people" entry
-           "* ${title}\n %^{BIRTHDAY}p %^{MAIL}p %^{ORGANIZATION}p %?"
-        :target (file "peoples.org")
-)))
+          ("c" "config" plain "%?"
+           :target (file+head "config/${slug}.org"
+                              "#+title: ${title}\n")
+           :unnarrowed t)
+           )
+        )
   )
 #+end_src
 
 #+begin_src emacs-lisp
 (setq my/org-roam-excluded-dirs '("journal"))
 
-(setq org-roam-db-node-include-function (lambda ()
-                                          (let* ((file-path (buffer-file-name (buffer-base-buffer)))
-                                                 (rel-file-path (f-relative file-path org-roam-directory))
-                                                 (parent-directories (butlast (f-split rel-file-path))))
-                                            (if (cl-intersection my/org-roam-excluded-dirs parent-directories :test #'string=) nil t))))
+(setq org-roam-db-node-include-function
+      (lambda ()
+        (let* ((file-path (buffer-file-name (buffer-base-buffer)))
+               (rel-file-path (f-relative file-path org-roam-directory))
+               (parent-directories (butlast (f-split rel-file-path))))
+          (if (cl-intersection my/org-roam-excluded-dirs parent-directories :test #'string=) nil t))))
+
 (after! citar
   (setq! citar-bibliography "~/org/library.bib")
   (setq citar-library-paths '("~/Zotero/")
         citar-notes-paths '("~/org/roam/bib/")
-        citar-file-note-org-include '(org-id org-roam-ref)
-        citar-symbols `((file ,(all-the-icons-faicon "file-o" :face 'all-the-icons-green :v-adjust -0.1) . " ")
-                        (note ,(all-the-icons-material "speaker_notes" :face 'all-the-icons-blue :v-adjust -0.3) . " ")
-                        (link ,(all-the-icons-octicon "link" :face 'all-the-icons-orange :v-adjust 0.01) . " "))
-        citar-symbol-separator " ")
-  (map! :leader
-        :prefix "n"
-        "b" #'citar-open))
-
+        citar-symbols `((file ,(all-the-icons-faicon
+                                "file-o"
+                                :face 'all-the-icons-green
+                                :v-adjust -0.1)
+                         . " ")
+                        (note ,(all-the-icons-material
+                                "speaker_notes"
+                                :face 'all-the-icons-blue
+                                :v-adjust -0.3)
+                              . " ")
+                        (link ,(all-the-icons-octicon
+                                "link"
+                                :face 'all-the-icons-orange
+                                :v-adjust 0.01)
+                              . " "))
+       )
+  )
 #+end_src
-*** Extra Behaviour
-**** Insert node immediatly
+*** Insert node immediately
 This make the node linking less painfull by two means:
  - Insert a  white space before the node link if it was not present
  - Add the possibility to create an new node without opening its buffer.
@@ -1089,7 +976,7 @@ This make the node linking less painfull by two means:
 )
 
 #+end_src
-**** Image Capture
+*** Image Capture
 This makes easy to add screenshot(s) to a node, and take care of the naming.
 #+name: screenshot
 #+begin_src emacs-lisp
@@ -1098,9 +985,9 @@ This makes easy to add screenshot(s) to a node, and take care of the naming.
 (defun pac/get-new-filename (filename &optional base-name count)
   "return a filename which does not already exists."
   (unless base-name (setq base-name filename))
-  (unless count (setq count 0))
+  (unless count (setq count 1))
 (setq filename (concat (file-name-sans-extension base-name)
-                       (cond ((< 0 count) (concat "_" (number-to-string count)))
+                       (cond ((< 1 count) (concat "_" (number-to-string count)))
                              (t ""))
                        "."
                        (file-name-extension base-name)))
@@ -1113,79 +1000,39 @@ This makes easy to add screenshot(s) to a node, and take care of the naming.
 (defun pac/screenshot-to-roam ()
   "take a screenshot and insert an image link in the org-roam note file"
   (interactive)
-  (let ((filename (pac/get-new-filename (concat (expand-file-name +org-roam-image-directory) (org-id-get) ".png"))))
+  (let ((filename (pac/get-new-filename
+                   (concat
+                    (expand-file-name +org-roam-image-directory)
+                    (org-roam-node-title (org-roam-node-at-point))
+                    ".png"))))
         (shell-command (format "gnome-screenshot -a -f %s" filename))
         (shell-command (format "mogrify -trim %s" filename))
         (insert (concat "[[" filename "]]")))
     (org-display-inline-images)
   )
 #+end_src
-**** Kill all roam buffers
-To clean the note taking session
-#+begin_src emacs-lisp
-(defun pac/kill-roam-buffer ()
-  (interactive)
-  (dolist (buf (buffer-list))
-    (if (string-match (expand-file-name org-roam-directory)
-                      (expand-file-name (or (buffer-file-name buf) "")))
-        (kill-buffer buf))))
-#+end_src
-****  Open an empty node
-#+begin_src emacs-lisp
-
-(defun pac/org-roam-empty-node-list (&optional n)
-  "Return a list of org-roam file with less than n words"
-  (unless n (setq n 10))
-  (let ((raw-output (split-string (shell-command-to-string (concat "wc -w " org-roam-directory "*.org | head -n -1"))))
-        (selected-files 'nil))
-    (while raw-output ;; raw output is ("10" "filename" "283" "filename2") where the first element is the number of word in the next one.
-      (when ( < (string-to-number (pop raw-output)) n)
-        (push (car raw-output) selected-files)
-        )
-      (pop raw-output)
-      )
-    selected-files)
-  )
-
-(defun pac/org-roam-open-empty-random ()
-  (interactive)
-  (let ((selected-files (pac/org-roam-empty-node-list)))
-    (if selected-files
-      (find-file (nth (random (length selected-files)) selected-files))
-      (message "No empty files found"))
-    )
-  )
-
-#+end_src
-**** Binding
+*** Binding
 Lets add convenients key bindings for the functions aboves
 #+name: maps
 #+begin_src emacs-lisp
-        (map! :leader
+(map! :leader
       :prefix-map ("n" . "notes")
       (:prefix ("r" . "roam ")
        :desc "Insert node Immediatly" "I" #'org-roam-node-insert-immediate
        :desc "Insert node" "i" #'pac/org-roam-node-insert-space
        :desc "Insert screenshot" "c" #'pac/screenshot-to-roam
-       :desc "kill all roam buffers" "k" (cmd! () (pac/kill-roam-buffer))))
+       ))
 #+end_src
-**** Dedicated org-roam workspace
-This makes sure that org-roam buffer are open in a dedicated workspace, to prevent them to spread in others.
-#+begin_src emacs-lisp
-(defadvice! yeet/org-roam-in-own-workspace-a (&rest _)
-  "Open all roam buffers in there own workspace."
-  :before #'org-roam-node-find
-  :before #'org-roam-node-random
-  :before #'org-roam-buffer-display-dedicated
-  :before #'org-roam-buffer-toggle
-  (when (featurep! :ui workspaces)
-    (+workspace-switch "*roam*" t)))
-#+end_src
-****
-** Org-Noter
+*** Notes Taking
 #+begin_src emacs-lisp
 (after! org-noter
   (setq org-noter-notes-search-path (list (expand-file-name "bib/" org-roam-directory)))
+  )
+#+end_src
+
+#+begin_src emacs-lisp
+(after! citar
+  (pushnew '("pdf" . citar-file-open-external) citar-file-open-functions)
   )
 #+end_src
 
@@ -1211,7 +1058,8 @@ The template provided by citar is hard coded, so we rewrite =citar-org-format-no
         (org-entry-put 0 "NOTER_DOCUMENT" noter-document)
         (insert "#+title: ")
         (when template (insert note-meta))
-        (insert "\n\n|\n\n#+print_bibliography:")
+      ;;  (insert "\n\n|\n\n#+print_bibliography:")
+        (insert "\n|\n")
         (search-backward "|")
         (delete-char 1)
         (when (fboundp 'evil-insert)
@@ -1219,29 +1067,140 @@ The template provided by citar is hard coded, so we rewrite =citar-org-format-no
 (setq citar-create-note-function 'pac/citar-org-format-note)
 #+end_src
 
-** Build Agenda from notes.
-Build Agenda from Roam Notes: Every note which has a Project tag will be parsed for Todo.
+** Capture and GTD
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! doct)
+#+end_src
+See also  [[id:e20503eb-2a58-46b6-a071-311956b594c2][Workflow]]
+#+begin_src emacs-lisp
+(defvar +org-inbox-file "~/org/inbox.org")
+(defvar +org-calendar-file "~/org/calendar.org")
+(defvar +org-project-dir "~/org/roam/project/")
+(after! org
+
+  (setq org-todo-keywords '((sequence "TODO(t)" "NEXT(n)" "START(s)" "WAIT(w)" "|" "DONE(d)" "MAYBE(m)" "ABORT(a)")
+                            (sequence "[ ](T)" "[?](W)" "|" "[X](D)"))
+        org-modern-todo-faces
+        '(("TODO"  :foreground "Orange Red"    :inverse-video t :weight bold)
+          ("NEXT"  :foreground "Forest Green"  :inverse-video t :weight bold)
+          ("WAIT"  :foreground "Coral"         :inverse-video t :weight bold)
+          ("START" :foreground "Royal Blue"    :inverse-video t :weight bold)
+          ("DONE"  :foreground "Dark Gray"     :inverse-video t :weight bold)
+          ("MAYBE"  :foreground "Orchid"       :inverse-video t :weight bold)
+          )
+        org-todo-keyword-faces
+        '(("TODO"  :foreground "Orange Red"    :weight bold)
+          ("NEXT"  :foreground "Forest Green"  :weight bold)
+          ("WAIT"  :foreground "Coral"         :weight bold)
+          ("START" :foreground "Royal Blue"    :weight bold)
+          ("DONE"  :foreground "Dark Gray"     :weight bold)
+          ("MAYBE"  :foreground "Orchid"       :weight bold)
+          ))
+  )
+#+end_src
+*** Capture
+#+begin_src emacs-lisp
+(defun pac/insert-project ()
+    (interactive "P")
+    (org-roam-node-insert '(lambda (node) (string-match-p "project" (org-roam-node-file node)))))
+#+end_src
+#+begin_src emacs-lisp
+(setq org-capture-templates
+      (doct `(("Work tasks"
+               :file +org-inbox-file
+               :type entry
+               :headline "Tasks"
+               :keys "w"
+               :template ("* TODO %? %^G%{extra}"
+                          "/Entered on/ %U")
+               :children (("General Task"
+                           :keys "t"
+                           :extra "")
+                          ("Deadline"
+                           :keys "d"
+                           :extra "\nDEADLINE: %^{DEADLINE:}t")
+                          ("Scheduled Task"
+                           :keys "s"
+                           :extra "\nSCHEDULED: %^{SCHEDULED:}t")
+                          )
+               )
+              ("Personal tasks"
+               :file +org-inbox-file
+               :type entry
+               :headline "Tasks"
+               :keys "t"
+               :template ("* TODO %? {extra} "
+                          "/Entered on/ %U")
+               :children (("General Task"
+                           :keys "t"
+                           :extra "")
+                          ("Deadline"
+                           :keys "d"
+                           :extra "\nDEADLINE: %^{DEADLINE:}t")
+                          ("Scheduled Task"
+                           :keys "s"
+                           :extra "\nSCHEDULED: %^{SCHEDULED:}t")
+                          )
+               )
+              ("Quick Notes"
+               :keys "n"
+               :file +org-inbox-file
+               :type entry
+               :headline "Notes"
+               :children (("Note"
+                           :keys "n"
+                           :template ("* %?"
+                                      "/Entered on/ %U %i %a"))
+                          ("Feedback"
+                           :keys "f"
+                           :template ("* Feedback on %(pac/insert-project)"
+                                      "/done on/ %U"
+                                      "%?"))))
+              ("Meeting"
+               :keys "m"
+               :file +org-calendar-file
+               :headline "Future"
+               :type entry
+               :template ("*  %? :meeting:"
+                          "<%<%Y-%m-%d %a %H:00>>")
+                )
+              ("Event"
+               :keys "e"
+               :type entry
+               :file +org-calendar-file
+               :headline "Future"
+               :children (("All day long"
+                           :keys "d"
+                           :template "* %^T %?")
+                          ("Event"
+                           :keys "e"
+                           :template "* %^t %?"))
+              ))
+            )
+      )
+#+end_src
+*** Refile
+
+Tasks are refile to project under the =Tasks= headline
 
 #+begin_src emacs-lisp
-(defun pac/org-roam-filter-by-tag (tag-name)
-  (lambda (node)
-    (member tag-name (org-roam-node-tags node))))
-
-(defun pac/org-roam-list-notes-by-tag (tag-name)
-  (mapcar #'org-roam-node-file
-          (seq-filter
-           (pac/org-roam-filter-by-tag tag-name)
-           (org-roam-node-list))))
-
-(defun pac/org-roam-refresh-agenda-list ()
-  (interactive)
-  (pac/add-to-list-multiple 'org-agenda-files (pac/org-roam-list-notes-by-tag "Project")))
-
-;; Build the agenda list the first time for the session
-(pac/org-roam-refresh-agenda-list)
+(setq +org-roam-projects-files (directory-files +org-project-dir t "org$"))
+(setq org-refile-targets '((+org-roam-projects-files . (:regexp . "Tasks"))))
 #+end_src
 
-#+name: holidays settings
+*** Agenda Configuration
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! org-super-agenda)
+#+end_src
+#+begin_src emacs-lisp
+(after! org-agenda
+  (org-super-agenda-mode))
+(setq org-agenda-files ())
+(cl-pushnew +org-inbox-file org-agenda-files)
+(cl-pushnew +org-calendar-file org-agenda-files)
+(cl-pushnew +org-project-dir org-agenda-files)
+#+end_src
+#+name: french-holidays
 #+begin_src emacs-lisp
 (setq french-holiday
       '((holiday-fixed 1 1 "Jour de l'an")
@@ -1284,75 +1243,162 @@ Build Agenda from Roam Notes: Every note which has a Project tag will be parsed 
       calendar-week-start-day 1
       calendar-mark-diary-entries-flag nil)
 #+end_src
+
+#+begin_src emacs-lisp
+(setq org-agenda-skip-scheduled-if-done t
+      org-agenda-skip-deadline-if-done t
+      org-agenda-include-deadlines t
+      org-agenda-block-separator nil
+      org-agenda-tags-column 100 ;; from testing this seems to be a good value
+      org-agenda-compact-blocks t)
+
+(setq org-agenda-custom-commands
+'(("o" "Overview"
+         ((agenda "" ((org-agenda-overriding-header "Agenda")
+                      (org-agenda-span 7)
+                      (org-agenda-start-day "+1d")
+                      (org-super-agenda-groups
+                       '((:name "Today"
+                          :time-grid t
+                          :date today
+                          :scheduled today
+                          :order 1)))))
+          (alltodo "" ((org-agenda-overriding-header "Todos")
+                       (org-super-agenda-groups
+                        '((:name "Next to do"
+                           :todo "NEXT"
+                           :order 10)
+                          (:name "Due Today"
+                           :deadline today
+                           :order 20)
+                          (:name "Overdue"
+                           :deadline past
+                           :face error
+                           :order 30)
+                          (:name "Due Soon"
+                           :deadline future
+                           :order 40)
+                          (:name "Scheduled"
+                           :scheduled future
+                           :order 5)
+                          (:discard (:anything t))
+                          ))))))
+  ("p" "Project Overview"
+        ((todo "" ((org-agenda-overriding-header "Projects")
+                        (org-super-agenda-groups
+                         '((:auto-tags t
+                            :file-path "/projects/"))
+                           )))))))
+#+end_src
+
 * LaTeX
 #+begin_src emacs-lisp
 (after! latex
-  (add-to-list 'TeX-command-list '("XeLaTeX" "%`xelatex%(mode)%' %t" TeX-run-TeX nil t)))
 (add-to-list 'auto-mode-alist '("\\.tikz" . LaTeX-mode))
 (add-to-list 'auto-mode-alist '("\\.pgf" . LaTeX-mode))
+)
+(after! latex
+(add-to-list 'TeX-view-program-selection '(output-pdf "PDF Tools"))
+(add-to-list 'TeX-view-program-list '("PDF Tools" TeX-pdf-tools-sync-view))
+;; Update PDF buffers after successful LaTeX runs.
+(add-hook 'TeX-after-compilation-finished-functions #'TeX-revert-document-buffer)
+)
 #+end_src
-*** Deliminator
-#+begin_src emacs-lisp
-(after! tex
-  (defvar tec/tex-last-delim-char nil
-    "Last open delim expanded in a tex document")
-  (defvar tec/tex-delim-dot-second t
-    "When the `tec/tex-last-delim-char' is . a second character (this) is prompted for")
-  (defun tec/get-open-delim-char ()
-    "Exclusivly read next char to tec/tex-last-delim-char"
-    (setq tec/tex-delim-dot-second nil)
-    (setq tec/tex-last-delim-char (read-char-exclusive "Opening deliminator, recognises: 9 ( [ { < | ."))
-    (when (eql ?. tec/tex-last-delim-char)
-      (setq tec/tex-delim-dot-second (read-char-exclusive "Other deliminator, recognises: 0 9 (  ) [ ] { } < > |"))))
-  (defun tec/tex-open-delim-from-char (&optional open-char)
-    "Find the associated opening delim as string"
-    (unless open-char (setq open-char (if (eql ?. tec/tex-last-delim-char)
-                                          tec/tex-delim-dot-second
-                                        tec/tex-last-delim-char)))
-    (pcase open-char
-      (?\( "(")
-      (?9  "(")
-      (?\[ "[")
-      (?\{ "\\{")
-      (?<  "<")
-      (?|  (if tec/tex-delim-dot-second "." "|"))
-      (_   ".")))
-  (defun tec/tex-close-delim-from-char (&optional open-char)
-    "Find the associated closing delim as string"
-    (if tec/tex-delim-dot-second
-        (pcase tec/tex-delim-dot-second
-          (?\) ")")
-          (?0  ")")
-          (?\] "]")
-          (?\} "\\}")
-          (?\> ">")
-          (?|  "|")
-          (_   "."))
-      (pcase (or open-char tec/tex-last-delim-char)
-        (?\( ")")
-        (?9  ")")
-        (?\[ "]")
-        (?\{ "\\}")
-        (?<  ">")
-        (?\) ")")
-        (?0  ")")
-        (?\] "]")
-        (?\} "\\}")
-        (?\> ">")
-        (?|  "|")
-        (_   "."))))
-  (defun tec/tex-next-char-smart-close-delim (&optional open-char)
-    (and (bound-and-true-p smartparens-mode)
-         (eql (char-after) (pcase (or open-char tec/tex-last-delim-char)
-                             (?\( ?\))
-                             (?\[ ?\])
-                             (?{ ?})
-                             (?< ?>)))))
-  (defun tec/tex-delim-yas-expand (&optional open-char)
-    (yas-expand-snippet (yas-lookup-snippet "_deliminators" 'latex-mode) (point) (+ (point) (if (tec/tex-next-char-smart-close-delim open-char) 2 1)))))
+** lsp-ltex
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! lsp-ltex)
+;; Optional dependency of lsp-ltex,
+;; needed for installing/updating ltex-ls LSP server
+(package! github-tags
+    :recipe (:host github
+            :repo "jcs-elpa/github-tags")
+    :pin "4253db4b6280640202e1d5db25239b165baa0467")
 #+end_src
-*** Editor visuals
 
+#+begin_src emacs-lisp
+;;; lsp-ltex
+
+(use-package! lsp-ltex
+  :commands (+lsp-ltex-toggle
+             +lsp-ltex-enable
+             +lsp-ltex-disable
+             +lsp-ltex-setup)
+  :hook ((latex-mode LaTeX-mode org-mode markdown-mode html-mode bibtex-mode) . #'+lsp-ltex-setup)
+  :init
+  ;; There is some problematic modes when it comes to enabling LSP
+  (defvar +lsp-ltex-disabled-modes '(org-msg-edit-mode))
+  :config
+  ;; Add doom-docs-mode to LSP language IDs
+  (add-to-list 'lsp-language-id-configuration '(doom-docs-org-mode . "org"))
+  :init
+  (setq
+        lsp-ltex-ls-path (expand-file-name "~/softs/ltex-ls-15.2.0")
+        lsp-ltex-check-frequency "save"
+        lsp-ltex-log-level "warning" ;; No need to log everything
+        lsp-ltex-diagnostic-severity "warning"
+        lsp-ltex-enabled ["bibtex" "context" "context.tex"
+                          "html" "latex" "markdown" "org"
+                          "restructuredtext" "rsweave"]
+        ;; Path in which, interactively added words and rules will be stored.
+        lsp-ltex-user-rules-path (expand-file-name "lsp-ltex" doom-data-dir))
+
+  ;; When n-gram data sets are available, use them to detect errors with words
+  ;; that are often confused (like their and there).
+  (when (file-directory-p "/usr/share/ngrams")
+    (setq lsp-ltex-additional-rules-language-model "/usr/share/ngrams"))
+
+  (defun +lsp-ltex-setup ()
+    "Load LTeX LSP server."
+    (interactive)
+    (require 'lsp-ltex)
+    (when (and (+lsp-ltex--enabled-p)
+               (not (memq major-mode +lsp-ltex-disabled-modes)))
+      (lsp-deferred)))
+
+  (defun +lsp-ltex--enabled-p ()
+    (not (memq 'ltex-ls lsp-disabled-clients)))
+
+  (defun +lsp-ltex-enable ()
+    "Enable LTeX LSP for the current buffer."
+    (interactive)
+    (unless (+lsp-ltex--enabled-p)
+      (setq-local lsp-disabled-clients (delq 'ltex-ls lsp-disabled-clients))
+      (message "Enabled ltex-ls"))
+    (+lsp-ltex-setup))
+
+  (defun +lsp-ltex-disable ()
+    "Disable LTeX LSP for the current buffer."
+    (interactive)
+    (when (+lsp-ltex--enabled-p)
+      (setq-local lsp-disabled-clients (cons 'ltex-ls lsp-disabled-clients))
+      (lsp-disconnect)
+      (message "Disabled ltex-ls")))
+
+  (defun +lsp-ltex-toggle ()
+    "Toggle LTeX LSP for the current buffer."
+    (interactive)
+    (if (+lsp-ltex--enabled-p)
+        (+lsp-ltex-disable)
+      (+lsp-ltex-enable)))
+
+  (map! :localleader
+        :map (text-mode-map latex-mode-map LaTeX-mode-map org-mode-map markdown-mode-map)
+        :desc "Toggle grammar check" "G" #'+lsp-ltex-toggle))
+
+;; (after! lsp-ltex
+;;   (advice-add
+;;    '+lsp-ltex-setup :after
+;;    (lambda ()
+;;      (setq-local lsp-idle-delay 5.0
+;;                  lsp-progress-function #'lsp-on-progress-legacy
+;;                  lsp-progress-spinner-type 'half-circle
+;;                  lsp-ui-sideline-show-code-actions nil
+;;                  lsp-ui-sideline-show-diagnostics nil
+;;                  lsp-ui-sideline-enable nil)))
+;;   )
+
+#+end_src
+** Editor visuals
 Let's enhance ~TeX-fold-math~ a bit
 #+begin_src emacs-lisp
 
@@ -1388,10 +1434,11 @@ Let's enhance ~TeX-fold-math~ a bit
       TeX-fold-macro-spec-list
       '(
         ;; as the defaults
-        ("[f]" ("footnote" "marginpar"))
-        ("[c]" ("cite"))
-        ("[l]" ("label"))
-        ("[r]" ("ref" "pageref" "eqref"))
+        ("[f]{{1}}" ("footnote" "marginpar"))
+        ("[{1}]" ("cite"))
+        ("[l]{{1}}" ("label"))
+        ("[r]{{1}}" ("ref" "pageref" "Cref" "cref"))
+        ("({1})"    ("eqref"))
         ("[i]" ("index" "glossary"))
         ("..." ("dots"))
         ("{1}" ("emph" "textit" "textsl" "textmd" "textrm" "textsf" "texttt"
@@ -1472,36 +1519,6 @@ Such special cases should be remapped to another value, as given in `string-offs
   "Return t if TESTSTRING appears to be a single token, nil otherwise"
   (if (string-match-p "^\\\\?\\w+$" teststring) t nil))
 #+end_src
-** CD LaTeX
-The symbols and modifies are very nice by default, but could do with a bit of
-fleshing out. Let's change the prefix to a key which is similarly rarely used,
-but more convenient, like =;=.
-#+begin_src emacs-lisp
-(after! cdlatex
-  (setq  cdlatex-math-symbol-prefix ?\;
-   cdlatex-math-symbol-alist
-   '( ;; adding missing functions to 3rd level symbols
-     (?_    ("\\downarrow"  ""           "\\inf"))
-     (?2    ("^2"           "\\sqrt{?}"     ""     ))
-     (?3    ("^3"           "\\sqrt[3]{?}"  ""     ))
-     (?^    ("\\uparrow"    ""           "\\sup"))
-     (?k    ("\\kappa"      ""           "\\ker"))
-     (?m    ("\\mu"         ""           "\\lim"))
-     (?c    (""             "\\circ"     "\\cos"))
-     (?d    ("\\delta"      "\\partial"  "\\dim"))
-     (?D    ("\\Delta"      "\\nabla"    "\\deg"))
-     ;; no idea why \Phi isnt on 'F' in first place, \phi is on 'f'.
-     (?F    ("\\Phi"))
-     ;; now just convenience
-     (?.    ("\\cdot" "\\dots"))
-     (?:    ("\\vdots" "\\ddots"))
-     (?*    ("\\times" "\\star" "\\ast")))
-   cdlatex-math-modify-alist
-   '( ;; my own stuff
-     (?B    "\\mathbb"   nil t    nil  nil)
-     (?b    "\\bm"       nil t    nil  nil)
-     (?a    "\\abs"      nil t    nil  nil))))
-#+end_src
 * Python
 #+begin_src emacs-lisp :tangle "packages.el"
 (package! numpydoc)
@@ -1509,13 +1526,6 @@ but more convenient, like =;=.
 (package! python-black)
 #+end_src
 #+begin_src emacs-lisp
-(after! lsp-pyright
-  (setq lsp-log-io t
-        lsp-pyright-typechecking-mode "off"
-        )
-   )
-
-
 (setq! pyenv-mode-mode-line-format nil)
 (use-package! docstr
   :config (setq docstr-python-style 'numpy))
@@ -1527,8 +1537,14 @@ but more convenient, like =;=.
 ;; (use-package! numpydoc
 ;;   :config (setq numpydoc-insertion-style nil
 ;;                 numpydoc-insert-examples-bloc nil))
+(after! projectile
+(projectile-register-project-type 'python-toml '("pyproject.toml")
+                                  :project-file "pyproject.toml"
+                                  :test "python -m unittest discover"
+                                  :test-prefix "test_"
+                                  :test-suffix"_test")
+)
 #+end_src
-
 ** Edit Docstring in rst-mode in separate buffer
 #+begin_src emacs-lisp
 (setq numpy-doc-keywords
@@ -1590,11 +1606,41 @@ Adapted and improve from https://gist.github.com/fleimgruber/cd2386d8326fad3e0e2
       :desc "Edit docstring in RST" "d" #'edit-indirect-rst)
 #+end_src
 
-* C & C++
 #+begin_src emacs-lisp
- (add-hook 'cuda-mode-local-vars-hook #'ccls)
-
-(after! (lsp-clangd)
-(add-to-list 'lsp-clients-clangd-args "--query-driver=/usr/bin/**"))
-
 #+end_src
+* LSP-mode config
+#+begin_src emacs-lisp
+(setq!
+ lsp-use-plists "true"
+ lsp-headerline-breadcrumb-enable t
+ lsp-enable-symbol-highlighting t
+ lsp-ui-doc-show-with-mouse t
+ lsp-pylsp-plugins-pyflakes-enabled t
+ lsp-pylsp-plugins-pydocstyle-convention "numpy"
+ lsp-pylsp-plugins-pydocstyle-add-ignore ["D102"]
+ lsp-pylsp-plugins-pycodestyle-ignore ["D102"]
+ lsp-pylsp-plugins-flake8-max-line-length 180
+ lsp-pylsp-plugins-pycodestyle-max-line-length 180
+
+ )
+#+end_src
+* Test
+
+
+This a test heading
+
+| Table             | Column       |
+|-------------------+--------------|
+| Row               | <2022-10-01> |
+| Row2 <2021-10-02> |              |
+
+
+*** Test headings
+IMHO this looks great.
+**** TODO Test
+**** NEXT Test
+**** WAIT test
+**** START Test
+**** DONE Test
+**** MAYBE  test
+**** ABORT Test
