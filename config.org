@@ -703,7 +703,7 @@ text --- like this \(\sqrt{\beta^2+3}-\sum_{\phi=1}^\infty \frac{x^\phi-1}{\Gamm
 \\usepackage{bm}
 \\DeclareMathOperator*{\\argmin}{arg\\,min}
 \\DeclareMathOperator*{\\diag}{diag}
-
+\\newcommand{\\st}{\\quad\\mathrm{s.t}\\quad}
 \\newcommand{\\prox}{\\operatorname{prox}}
 \\newcommand{\\dom}{\\operatorname{dom}}
 \\newcommand{\\Fix}{\\operatorname{Fix}}
