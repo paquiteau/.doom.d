@@ -1637,24 +1637,27 @@ Adapted and improve from https://gist.github.com/fleimgruber/cd2386d8326fad3e0e2
 
 #+begin_src emacs-lisp
 #+end_src
-* LSP-mode config
+** LSP-mode config
+
+Basically, enable flake8, and lets the local configuratio do it job with flake8 plugins.
 #+begin_src emacs-lisp
 (setq!
  lsp-use-plists "true"
  lsp-headerline-breadcrumb-enable t
  lsp-enable-symbol-highlighting t
  lsp-ui-doc-show-with-mouse t
- lsp-pylsp-plugins-pyflakes-enabled t
- lsp-pylsp-plugins-pydocstyle-convention "numpy"
- lsp-pylsp-plugins-pydocstyle-add-ignore ["D102"]
+ lsp-pylsp-plugins-pyflakes-enabled nil
+ lsp-pylsp-plugins-pydocstyle-enabled nil
+ lsp-pylsp-plugins-pylint-enabled nil
  lsp-pylsp-plugins-pycodestyle-ignore ["D102"]
  lsp-pylsp-plugins-flake8-max-line-length 180
  lsp-pylsp-plugins-pycodestyle-max-line-length 180
 
  )
 #+end_src
-* Test
 
+** TODO  Setup pylsp installation here
+ install python-lsp-server, flake8 flake8 plugins etc
 * LaTeX OCR
 Using [[pix2tex][https://github.com/lukas-blecher/LaTeX-OCR]], a free alternative to mathpix OCR
 
