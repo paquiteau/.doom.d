@@ -604,17 +604,18 @@ let's change that, and do a few other similar tweaks while we're at it.
    org-latex-pdf-process '("latexmk -f -pdf -%latex -shell-escape -interaction=nonstopmode -output-directory=%o %f")
    org-latex-listings 'minted
    org-latex-packages-alist '(("" "minted") ("margin=1cm" "geometry" nil))
+;;   org-preview-latex-default-process 'dvisvgm   ;No blur when scaling
+   org-startup-with-latex-preview nil
+   org-pretty-entities-include-sub-superscripts nil ; Don't hide the _ and ^
    org-list-allow-alphabetical t               ; have a. A. a) A) list bullets
    org-list-demote-modify-bullet '(("+" . "-") ("-" . "+") ("*" . "+") ("1." . "a."))
    org-log-done 'time                          ; having the time a item is done sounds convenient
-   org-pretty-entities-include-sub-superscripts nil ; Don't hide the _ and ^
-   org-preview-latex-default-process 'dvisvgm   ;No blur when scaling
-   org-startup-indented nil
-   org-startup-with-latex-preview  t
+   org-startup-indented t
    org-use-property-inheritance t              ; it's convenient to have properties inherited
-   +org-latex-preview-scale 0.66
+   +org-latex-preview-scale 1.0
    )
   )
+;; Word Count in org mode
 (after! org
   (load! "org-wc.el"))
 ; cd-latex support
