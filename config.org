@@ -313,7 +313,7 @@ let's improve that memory.
   '((en . ("en_US" "English" "US" "English"))
     (fr . ("fr_FR" "French" "FR" "French"))))
 
-(add-hook! org-mode #'guess-language-mode)
+(add-hook! text-mode #'guess-language-mode)
 #+end_src
 
 ** Org Chef
