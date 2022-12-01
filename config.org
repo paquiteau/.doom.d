@@ -424,29 +424,7 @@ And add some custom functions provided by =blamer= author:
   (setq markdown-fontify-code-blocks-natively t)
 )
 #+end_src
-** Mathpix
-Mathpix has move to an pay per call api , we need to find an alternative.
-#+begin_src emacs-lisp
-(load! "lisp/mathpix.el")
-(setq-default mathpix-app-id paquiteau-mathpix-id
-              mathpix-app-key paquiteau-mathpix-key)
-#+end_src
 
-#+begin_src emacs-lisp
-(defun pac/mathpix-insert (mathdelim)
-  (unless (texmathp)
-    (insert mathdelim)
-    (backward-char 2))
-  (mathpix-screenshot)
-  (forward-char 2)
-  )
-
-(map! :leader
-      :prefix "i"
-       "m" (cmd! (pac/mathpix-insert "\\(\\)"))
-       "M" (cmd! (interactive) (pac/mathpix-insert "\\[\\]"))
-      )
-#+end_src
 ** Mixed-pitch
 #+begin_src emacs-lisp
 (use-package! mixed-pitch
@@ -1625,6 +1603,46 @@ Adapted and improve from https://gist.github.com/fleimgruber/cd2386d8326fad3e0e2
 #+end_src
 * Test
 
+* LaTeX OCR
+Using [[pix2tex][https://github.com/lukas-blecher/LaTeX-OCR]], a free alternative to mathpix OCR
+
+=pix2tex= command is installed in a virtualenv of the same name.
+#+begin_src emacs-lisp
+(setq latex-ocr-screenshot-file
+  (expand-file-name "latex-ocr.png" temporary-file-directory))
+(setq latex-ocr-screenshot-cmd "gnome-screenshot -a -f %s" )
+(setq latex-ocr-pix2tex-cmd "PYENV_VERSION=pix2tex pix2tex %s 2>/dev/null")
+(defun pix2tex-screenshot()
+  (interactive)
+  (let ((default-directory "~"))
+  (make-directory (file-name-directory latex-ocr-screenshot-file) t)
+  (shell-command-to-string (format latex-ocr-screenshot-cmd latex-ocr-screenshot-file))
+  ;; output string is "filename: <latex-formula>"
+  ;; so we parse it and return the formula
+  (insert (car (cdr (s-split-up-to
+             ":"
+             (shell-command-to-string (format
+                                       latex-ocr-pix2tex-cmd
+                                       latex-ocr-screenshot-file))
+             1))))))
+#+end_src
+
+#+begin_src emacs-lisp
+(defun pac/latex-ocr-insert (mathdelim)
+  (unless (texmathp)
+    (insert mathdelim)
+    (backward-char 2))
+  (pix2tex-screenshot)
+  (forward-char 2)
+  )
+
+(map! :leader
+      :prefix "i"
+       "m" (cmd! (pac/latex-ocr-insert "\\(\\)"))
+       "M" (cmd! (interactive) (pac/latex-ocr-insert "\\[\\]"))
+      )
+#+end_src
+* Test
 
 This a test heading
 
