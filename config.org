@@ -1556,6 +1556,24 @@ Such special cases should be remapped to another value, as given in `string-offs
                                   :test-suffix"_test")
 )
 #+end_src
+
+Fix highlighting errors from tree-sitter.
+#+begin_src emacs-lisp
+(tree-sitter-hl-add-patterns 'python
+        [
+         ((expression_statement (assignment)) \. (expression_statement (string) @doc))
+         (function_definition body:
+                              (block \.
+                                (expression_statement
+                                 (string)
+                                 @doc)))
+         (class_definition body:
+                           (block \.
+                             (expression_statement
+                              (string)
+                              @doc)))])
+  #+end_src
+
 ** Edit Docstring in rst-mode in separate buffer
 #+begin_src emacs-lisp
 (setq numpy-doc-keywords
