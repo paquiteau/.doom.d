@@ -1010,8 +1010,13 @@ Lets add convenients key bindings for the functions aboves
 
 #+begin_src emacs-lisp
 (after! citar
+  (setq citar-org-roam-subdir "bib")
   (pushnew '("pdf" . citar-file-open-external) citar-file-open-functions)
-  )
+
+(map! :leader
+      :prefix "i"
+       "b" 'citar-insert-reference))
+
 #+end_src
 
 The template provided by citar is hard coded, so we rewrite =citar-org-format-note-default= to add org noter properties
@@ -1042,7 +1047,7 @@ The template provided by citar is hard coded, so we rewrite =citar-org-format-no
         (delete-char 1)
         (when (fboundp 'evil-insert)
           (evil-insert 1)))))
-(setq citar-create-note-function 'pac/citar-org-format-note)
+;; (setq citar-create-note-function 'pac/citar-org-format-note)
 #+end_src
 
 ** Capture and GTD
