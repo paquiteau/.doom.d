@@ -657,13 +657,12 @@ functionality as in LaTeX. Let's try viewing possible output files with this.
 (defvar org-view-external-file-extensions '("html")
   "File formats that should be opened externally.")
 #+end_src
-**  LaTeX fragments
+** LaTeX fragments
 For automatically toggling LaTeX fragment previews as the cursor moves in and
 out of them there's this nice package
 #+begin_src emacs-lisp :tangle "packages.el"
 (package! org-fragtog)
 (package! texfrag)
-;;(package! org-auctex :recipe (:host github :repo "karthink/org-auctex" :files ("*.el")))
 #+end_src
 
 What's better than syntax-highlighted LaTeX is /rendered/ LaTeX though, and we can
