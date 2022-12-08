@@ -285,18 +285,6 @@ let's improve that memory.
     company-files
     company-yasnippet))
 #+end_src
-** Coverage
-
-#+begin_src emacs-lisp :tangle "packages.el"
-(package! cov)
-#+end_src
-** Doom Modeline
-#+begin_src emacs-lisp
-(after! doom-modeline
-  (doom-modeline-def-modeline 'main
-    '(bar matches buffer-info remote-host buffer-position parrot selection-info)
-    '(misc-info minor-modes checker input-method buffer-encoding major-mode process vcs "    "))) ;; padding on the right.
-#+end_src
 ** Spell
 #+begin_src emacs-lisp
 (setq ispell-personal-dictionary (expand-file-name ".ispell_personal" doom-private-dir))
@@ -601,10 +589,7 @@ let's change that, and do a few other similar tweaks while we're at it.
    org-use-sub-superscripts t       ; don't treat lone _ / ^ as sub/superscripts, require _{} / ^{}
    org-fontify-quote-and-verse-blocks t        ; /italic/ for quotes.
    org-highlight-latex-and-related '(native script entities)
-   org-latex-pdf-process '("latexmk -f -pdf -%latex -shell-escape -interaction=nonstopmode -output-directory=%o %f")
-   org-latex-listings 'minted
-   org-latex-packages-alist '(("" "minted") ("margin=1cm" "geometry" nil))
-;;   org-preview-latex-default-process 'dvisvgm   ;No blur when scaling
+   org-preview-latex-default-process 'dvisvgm   ;No blur when scaling
    org-startup-with-latex-preview nil
    org-pretty-entities-include-sub-superscripts nil ; Don't hide the _ and ^
    org-list-allow-alphabetical t               ; have a. A. a) A) list bullets
@@ -625,6 +610,19 @@ let's change that, and do a few other similar tweaks while we're at it.
   :after #'org-cdlatex-environment-indent
   (org-edit-latex-environment))
 #+end_src
+** LaTeX Export
+#+begin_src emacs-lisp
+(after! org
+  (setq
+   org-latex-pdf-process '("latexmk -f -pdf -%latex -shell-escape -interaction=nonstopmode -output-directory=%o %f")
+   org-latex-listings 'minted
+   org-latex-packages-alist '(("" "minted") ("margin=1cm" "geometry" nil))
+   org-cite-global-bibliography '("~/org/library.bib")
+   )
+  )
+
+#+end_src
+
 ** View exported file
 ='localeader v= has no pre-existing binding, so I may as well use it with the same
 functionality as in LaTeX. Let's try viewing possible output files with this.
@@ -668,8 +666,8 @@ out of them there's this nice package
 What's better than syntax-highlighted LaTeX is /rendered/ LaTeX though, and we can
 have this be performed automatically with =org-fragtog=.
 #+begin_src emacs-lisp
-(use-package! org-fragtog
-  :hook (org-mode . org-fragtog-mode))
+;; (use-package! org-fragtog
+;;   :hook (org-mode . org-fragtog-mode))
 
 #+end_src
 It's nice to customize the look of LaTeX fragments so they fit better in the
@@ -809,6 +807,9 @@ buffer's text scale."
     (message "Latex numbering disabled.")))
 #+end_src
 
+#+begin_src emacs-lisp
+(load! "lisp/org-auctex.el")
+#+end_src
 ** Visuals Style
 *** Org-Modern
 Rincing Org easily
@@ -1539,7 +1540,10 @@ Such special cases should be remapped to another value, as given in `string-offs
 (package! numpydoc)
 (package! docstr)
 (package! python-black)
+(package! xml+)
+(package!  nose :disable t)
 #+end_src
+
 #+begin_src emacs-lisp
 (setq! pyenv-mode-mode-line-format nil)
 (use-package! docstr
@@ -1559,6 +1563,7 @@ Such special cases should be remapped to another value, as given in `string-offs
                                   :test-prefix "test_"
                                   :test-suffix"_test")
 )
+(load! "lisp/python-coverage.el")
 #+end_src
 
 Fix highlighting errors from tree-sitter.
