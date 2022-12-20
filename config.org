@@ -109,8 +109,8 @@ Behold, the big =setq=
 #+begin_src emacs-lisp
 (custom-set-faces!
   '(doom-modeline-buffer-modified :foreground "orange")
-  '(mode-line :family "Noto Sans" :height 0.9)
-  '(mode-line-inactive :family "Noto Sans" :height 0.9)
+  '(mode-line :family "Noto" :height 0.9)
+  '(mode-line-inactive :family "Noto" :height 0.9)
   '(markdown-header-face-1 :height 1.25 :weight extra-bold :inherit markdown-header-face)
   '(markdown-header-face-2 :height 1.15 :weight bold       :inherit markdown-header-face)
   '(markdown-header-face-3 :height 1.08 :weight bold       :inherit markdown-header-face)
