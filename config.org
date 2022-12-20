@@ -37,13 +37,14 @@ Behold, the big =setq=
  +workspaces-switch-project-function #'magit-status
  auth-source-cache-expiry nil
  auth-sources '("~/.authinfo.gpg")
+ all-the-icons-scale-factor 1.1
  auto-save-default t                         ; Nobody likes to loose work, I certainly don't
  display-line-numbers-type nil
  display-time-default-load-average t
  display-time-mode t
  display-time-24hr-format t
  ;; doom modeline
- doom-modeline-height 10
+ doom-modeline-height 8
  doom-modeline-icon t
  doom-modeline-persp-icon t
  doom-modeline-persp-name t
