@@ -1016,7 +1016,7 @@ This makes easy to add screenshot(s) to a node, and take care of the naming.
   (let ((filename (pac/get-new-filename
                    (concat
                     (expand-file-name +org-roam-image-directory)
-                    (org-roam-node-title (org-roam-node-at-point))
+                    (org-roam-node-slug (org-roam-node-at-point))
                     ".png"))))
         (shell-command (format "gnome-screenshot -a -f %s" filename))
         (shell-command (format "mogrify -trim %s" filename))
