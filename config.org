@@ -148,6 +148,36 @@ than having to call `add-to-list' multiple times."
   (dolist (item to-add)
     (add-to-list l item)))
 #+end_src
+
+#+begin_src emacs-lisp :tangle yes
+  (defun wrap-at-sentences ()
+  "Fills the current paragraph, but starts each sentence on a new line."
+  (interactive)
+  (save-excursion
+    ;; Select the entire paragraph.
+    (mark-paragraph)
+    ;; Move to the start of the paragraph.
+    (goto-char (region-beginning))
+    ;; Record the location of the end of the paragraph.
+    (setq end-of-paragraph (region-end))
+    ;; Wrap lines with 'hard' newlines (i.e., real line breaks).
+    (let ((use-hard-newlines 't))
+      ;; Loop over each sentence in the paragraph.
+      (while (< (point) end-of-paragraph)
+        ;; Determine the region spanned by the sentence.
+        (setq start-of-sentence (point))
+        (forward-sentence)
+        (forward-char)
+        ;; Wrap the sentence with hard newlines.
+        ;(fill-region start-of-sentence (point))
+        ;; Delete the whitespace following the period, if any.
+        (while (char-equal (char-syntax (preceding-char)) ?\s)
+          (delete-char -1))
+        ;; Insert a newline before the next sentence.
+        (insert "\n")))))
+
+#+end_src
+
 *** Emacs client wrapper
 I frequently want to make use of Emacs while in a terminal emulator. To make
 this easier, I can construct a few handy aliases.
