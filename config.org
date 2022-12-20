@@ -1124,41 +1124,45 @@ See also  [[id:e20503eb-2a58-46b6-a071-311956b594c2][Workflow]]
 #+end_src
 #+begin_src emacs-lisp
 (setq org-capture-templates
-      (doct `(("Work tasks"
+      (doct `((:group "Task"
+               :template ("* TODO %? :%{tag}:"
+                          "%{timing}"
+                          ":PROPERTIES:"
+                          ":Created: %U"
+                          ":END:")
+
                :file +org-inbox-file
                :type entry
-               :headline "Tasks"
-               :keys "w"
-               :template ("* TODO %? %^G%{extra}"
-                          "/Entered on/ %U")
-               :children (("General Task"
-                           :keys "t"
-                           :extra "")
-                          ("Deadline"
-                           :keys "d"
-                           :extra "\nDEADLINE: %^{DEADLINE:}t")
-                          ("Scheduled Task"
-                           :keys "s"
-                           :extra "\nSCHEDULED: %^{SCHEDULED:}t")
-                          )
-               )
-              ("Personal tasks"
-               :file +org-inbox-file
-               :type entry
-               :headline "Tasks"
-               :keys "t"
-               :template ("* TODO %? {extra} "
-                          "/Entered on/ %U")
-               :children (("General Task"
-                           :keys "t"
-                           :extra "")
-                          ("Deadline"
-                           :keys "d"
-                           :extra "\nDEADLINE: %^{DEADLINE:}t")
-                          ("Scheduled Task"
-                           :keys "s"
-                           :extra "\nSCHEDULED: %^{SCHEDULED:}t")
-                          )
+               :children (
+                          ("Work Task"
+                           :keys "w"
+                           :tag "WORK"
+                           :children (("General Task"
+                                       :keys "w"
+                                       :timing "")
+                                      ("Work Deadline"
+                                       :keys "d"
+                                       :timing "DEADLINE: %^{DEADLINE:}t")
+                                      ("Work Scheduled Task"
+                                       :keys "s"
+                                       :timing "SCHEDULED: %^{SCHEDULED:}t")
+                                      )
+                           )
+                          ("Personal Task"
+                           :keys "p"
+                           :tag "HOME"
+                           :children (("Personal General Task"
+                                       :keys "t"
+                                       :timing "")
+                                      ("Personal Deadline"
+                                       :keys "d"
+                                       :timing "\nDEADLINE: %^{DEADLINE:}t")
+                                      ("Personal Scheduled Task"
+                                       :keys "s"
+                                       :timing "\nSCHEDULED: %^{SCHEDULED:}t")
+                                      )
+
+                           ))
                )
               ("Quick Notes"
                :keys "n"
@@ -1181,7 +1185,7 @@ See also  [[id:e20503eb-2a58-46b6-a071-311956b594c2][Workflow]]
                :type entry
                :template ("*  %? :meeting:"
                           "<%<%Y-%m-%d %a %H:00>>")
-                )
+               )
               ("Event"
                :keys "e"
                :type entry
@@ -1193,7 +1197,7 @@ See also  [[id:e20503eb-2a58-46b6-a071-311956b594c2][Workflow]]
                           ("Event"
                            :keys "e"
                            :template "* %^t %?"))
-              ))
+               ))
             )
       )
 #+end_src
