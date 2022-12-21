@@ -12,8 +12,8 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(doom-modeline-buffer-modified ((t (:foreground "orange"))))
- '(mode-line ((t (:family "Noto Sans" :height 0.9))))
- '(mode-line-inactive ((t (:family "Noto Sans" :height 0.9))))
+ '(mode-line ((t (:family "Noto" :height 0.9))))
+ '(mode-line-inactive ((t (:family "Noto" :height 0.9))))
  '(org-document-title ((t (:height 1.2))))
  '(outl (ine-5 :weight semi-bold :height 1.06))
  '(outline-1 ((t (:weight extra-bold :height 1.25))))

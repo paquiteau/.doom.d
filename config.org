@@ -1685,7 +1685,7 @@ Adapted and improve from https://gist.github.com/fleimgruber/cd2386d8326fad3e0e2
 
 #+begin_src emacs-lisp
 #+end_src
-** LSP-mode config
+** ABORT LSP-mode config
 
 Basically, enable flake8, and lets the local configuratio do it job with flake8 plugins.
 #+begin_src emacs-lisp
@@ -1705,16 +1705,47 @@ Basically, enable flake8, and lets the local configuratio do it job with flake8 
  )
 #+end_src
 
+** Ruff LSP
+
+Ruff is awesome, and it has a lsp client !
 #+begin_src emacs-lisp
-(lsp-register-client
- (make-lsp-client :new-connection (lsp-stdio-connection '("ruff-lsp"))
-                  :major-modes '(python-mode)
-                  :priority 0
-                  :server-id 'lsp-python-ruff)
- )
+
+(after! lsp-mode
+    (lsp-register-client
+    (make-lsp-client :new-connection (lsp-stdio-connection '("ruff-lsp"
+                                                             "--args="))
+                    :major-modes '(python-mode)
+                    :priority -1
+                    :server-id 'lsp-python-ruff)
+    )
+    (defcustom-lsp lsp-ruff-args ["--line-length=10"]
+      "arguments for ruff."
+      :group 'lsp-pytohn-ruff
+      :type 'vector
+      :lsp-path "ruff-lsp.args"
+    )
+
+    ;; pylsp integration, not really working....
+  (defcustom-lsp lsp-pylsp-plugin-ruff-enabled t
+    "enable ruff"
+    :group 'lsp-pylsp
+    :type 'boolean
+    :lsp-path "pylsp.plugins.ruff.enabled")
+  (defcustom-lsp lsp-pylsp-plugin-ruff-select ["F", "E", "W", "I"]
+    "enable ruff"
+    :group 'lsp-pylsp
+    :type 'vector
+    :lsp-path "pylsp.plugins.ruff.select")
+
+  (defcustom-lsp lsp-pylsp-plugin-ruff-linelength 10
+    "enable ruff"
+    :group 'lsp-pylsp
+    :type 'vector
+    :lsp-path "pylsp.plugins.ruff.lineLength")
+
+
+                )
 #+end_src
-** TODO  Setup pylsp installation here
- install python-lsp-server, flake8 flake8 plugins etc
 * LaTeX OCR
 Using [[pix2tex][https://github.com/lukas-blecher/LaTeX-OCR]], a free alternative to mathpix OCR
 

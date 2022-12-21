@@ -1,0 +1,7 @@
+# key: npt
+# name: npt
+# uuid: npt
+# group: general
+# --
+import numpy.testing as npt
+$0
