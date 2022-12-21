@@ -1715,7 +1715,7 @@ Ruff is awesome, and it has a lsp client !
     (make-lsp-client :new-connection (lsp-stdio-connection '("ruff-lsp"
                                                              "--args="))
                     :major-modes '(python-mode)
-                    :priority -1
+                    :priority 100
                     :server-id 'lsp-python-ruff)
     )
     (defcustom-lsp lsp-ruff-args ["--line-length=10"]
