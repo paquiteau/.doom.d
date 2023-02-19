@@ -23,8 +23,6 @@
 ** Headers for tangle
 
 #+begin_src emacs-lisp
-(load! "secrets.el")
-
 (setq-default custom-file (expand-file-name ".custom.el" doom-private-dir))
 (when (file-exists-p custom-file)
   (load custom-file))
