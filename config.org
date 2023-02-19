@@ -443,6 +443,43 @@ At some point I would like this to be a dash board of all my projects.
 (setq magit-repository-directories '(("~/gits/nsp" . 1) ("~/gits/rep/" . 1)))
 )
 #+end_src
+
+*** Conventional Commit
+inspired by:
+ - http://www.modernemacs.com/post/pretty-magit/ for the elisp
+ - https://www.conventionalcommits.org/en/v1.0.0/
+
+#+begin_src emacs-lisp
+(setq conventional-commit-type  '(("feat" . " A new feature")
+                                  ("fix" . " A bug fix")
+                                  ("docs" . " Documentation only changes")
+                                  ("style" . " Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc)")
+                                  ("refactor" . " A code change that neither fixes a bug nor adds a feature")
+                                  ("perf" . " A code change that improves performance")
+                                  ("test" . " Adding missing tests or correcting existing tests")
+                                  ("chore" . " Changes to the build process or auxiliary tools and libraries such as documentation generation")))
+
+(setq use-magit-commit-prompt-p nil)
+(defun use-magit-commit-prompt (&rest args)
+  (setq use-magit-commit-prompt-p t))
+
+(defun pac/conventional-type-prompt ()
+  (interactive)
+  (when use-magit-commit-prompt-p
+    (setq use-magit-commit-prompt-p nil)
+    (let ((completion-exra-properties '(:annotation-function (lambda (cand) (cdr (assoc cand conventional-commit-type))))))
+      (setq type (completing-read "Commit type: " conventional-commit-type nil t))
+      (setq scope (read-string "scope: "))
+      (message scope)
+      (unless (string-empty-p scope) (setq scope (format "(%s)" scope))) ;; only format scope when non empty.
+      (insert (format "%s%s: " type scope))
+    (evil-insert 1)
+      )))
+(remove-hook 'git-commit-setup-hook 'with-editor-usage-message)
+(add-hook 'git-commit-setup-hook 'pac/conventional-type-prompt)
+(advice-add 'magit-commit :after 'use-magit-commit-prompt)
+#+end_src
+
 ** Blamer
 Lets directly blame others
 #+begin_src emacs-lisp :tangle "packages.el"
