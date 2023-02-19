@@ -69,7 +69,7 @@ Behold, the big =setq=
  password-cache-expiry nil                   ; I can trust my computers ... can't I?
  projectile-ignored-projects '("~/" "/tmp" "~/.emacs.d/.local/straight/repos/")
  projectile-ignored-projects '("~/" "/tmp" "~/.emacs.d/.local/straight/repos/")
- projectile-project-search-path '("~/gits/nsp/" "~/gits/rep/")
+ projectile-project-search-path '(("~/gits/nsp/" . 1) ("~/gits/rep/" . 1))
  read-process-output-max (* 1024 1024)
  scroll-margin 2
  system-time-locale "C"
