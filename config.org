@@ -1502,9 +1502,9 @@ Such special cases should be remapped to another value, as given in `string-offs
 
 #+end_src
 * Python
+
+Python is my main programming language, so let's make it even better.
 #+begin_src emacs-lisp :tangle "packages.el"
-(package! numpydoc)
-(package! docstr)
 (package! python-black)
 (package! xml+)
 (package!  nose :disable t)
@@ -1512,8 +1512,6 @@ Such special cases should be remapped to another value, as given in `string-offs
 
 #+begin_src emacs-lisp
 (setq! pyenv-mode-mode-line-format nil)
-(use-package! docstr
-  :config (setq docstr-python-style 'numpy))
 
 (use-package! python-black
   :after python
@@ -1529,6 +1527,8 @@ Such special cases should be remapped to another value, as given in `string-offs
                                   :test-prefix "test_"
                                   :test-suffix"_test")
 )
+
+;; And be able to see the coverage direcly in buffer is nice.
 (load! "lisp/python-coverage.el")
 #+end_src
 
@@ -1548,6 +1548,11 @@ Fix highlighting errors from tree-sitter.
                               (string)
                               @doc)))])
   #+end_src
+
+Use the correct sphinx build in environment.
+#+begin_src emacs-lisp
+(setq! flycheck-rst-sphinx-executable "pyenv exec sphinx-build")
+#+end_src
 
 ** Edit Docstring in rst-mode in separate buffer
 #+begin_src emacs-lisp
@@ -1612,7 +1617,7 @@ Adapted and improve from https://gist.github.com/fleimgruber/cd2386d8326fad3e0e2
 
 #+begin_src emacs-lisp
 #+end_src
-** ABORT LSP-mode config
+** LSP-mode config
 
 Basically, enable flake8, and lets the local configuratio do it job with flake8 plugins.
 #+begin_src emacs-lisp
@@ -1621,6 +1626,7 @@ Basically, enable flake8, and lets the local configuratio do it job with flake8 
  lsp-headerline-breadcrumb-enable t
  lsp-enable-symbol-highlighting t
  lsp-ui-doc-show-with-mouse t
+ lsp-pylsp-plugins-jedi-use-pyenv-environment t
  lsp-pylsp-plugins-pyflakes-enabled nil
  lsp-pylsp-plugins-pydocstyle-enabled nil
  lsp-pylsp-plugins-pylint-enabled nil
