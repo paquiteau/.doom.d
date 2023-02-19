@@ -423,8 +423,25 @@ Variable pitch fontification + colouring
 Let's add personal forges:
 #+begin_src emacs-lisp
 (after! forge
-  (add-to-list 'forge-alist '("gitlab.crans.org" "gitlab.crans.org/api/v4" "gitlab.crans.org" forge-gitlab-repository))
-                )
+  (add-to-list 'forge-alist '("gitlab.crans.org" "gitlab.crans.org/api/v4" "gitlab.crans.org" forge-gitlab-repository)))
+#+end_src
+And configure the repository list.
+At some point I would like this to be a dash board of all my projects.
+#+begin_src emacs-lisp
+(after! magit
+  (setq magit-repolist-columns
+      '(("Name"    25 magit-repolist-column-ident ())
+        ("Version" 25 magit-repolist-column-version ())
+        ("D"        1 magit-repolist-column-dirty ())
+        ("⇣"      3 magit-repolist-column-unpulled-from-upstream
+         ((:right-align t)
+          (:help-echo "Upstream changes not in branch")))
+        ("⇡"        3 magit-repolist-column-unpushed-to-upstream
+         ((:right-align t)
+          (:help-echo "Local changes not in upstream")))
+        ("Path"    99 magit-repolist-column-path ())))
+(setq magit-repository-directories '(("~/gits/nsp" . 1) ("~/gits/rep/" . 1)))
+)
 #+end_src
 ** Blamer
 Lets directly blame others
