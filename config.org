@@ -646,28 +646,22 @@ let's change that, and do a few other similar tweaks while we're at it.
    org-ellipsis " ▾ "
    org-export-in-background t                  ; run export processes in external emacs process
    org-use-sub-superscripts t       ; don't treat lone _ / ^ as sub/superscripts, require _{} / ^{}
-   org-fontify-quote-and-verse-blocks t        ; /italic/ for quotes.
    org-highlight-latex-and-related '(native script entities)
+   ;org-highlight-latex-and-related nil ;
    org-preview-latex-default-process 'dvisvgm   ;No blur when scaling
-   org-startup-with-latex-preview nil
-   org-pretty-entities-include-sub-superscripts nil ; Don't hide the _ and ^
+   org-startup-with-latex-preview t
+   org-hide-emphasis-markers t                 ; hide the emphasis.
+   org-pretty-entities-include-sub-superscripts t ;  hide the _ and ^
    org-list-allow-alphabetical t               ; have a. A. a) A) list bullets
    org-list-demote-modify-bullet '(("+" . "-") ("-" . "+") ("*" . "+") ("1." . "a."))
    org-log-done 'time                          ; having the time a item is done sounds convenient
-   org-startup-indented t
+   org-startup-indented nil
    org-use-property-inheritance t              ; it's convenient to have properties inherited
    +org-latex-preview-scale 1.0
    )
   )
-;; Word Count in org mode
-(after! org
-  (load! "org-wc.el"))
 ; cd-latex support
 (add-hook 'org-mode-hook 'turn-on-org-cdlatex)
-; enter the environment after C-c }
-(defadvice! org-edit-latex-emv-after-insert ()
-  :after #'org-cdlatex-environment-indent
-  (org-edit-latex-environment))
 #+end_src
 ** LaTeX Export
 #+begin_src emacs-lisp
@@ -715,22 +709,9 @@ functionality as in LaTeX. Let's try viewing possible output files with this.
   "File formats that should be opened externally.")
 #+end_src
 ** LaTeX fragments
-For automatically toggling LaTeX fragment previews as the cursor moves in and
-out of them there's this nice package
-#+begin_src emacs-lisp :tangle "packages.el"
-(package! org-fragtog)
-(package! texfrag)
-#+end_src
 
-What's better than syntax-highlighted LaTeX is /rendered/ LaTeX though, and we can
-have this be performed automatically with =org-fragtog=.
-#+begin_src emacs-lisp
-;; (use-package! org-fragtog
-;;   :hook (org-mode . org-fragtog-mode))
-
-#+end_src
 It's nice to customize the look of LaTeX fragments so they fit better in the
-text --- like this \(\sqrt{\beta^2+3}-\sum_{\phi=1}^\infty \frac{x^\phi-1}{\Gamma(a)}\).
+text: like this \(\sqrt{\beta^2+3}-\sum_{\phi=1}^\infty \frac{x^\phi-1}{\Gamma(a)}\).
 #+name: org-latex-preamble
 #+begin_src emacs-lisp
 (setq org-format-latex-header "\\documentclass{article}
@@ -768,7 +749,6 @@ text --- like this \(\sqrt{\beta^2+3}-\sum_{\phi=1}^\infty \frac{x^\phi-1}{\Gamm
                 ")
 #+end_src
 *** Fragment scaling
-
 Also , lets update the ~org-format-latex-option~
 #+begin_src emacs-lisp
 (defun my/text-scale-adjust-latex-previews ()
@@ -786,11 +766,6 @@ buffer's text scale."
        (if (eq (overlay-get ov 'org-overlay-type)
                'org-latex-overlay)
            (my/text-scale--resize-fragment ov)))))
-  ;; (setq org-format-latex-options (plist-put
-  ;;                                 org-format-latex-options
-  ;;                                 :scale (* +org-latex-preview-scale (expt text-scale-mode-step text-scale-mode-amount))))
-;;(setq-default 'preview-scale-function (* +org-latex-preview-scale (expt text-scale-mode-step text-scale-mode-amount)))
-
   )
 
 (defun my/text-scale--resize-fragment (ov)
@@ -807,84 +782,41 @@ buffer's text scale."
 
 (advice-add 'org-fragtog--post-cmd :after #'my/text-scale-adjust-latex-previews)
 #+end_src
-*** Numbered equations
-#+begin_src emacs-lisp
-;; From https://github.com/jkitchin/scimax
-;; Numbered equations all have (1) as the number for fragments with vanilla
-;; org-mode. This code injects the correct numbers into the previews so they
-;; look good.
-(defun my/org-renumber-environment (orig-func &rest args)
-  "A function to inject numbers in LaTeX fragment previews."
-  (let ((results '())
-    (counter -1)
-    (numberp))
-    (setq results (cl-loop for (begin .  env) in
-               (org-element-map (org-element-parse-buffer) 'latex-environment
-                 (lambda (env)
-                   (cons
-                    (org-element-property :begin env)
-                    (org-element-property :value env))))
-               collect
-               (cond
-                ((and (string-match "\\\\begin{equation}" env)
-                      (not (string-match "\\\\tag{" env)))
-                 (cl-incf counter)
-                 (cons begin counter))
-                ((string-match "\\\\begin{align}" env)
-                 (prog2
-                     (cl-incf counter)
-                     (cons begin counter)
-                   (with-temp-buffer
-                     (insert env)
-                     (goto-char (point-min))
-                     ;; \\ is used for a new line. Each one leads to a number
-                     (cl-incf counter (count-matches "\\\\$"))
-                     ;; unless there are nonumbers.
-                     (goto-char (point-min))
-                     (cl-decf counter (count-matches "\\nonumber")))))
-                (t
-                 (cons begin nil)))))
-
-    (when (setq numberp (cdr (assoc (point) results)))
-      (setf (car args)
-        (concat
-         (format "\\setcounter{equation}{%s}\n" numberp)
-         (car args)))))
-
-  (apply orig-func args))
-
-(defun my/toggle-latex-equation-numbering ()
-  "Toggle whether LaTeX fragments are numbered."
-  (interactive)
-  (if (not (get 'my/org-renumber-environment 'enabled))
-      (progn
-    (advice-add 'org-create-formula-image :around #'my/org-renumber-environment)
-    (put 'my/org-renumber-environment 'enabled t)
-    (message "Latex numbering enabled"))
-    (advice-remove 'org-create-formula-image #'my/org-renumber-environment)
-    (put 'my/org-renumber-environment 'enabled nil)
-    (message "Latex numbering disabled.")))
-#+end_src
-
-#+begin_src emacs-lisp
-(load! "lisp/org-auctex.el")
-#+end_src
 ** Visuals Style
 *** Org-Modern
-Rincing Org easily
+Rincing Org /easily/ with *markup* _test_
+
 #+begin_src emacs-lisp :tangle "packages.el"
 (package! org-modern)
+(package! org-appear :recipe (:host github :repo "awth13/org-appear"))
+(package! org-fragtog)
 #+end_src
 #+begin_src emacs-lisp
 (after! org
-  (setq org-highlight-latex-and-related '(native script entities)))
-(global-org-modern-mode)
-#+end_src
-#+begin_src emacs-lisp
-(after! org-modern
-  (setq org-modern-table-vertical 2
-        org-modern-table nil ;; TODO Table rendering is broken for now
-        org-modern-horizontal-rule nil))
+  (global-org-modern-mode)
+)
+(use-package! org-modern
+  :hook (org-mode . org-modern-mode)
+  :config
+  (setq org-modern-table-vertical 1
+        org-modern-table-horizontal 0.2
+        org-modern-horizontal-rule nil
+        org-modern-list '((43 . "➤")
+                          (45 . "–")
+                          (42 . "•"))
+        org-modern-block-fringe nil
+        ))
+
+;; also needs org-hide-emphasis-marker to be set.
+(use-package! org-appear
+  :hook (org-mode . org-appear-mode)
+  :config
+  (setq org-appear-autoemphasis t
+        org-appear-autoentities t
+        org-appear-autosubmarkers t
+        org-appear-autolinks nil)
+)
+(add-hook 'org-mode-hook 'org-fragtog-mode)
 #+end_src
 *** Org Roam UI
 A nice graph of knowledge.
@@ -928,21 +860,16 @@ This makes sure that org-roam buffer are open in a dedicated workspace, to preve
   (setq org-roam-directory "~/org/roam/"
         org-roam-dailies-directory "~/org/roam/journal"
         org-roam-dailies-capture-templates
-        '(("w" "Daily Work Notes" plain
+        '(("d" "Daily Notes" plain
            "%?"
-           :target (file+datetree "work.org" "+title: Work")
-           :unnarrowed t)
-          ("p" "Daily Personal Notes" plain
-           "%?"
-           :target (file+datetree "perso.org" "+title: Perso")
+           :target (file+datetree "journal.org" "+title: Personal Journal")
            :unnarrowed t)
           )
 
         org-roam-capture-templates
         '(("d" "default" plain "%?"
            :target (file+head "%<%Y%m%d%H%M%S>-${slug}.org"
-                              "#+title: ${title}\n#+filetags: :draft:empty:\n"
-                                                  )
+                              "#+title: ${title}\n#+filetags: :draft:empty:\n")
            :unnarrowed t)
           ("p" "project" plain "%?"
            :target (file+head "project/${slug}.org"
@@ -955,6 +882,9 @@ This makes sure that org-roam buffer are open in a dedicated workspace, to preve
           ("c" "config" plain "%?"
            :target (file+head "config/${slug}.org"
                               "#+title: ${title}\n")
+           :unnarrowed t)
+          ("r" "review" plain (file "/home/pac/org/roam/templates/review_paper.org")
+           :target (file "review/${slug}.org")
            :unnarrowed t)
            )
         )
