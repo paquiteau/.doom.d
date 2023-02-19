@@ -1,0 +1,37 @@
+# -*- mode: snippet -*-
+# name: letter
+# key: letter
+# --
+\documentclass[12pt]{lettre}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{eurosym}
+\usepackage[french]{babel}
+\usepackage{numprint}
+
+\begin{document}
+
+\begin{letter}{$destinataire}
+\name{Pierre-Antoine Comby}
+\address{Pierre-Antoine Comby\\66, rue Jean-Jaurès\\ 94800 }
+\lieu{Sassone-le-Creux}
+\telephone{06 67 69 69 75}
+\email{comby.p.antoine@gmail.com}
+\nofax
+
+\def\concname{Objet :~} % On définit ici la commande 'objet'
+\conc{$object}
+\opening{Madame, Monsieur,}
+$0
+
+
+\closing{Je vous prie d'agréer,
+Madame, Monsieur,
+mes salutations distinguées.}
+
+\end{letter}
+
+
+\end{document}
