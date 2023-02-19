@@ -115,7 +115,7 @@
         +forge)
        ;;make              ; run make tasks from Emacs
        pass              ; password manager for nerds
-       ;;pdf               ; pdf enhancements
+       pdf               ; pdf enhancements
        ;;prodigy           ; FIXME managing external services & code builders
        rgb               ; creating color strings
        taskrunner        ; taskrunner for all your projects
@@ -129,7 +129,8 @@
 
        :lang
        ;;agda              ; types of types of types of types...
-       ;;beancount         ; mind the GAAP
+       (beancount         ; mind the GAAP
+        +lsp)
        (cc                ; C > C++ == 1
         +lsp)
 
@@ -189,7 +190,6 @@
         +lsp
         +tree-sitter
         +pyenv
-        +cython
         )
        ;;qt                ; the 'cutest' gui framework ever
        ;;racket            ; a DSL for DSLs
