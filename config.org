@@ -1012,37 +1012,6 @@ Lets add convenients key bindings for the functions aboves
 
 #+end_src
 
-The template provided by citar is hard coded, so we rewrite =citar-org-format-note-default= to add org noter properties
-#+begin_src emacs-lisp
-
-(defun pac/citar-org-format-note (key entry filepath)
-  "Format a note FILEPATH from KEY and ENTRY."
-    (let* ((template (citar--get-template 'note))
-           (note-meta
-            (when template
-              (citar--format-entry-no-widths
-               entry
-               template)))
-           ;; get the first matching file
-           (noter-document (car (citar-file--parse-file-field entry "file" )))
-           (buffer (find-file filepath)))
-      (with-current-buffer buffer
-        ;; This just overrides other template insertion.
-        (erase-buffer)
-        (citar-org-roam-make-preamble key)
-        ;;My addition:
-        (org-entry-put 0 "NOTER_DOCUMENT" noter-document)
-        (insert "#+title: ")
-        (when template (insert note-meta))
-      ;;  (insert "\n\n|\n\n#+print_bibliography:")
-        (insert "\n|\n")
-        (search-backward "|")
-        (delete-char 1)
-        (when (fboundp 'evil-insert)
-          (evil-insert 1)))))
-;; (setq citar-create-note-function 'pac/citar-org-format-note)
-#+end_src
-
 ** Capture and GTD
 #+begin_src emacs-lisp :tangle "packages.el"
 (package! doct)
