@@ -131,6 +131,7 @@ Behold, the big =setq=
 #+end_src
 
 *** Ligature tweaking
+I don't like the default -- and --- ligature (they messed up with RST headlines).
 #+begin_src emacs-lisp
 (setq +ligatures-composition-alist
   '((?!  . "\\(?:!\\(?:==\\|[!=]\\)\\)")                                      ; (regexp-opt '("!!" "!=" "!=="))
@@ -185,6 +186,8 @@ than having to call `add-to-list' multiple times."
     (add-to-list l item)))
 #+end_src
 
+
+The following function reformat the paragraph so that each sentence has its own line.
 #+begin_src emacs-lisp :tangle yes
   (defun wrap-at-sentences ()
   "Fills the current paragraph, but starts each sentence on a new line."
@@ -374,6 +377,7 @@ Github copilot is too great to be ignored this days.
 (setq ispell-personal-dictionary (expand-file-name ".ispell_personal" doom-private-dir))
 #+end_src
 *** Guess-languages
+I write stuff mostly in English, but sometimes I have to add French in the mix.
 #+begin_src emacs-lisp :tangle "packages.el"
 (package! guess-language)
 (package! flyspell-lazy :disable t)
@@ -402,7 +406,7 @@ it, either by command or in a capture template.
  "<<" ">>"
  :actions '(insert))
 #+end_src
-** Info colors colors
+** Info colors
 This makes manual pages nicer to look at :)
 Variable pitch fontification + colouring
 #+begin_src emacs-lisp :tangle "packages.el"
@@ -563,6 +567,8 @@ Dont use the pdf package of =init.el=
 #+end_src
 
 ** String Inflection
+
+String Inflection for easily changing naming scheme.
 #+begin_src emacs-lisp :tangle "packages.el"
 (package! string-inflection)
 #+end_src
