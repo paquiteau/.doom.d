@@ -1,3 +1,4 @@
 config.el
 secrets.el
-
+packages.el
+.custom.el
