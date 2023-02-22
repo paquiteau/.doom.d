@@ -504,6 +504,9 @@ inspired by:
 #+begin_src emacs-lisp
 (load! "lisp/conv-commit.el")
 #+end_src
+Now i can use a snippet (bound to ~c~ in =git-commit-mode= to launch the prompt for a conventional commit.
+
+
 *** Blamer
 Lets directly blame others
 #+begin_src emacs-lisp :tangle "packages.el"
