@@ -1,9 +1,9 @@
 ;;; lisp/conv-commit.el -*- lexical-binding: t; -*-
 
 (require 'consult)
-(defvar conv-type-desc nil
+(defvar conv-commit-type-desc nil
   "The type of conventional commit.")
-(setq conv-type-desc
+(setq conv-commit-type-desc
 '(("build"
       :desc "Changes that affect the build system or external dependencies."
       :icon ?🧰
@@ -46,13 +46,13 @@
       :props (:foreground "dark green" :height 1.2))
 ))
 
-(defun conv-type-completion-decorate (type)
+(defun conv-commit-type-completion-decorate (type)
   "Decorate the completions candidates with icon prefix and description suffix.
 
 TYPE is the type of conventional commit.
 Return a list (candidate, icon, description)."
 
-  (let ((type-data (cdr (assoc type conv-type-desc))))
+  (let ((type-data (cdr (assoc type conv-commit-type-desc))))
     (list
      type
      (concat
@@ -61,32 +61,20 @@ Return a list (candidate, icon, description)."
      "   ")
      (concat
       (string-pad " " (- 10 (length type)))
-      (propertize (plist-get type-data :desc) 'face '(:foreground "gray" :slant "italic"))))))
+      (propertize (plist-get type-data :desc) 'face '(:foreground "gray" ))))))
 
 
-(defun conv-type-completion-read ()
+(defun conv-commit-type-prompt ()
   (interactive)
-  (consult--read conv-type-desc
+  (consult--read conv-commit-type-desc
                  :prompt "Commit type: "
                  :annotate #'conv-type-completion-decorate
                  )
 )
 
-(defvar use-magit-commit-prompt-p nil)
-(defun use-magit-commit-prompt (&rest args)
-  (setq use-magit-commit-prompt-p t))
-
-(defun conv-type-prompt ()
+(defun conv-commit-scope-prompt ()
   (interactive)
-  (when use-magit-commit-prompt-p
-    (when-let ((type (conv-type-completion-read))
-               (scope (read-string "Scope: ")))
-      (unless (string-empty-p scope) (setq scope (format "(%s)" scope))) ;; only format scope when non empty.
-      (setq use-magit-commit-prompt-p nil)
-      (insert (format "%s%s: " type scope)))))
-
-(remove-hook 'git-commit-setup-hook 'with-editor-usage-message)
-(add-hook 'git-commit-setup-hook 'conv-type-prompt)
-(advice-add 'magit-commit :after 'use-magit-commit-prompt)
+  (when-let ((scope (read-string "Scope: ")))
+    (unless (string-empty-p scope) (setq scope (format "(%s)" scope))))) ;; only format scope when non empty.
 
 (provide 'conv-commit)
