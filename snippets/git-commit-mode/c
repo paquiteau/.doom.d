@@ -1,0 +1,6 @@
+# -*- mode: snippet -*-
+# name:
+# key: c
+# condition: t
+# --
+`(conv-commit-format)`${1:Description}
