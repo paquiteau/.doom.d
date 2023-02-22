@@ -68,13 +68,21 @@ Return a list (candidate, icon, description)."
   (interactive)
   (consult--read conv-commit-type-desc
                  :prompt "Commit type: "
-                 :annotate #'conv-type-completion-decorate
+                 :annotate #'conv-commit-type-completion-decorate
                  )
 )
 
 (defun conv-commit-scope-prompt ()
   (interactive)
   (when-let ((scope (read-string "Scope: ")))
-    (unless (string-empty-p scope) (setq scope (format "(%s)" scope))))) ;; only format scope when non empty.
+    (if (string-empty-p scope) "" (concat "(" scope ")"))))
+
+(defun conv-commit-format ()
+  (interactive)
+  (let ((type (conv-commit-type-prompt))
+        (scope (conv-commit-scope-prompt)))
+      (if (or type scope)
+      (format "%s%s: " type scope)
+    )))
 
 (provide 'conv-commit)
