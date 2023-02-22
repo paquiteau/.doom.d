@@ -1130,231 +1130,42 @@ Lets add convenients key bindings for the functions aboves
 #+end_src
 
 ** Capture and GTD
-#+begin_src emacs-lisp :tangle "packages.el"
-(package! doct)
-#+end_src
 See also  [[id:e20503eb-2a58-46b6-a071-311956b594c2][Workflow]]
 #+begin_src emacs-lisp
 (defvar +org-inbox-file "~/org/inbox.org")
-(defvar +org-calendar-file "~/org/calendar.org")
 (defvar +org-project-dir "~/org/roam/project/")
 (after! org
 
-  (setq org-todo-keywords '((sequence "TODO(t)" "NEXT(n)" "START(s)" "WAIT(w)" "|" "DONE(d)" "MAYBE(m)" "ABORT(a)")
+  (setq org-todo-keywords '((sequence "TODO(t)" "WAIT(w)" "|" "DONE(d)")
                             (sequence "[ ](T)" "[?](W)" "|" "[X](D)"))
         org-modern-todo-faces
-        '(("TODO"  :foreground "Orange Red"    :inverse-video t :weight bold)
-          ("NEXT"  :foreground "Forest Green"  :inverse-video t :weight bold)
+        '(("TODO"  :foreground "Orange"        :inverse-video t :weight bold)
           ("WAIT"  :foreground "Coral"         :inverse-video t :weight bold)
-          ("START" :foreground "Royal Blue"    :inverse-video t :weight bold)
           ("DONE"  :foreground "Dark Gray"     :inverse-video t :weight bold)
-          ("MAYBE"  :foreground "Orchid"       :inverse-video t :weight bold)
           )
         org-todo-keyword-faces
-        '(("TODO"  :foreground "Orange Red"    :weight bold)
-          ("NEXT"  :foreground "Forest Green"  :weight bold)
+        '(("TODO"  :foreground "Orange"        :weight bold)
           ("WAIT"  :foreground "Coral"         :weight bold)
-          ("START" :foreground "Royal Blue"    :weight bold)
           ("DONE"  :foreground "Dark Gray"     :weight bold)
-          ("MAYBE"  :foreground "Orchid"       :weight bold)
           ))
   )
 #+end_src
-*** Capture
-#+begin_src emacs-lisp
-(defun pac/insert-project ()
-    (interactive "P")
-    (org-roam-node-insert '(lambda (node) (string-match-p "project" (org-roam-node-file node)))))
-#+end_src
-#+begin_src emacs-lisp
-(setq org-capture-templates
-      (doct `((:group "Task"
-               :template ("* TODO %? :%{tag}:"
-                          "%{timing}"
-                          ":PROPERTIES:"
-                          ":Created: %U"
-                          ":END:")
-
-               :file +org-inbox-file
-               :type entry
-               :children (
-                          ("Work Task"
-                           :keys "w"
-                           :tag "WORK"
-                           :children (("General Task"
-                                       :keys "w"
-                                       :timing "")
-                                      ("Work Deadline"
-                                       :keys "d"
-                                       :timing "DEADLINE: %^{DEADLINE:}t")
-                                      ("Work Scheduled Task"
-                                       :keys "s"
-                                       :timing "SCHEDULED: %^{SCHEDULED:}t")
-                                      )
-                           )
-                          ("Personal Task"
-                           :keys "p"
-                           :tag "HOME"
-                           :children (("Personal General Task"
-                                       :keys "t"
-                                       :timing "")
-                                      ("Personal Deadline"
-                                       :keys "d"
-                                       :timing "\nDEADLINE: %^{DEADLINE:}t")
-                                      ("Personal Scheduled Task"
-                                       :keys "s"
-                                       :timing "\nSCHEDULED: %^{SCHEDULED:}t")
-                                      )
-
-                           ))
-               )
-              ("Quick Notes"
-               :keys "n"
-               :file +org-inbox-file
-               :type entry
-               :headline "Notes"
-               :children (("Note"
-                           :keys "n"
-                           :template ("* %?"
-                                      "/Entered on/ %U %i %a"))
-                          ("Feedback"
-                           :keys "f"
-                           :template ("* Feedback on %(pac/insert-project)"
-                                      "/done on/ %U"
-                                      "%?"))))
-              ("Meeting"
-               :keys "m"
-               :file +org-calendar-file
-               :headline "Future"
-               :type entry
-               :template ("*  %? :meeting:"
-                          "<%<%Y-%m-%d %a %H:00>>")
-               )
-              ("Event"
-               :keys "e"
-               :type entry
-               :file +org-calendar-file
-               :headline "Future"
-               :children (("All day long"
-                           :keys "d"
-                           :template "* %^T %?")
-                          ("Event"
-                           :keys "e"
-                           :template "* %^t %?"))
-               ))
-            )
-      )
-#+end_src
-*** Refile
-
-Tasks are refile to project under the =Tasks= headline
-
-#+begin_src emacs-lisp
-(setq +org-roam-projects-files (directory-files +org-project-dir t "org$"))
-(setq org-refile-targets '((+org-roam-projects-files . (:regexp . "Tasks"))))
-#+end_src
-
 *** Agenda Configuration
-#+begin_src emacs-lisp :tangle "packages.el"
-(package! org-super-agenda)
-#+end_src
 #+begin_src emacs-lisp
-(after! org-agenda
-  (org-super-agenda-mode))
 (setq org-agenda-files ())
 (cl-pushnew +org-inbox-file org-agenda-files)
-(cl-pushnew +org-calendar-file org-agenda-files)
-(cl-pushnew +org-project-dir org-agenda-files)
-#+end_src
-#+name: french-holidays
-#+begin_src emacs-lisp
-(setq french-holiday
-      '((holiday-fixed 1 1 "Jour de l'an")
-        (holiday-fixed 5 8 "Victoire 45")
-        (holiday-fixed 7 14 "Fête nationale")
-        (holiday-fixed 8 15 "Assomption")
-        (holiday-fixed 11 1 "Toussaint")
-        (holiday-fixed 11 11 "Armistice 18")
-        (holiday-easter-etc 1 "Lundi de Pâques")
-        (holiday-easter-etc 39 "Ascension")
-        (holiday-easter-etc 50 "Lundi de Pentecôte")
-        (holiday-fixed 1 6 "Épiphanie")
-        (holiday-fixed 2 2 "Chandeleur")
-        (holiday-fixed 2 14 "Saint Valentin")
-        (holiday-fixed 5 1 "Fête du travail")
-        (holiday-fixed 5 8 "Commémoration de la capitulation de l'Allemagne en 1945")
-        (holiday-fixed 6 21 "Fête de la musique")
-        (holiday-fixed 11 2 "Commémoration des fidèles défunts")
-        (holiday-fixed 12 25 "Noël")
-        ;; fêtes à date variable
-        (holiday-easter-etc 0 "Pâques")
-        (holiday-easter-etc 49 "Pentecôte")
-        (holiday-easter-etc -47 "Mardi gras")
-        (holiday-float 6 0 3 "Fête des pères") ;; troisième dimanche de juin
-        ;; Fête des mères
-        (holiday-sexp
-         '(if (equal
-               ;; Pentecôte
-               (holiday-easter-etc 49)
-               ;; Dernier dimanche de mai
-               (holiday-float 5 0 -1 nil))
-            ;; -> Premier dimanche de juin si coïncidence
-            (car (car (holiday-float 6 0 1 nil)))
-            ;; -> Dernier dimanche de mai sinon
-            (car (car (holiday-float 5 0 -1 nil))))
-         "Fête des mères")))
-(setq calendar-date-style 'european
-      holiday-other-holidays french-holiday
-      calendar-mark-holidays-flag t
-      calendar-week-start-day 1
-      calendar-mark-diary-entries-flag nil)
 #+end_src
 
 #+begin_src emacs-lisp
-(setq org-agenda-skip-scheduled-if-done t
-      org-agenda-skip-deadline-if-done t
-      org-agenda-include-deadlines t
-      org-agenda-block-separator nil
-      org-agenda-tags-column 100 ;; from testing this seems to be a good value
-      org-agenda-compact-blocks t)
-
-(setq org-agenda-custom-commands
-'(("o" "Overview"
-         ((agenda "" ((org-agenda-overriding-header "Agenda")
-                      (org-agenda-span 7)
-                      (org-agenda-start-day "+1d")
-                      (org-super-agenda-groups
-                       '((:name "Today"
-                          :time-grid t
-                          :date today
-                          :scheduled today
-                          :order 1)))))
-          (alltodo "" ((org-agenda-overriding-header "Todos")
-                       (org-super-agenda-groups
-                        '((:name "Next to do"
-                           :todo "NEXT"
-                           :order 10)
-                          (:name "Due Today"
-                           :deadline today
-                           :order 20)
-                          (:name "Overdue"
-                           :deadline past
-                           :face error
-                           :order 30)
-                          (:name "Due Soon"
-                           :deadline future
-                           :order 40)
-                          (:name "Scheduled"
-                           :scheduled future
-                           :order 5)
-                          (:discard (:anything t))
-                          ))))))
-  ("p" "Project Overview"
-        ((todo "" ((org-agenda-overriding-header "Projects")
-                        (org-super-agenda-groups
-                         '((:auto-tags t
-                            :file-path "/projects/"))
-                           )))))))
+(after! org
+  (setq org-agenda-deadline-leaders '("" "" "%2d d. ago: ")
+      org-deadline-warning-days 0
+      org-agenda-span 7
+      org-agenda-start-day "-0d"
+      org-agenda-skip-function-global '(org-agenda-skip-entry-if 'todo 'done)
+      org-log-done 'time
+      )
+)
 #+end_src
 
 * LaTeX
