@@ -1445,9 +1445,6 @@ Python is my main programming language, so let's make it even better.
   :after python
   :hook (python-mode . python-black-on-save-mode-enable-dwim))
 
-;; (use-package! numpydoc
-;;   :config (setq numpydoc-insertion-style nil
-;;                 numpydoc-insert-examples-bloc nil))
 (after! projectile
 (projectile-register-project-type 'python-toml '("pyproject.toml")
                                   :project-file "pyproject.toml"
@@ -1477,9 +1474,26 @@ Fix highlighting errors from tree-sitter.
                               @doc)))])
   #+end_src
 
-Use the correct sphinx build in environment.
+** Configure Flycheck RST-sphinx to use the correct pyenv
+
+
 #+begin_src emacs-lisp
-(setq! flycheck-rst-sphinx-executable "pyenv exec sphinx-build")
+(require 'pyenv-mode)
+(defun pac/get-pyenv-version ()
+  "return the content of project's most-closest .python-version"
+  (car (s-lines (s-trim (f-read-text
+                         (f-expand ".python-version" (f-traverse-upwards
+                                   (lambda (path) (f-exists? (f-expand ".python-version" path)))))
+                         'utf-8)))))
+
+
+;; FIXME: we should not use a custom dir-local setup to do that.
+;; add-hook rst-mode-hook does not help
+(dir-locals-set-class-variables 'gits-dirs
+                                '((rst-mode .
+                                   ((eval . (setq-local flycheck-rst-sphinx-executable (concat (pyenv-mode-full-path (pac/get-pyenv-version)) "/bin/sphinx-build"))))
+                                   )))
+(dir-locals-set-directory-class "~/gits/nsp/" 'gits-dirs)
 #+end_src
 
 ** Edit Docstring in rst-mode in separate buffer
@@ -1490,10 +1504,6 @@ Use the correct sphinx build in environment.
     (,(regexp-opt '("int" "float" "numpy.ndarray" "array" "ndarray" "None" "tuple" "list" "iterable" "class" "object" "type" "str" "set" "complex" "dict" "slice" "range"))
      . font-lock-type-face)
     )
-  )
-
-(define-derived-mode numpy-doc-mode rst-mode "NumpyDoc"
-  "A major mode to edi rst docstring using the numpy convention."
   )
 #+end_src
 
@@ -1543,8 +1553,6 @@ Adapted and improve from https://gist.github.com/fleimgruber/cd2386d8326fad3e0e2
       :desc "Edit docstring in RST" "d" #'edit-indirect-rst)
 #+end_src
 
-#+begin_src emacs-lisp
-#+end_src
 ** LSP-mode config
 
 Basically, enable flake8, and lets the local configuratio do it job with flake8 plugins.
