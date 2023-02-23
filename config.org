@@ -424,6 +424,9 @@ Github copilot is too great to be ignored this days.
          ("<tab>" . 'copilot-accept-completion)
          ("TAB" . 'copilot-accept-completion)))
 #+end_src
+** TODO BetterIntegraion
+https://robert.kra.hn/posts/2023-02-22-copilot-emacs-setup/
+https://github.com/rksm/copilot-emacsd
 ** Spell
 #+begin_src emacs-lisp
 (setq ispell-personal-dictionary (expand-file-name ".ispell_personal" doom-private-dir))
