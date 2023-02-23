@@ -836,10 +836,19 @@ buffer's text scale."
   ))
 
 ;; (add-hook 'text-scale-mode-hook #'org-auctex-preview-buffer)
+
 (add-hook 'text-scale-mode-hook #'my/text-scale-adjust-latex-previews)
 
 (advice-add 'org-fragtog--post-cmd :after #'my/text-scale-adjust-latex-previews)
+
+(defun my/scale-big-font (&optional toggle)
+  (setq +org-latex-preview-scale (if doom-big-font-mode 2 1))
+  (my/text-scale-adjust-latex-previews)
+)
+(advice-add 'doom-big-font-mode :after #'my/scale-big-font)
 #+end_src
+Some text \(\sqrt{x} = \frac{1}{2}\) Some text
+
 ** Visuals Style
 *** Org-Modern
 Rincing Org /easily/ with *markup* _test_
