@@ -635,6 +635,34 @@ Open scad is a programming language to create 3d parametric objects.
 (add-to-list 'auto-mode-alist '("\\.rec$" . singularity-mode))
 #+end_src
 
+** Theme switching
+#+begin_src emacs-lisp :tangle "packages.el"
+;; In packages.el
+(package! heaven-and-hell)
+#+end_src
+
+#+begin_src  emacs-lisp
+
+;; In config.el
+(after! heaven-and-hell
+  (setq heaven-and-hell-themes
+        '((light . modus-operandi)
+          (dark . doom-one)))
+  ;; Optionall, load themes without asking for confirmation.
+  (setq heaven-and-hell-load-theme-no-confirm t)
+  (defun pac/custom-toggle-theme ()
+    (interactive)
+    (heaven-and-hell-toggle-theme)
+    (doom/reload-theme)
+    )
+  (map!
+   :g "<f6>" 'pac/custom-toggle-theme
+   ;; Sometimes loading default theme is broken. I couldn't figured that out yet.
+   :leader "<f6>" 'heaven-and-hell-load-default-theme)
+)
+
+(add-hook 'after-init-hook 'heaven-and-hell-init-hook)
+#+end_src
 ** TRAMP
 #+begin_src emacs-lisp
 (after! tramp
