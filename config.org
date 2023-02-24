@@ -650,11 +650,16 @@ Open scad is a programming language to create 3d parametric objects.
           (dark . doom-one)))
   ;; Optionall, load themes without asking for confirmation.
   (setq heaven-and-hell-load-theme-no-confirm t)
+
   (defun pac/custom-toggle-theme ()
     (interactive)
     (heaven-and-hell-toggle-theme)
     (doom/reload-theme)
-    )
+    (when (and (eq major-mode 'org-mode ) org-startup-with-latex-preview)
+      (org-clear-latex-preview)
+      (let ((current-prefix-arg '(16))) ;; magic number in the code.
+      (call-interactively 'org-latex-preview))))
+
   (map!
    :g "<f6>" 'pac/custom-toggle-theme
    ;; Sometimes loading default theme is broken. I couldn't figured that out yet.
