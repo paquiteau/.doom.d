@@ -720,7 +720,9 @@ let's change that, and do a few other similar tweaks while we're at it.
    org-log-done 'time                          ; having the time a item is done sounds convenient
    org-startup-indented nil
    org-use-property-inheritance t              ; it's convenient to have properties inherited
-   +org-latex-preview-scale 1.0
+   +org-latex-preview-scale-normal 1.0
+   +org-latex-preview-scale-big 1.5
+   +org-latex-preview-scale-current 1.0
    )
   )
 ; cd-latex support
@@ -837,7 +839,7 @@ buffer's text scale."
    (cons 'image
          (plist-put
           (cdr (overlay-get ov 'display))
-          :scale  (* +org-latex-preview-scale (expt text-scale-mode-step text-scale-mode-amount))))
+          :scale  (* +org-latex-preview-scale-current (expt text-scale-mode-step text-scale-mode-amount))))
   ))
 
 ;; (add-hook 'text-scale-mode-hook #'org-auctex-preview-buffer)
@@ -847,9 +849,8 @@ buffer's text scale."
 (advice-add 'org-fragtog--post-cmd :after #'my/text-scale-adjust-latex-previews)
 
 (defun my/scale-big-font (&optional toggle)
-  (setq +org-latex-preview-scale (if doom-big-font-mode 2 1))
-  (my/text-scale-adjust-latex-previews)
-)
+  (setq +org-latex-preview-scale-current (if doom-big-font-mode +org-latex-preview-scale-big +org-latex-preview-scale-normal))
+  (my/text-scale-adjust-latex-previews))
 (advice-add 'doom-big-font-mode :after #'my/scale-big-font)
 #+end_src
 Some text \(\sqrt{x} = \frac{1}{2}\) Some text
