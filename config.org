@@ -1080,7 +1080,7 @@ Lets add convenients key bindings for the functions aboves
 #+begin_src emacs-lisp
 (after! citar
   (setq citar-org-roam-subdir "bib")
-  (pushnew '("pdf" . citar-file-open-external) citar-file-open-functions)
+  ;(pushnew '("pdf" . citar-file-open-external) citar-file-open-functions)
 
 (map! :leader
       :prefix "i"
