@@ -1388,9 +1388,9 @@ Such special cases should be remapped to another value, as given in `string-offs
 ;;   )
 
 #+end_src
-* Python
 
-Python is my main programming language, so let's make it even better.
+* Python
+My main programming language, so let's make it even better.
 #+begin_src emacs-lisp :tangle "packages.el"
 (package! python-black)
 (package! xml+)
@@ -1404,6 +1404,7 @@ Python is my main programming language, so let's make it even better.
   :after python
   :hook (python-mode . python-black-on-save-mode-enable-dwim))
 
+;; Merge upstream, but waiting for release and doom bumping ..
 (after! projectile
 (projectile-register-project-type 'python-toml '("pyproject.toml")
                                   :project-file "pyproject.toml"
