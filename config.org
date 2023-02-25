@@ -805,6 +805,9 @@ text: like this \(\sqrt{\beta^2+3}-\sum_{\phi=1}^\infty \frac{x^\phi-1}{\Gamma(a
 \\usepackage{bm}
 \\DeclareMathOperator*{\\argmin}{arg\\,min}
 \\DeclareMathOperator*{\\diag}{diag}
+\\DeclareMathOperator*{\\sgn}{sgn}
+\\DeclareMathOperator*{\\tr}{tr}
+\\DeclareMathOperator*{\\vertiii}{\\vert\\!\\vert\\!\\vert}
 \\newcommand{\\st}{\\quad\\mathrm{s.t}\\quad}
 \\newcommand{\\prox}{\\operatorname{prox}}
 \\newcommand{\\dom}{\\operatorname{dom}}
