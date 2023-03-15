@@ -1324,8 +1324,8 @@ Such special cases should be remapped to another value, as given in `string-offs
    cdlatex-math-modify-alist
    '( ;; my own stuff
      (?B    "\\mathbb"        nil          t    nil  nil)
+     (?m    "\\bm"           "\\mbox"      t    nil  nil)
      (?a    "\\abs"           nil          t    nil  nil))))
-
 
 #+end_src
 * lsp-ltex
