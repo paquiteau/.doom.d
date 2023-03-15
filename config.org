@@ -1105,6 +1105,23 @@ Lets add convenients key bindings for the functions aboves
        :desc "Insert node" "i" #'pac/org-roam-node-insert-space
        :desc "Insert screenshot" "c" #'pac/screenshot-to-roam
        ))
+;; =SPC n d= is for deft, and i don't used it. so lets remap the dailies here.
+
+(map! :map doom-leader-notes-map
+      :prefix ("d" . "by date")
+         :desc "Goto previous note" "b" #'org-roam-dailies-goto-previous-note
+         :desc "Goto date"          "d" #'org-roam-dailies-goto-date
+         :desc "Capture date"       "D" #'org-roam-dailies-capture-date
+         :desc "Goto next note"     "f" #'org-roam-dailies-goto-next-note
+         :desc "Goto tomorrow"      "m" #'org-roam-dailies-goto-tomorrow
+         :desc "Capture tomorrow"   "M" #'org-roam-dailies-capture-tomorrow
+         :desc "Capture today"      "n" #'org-roam-dailies-capture-today
+         :desc "Goto today"         "t" #'org-roam-dailies-goto-today
+         :desc "Capture today"      "T" #'org-roam-dailies-capture-today
+         :desc "Goto yesterday"     "y" #'org-roam-dailies-goto-yesterday
+         :desc "Capture yesterday"  "Y" #'org-roam-dailies-capture-yesterday
+         :desc "Find directory"     "-" #'org-roam-dailies-find-directory)
+
 #+end_src
 *** Notes Taking
 #+begin_src emacs-lisp
