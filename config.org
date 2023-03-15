@@ -710,31 +710,35 @@ let's change that, and do a few other similar tweaks while we're at it.
    org-export-in-background t                  ; run export processes in external emacs process
    org-use-sub-superscripts t       ; don't treat lone _ / ^ as sub/superscripts, require _{} / ^{}
    org-highlight-latex-and-related '(native script entities)
-   ;org-highlight-latex-and-related nil ;
-   org-preview-latex-default-process 'dvisvgm   ;No blur when scaling
-   org-startup-with-latex-preview t
-   org-hide-emphasis-markers t                 ; hide the emphasis.
+   org-highlight-latex-and-related nil ;
+   ;;org-preview-latex-default-process 'dvisvgm   ;No blur when scaling
+   ;; org-startup-with-latex-preview t
+   ;;org-hide-emphasis-markers t                 ; hide the emphasis.
    org-pretty-entities-include-sub-superscripts t ;  hide the _ and ^
    org-list-allow-alphabetical t               ; have a. A. a) A) list bullets
    org-list-demote-modify-bullet '(("+" . "-") ("-" . "+") ("*" . "+") ("1." . "a."))
    org-log-done 'time                          ; having the time a item is done sounds convenient
    org-startup-indented nil
    org-use-property-inheritance t              ; it's convenient to have properties inherited
-   +org-latex-preview-scale-normal 1.0
-   +org-latex-preview-scale-big 1.3
-   +org-latex-preview-scale-current 1.0
    )
   )
 ; cd-latex support
 (add-hook 'org-mode-hook 'turn-on-org-cdlatex)
 #+end_src
 ** LaTeX Export
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! engrave-faces)
+#+end_src
+
+#+begin_src emacs-lisp
+(use-package! engrave-faces-latex :after ox-latex)
+#+end_src
 #+begin_src emacs-lisp
 (after! org
   (setq
    org-latex-pdf-process '("latexmk -f -pdf -%latex -shell-escape -interaction=nonstopmode -output-directory=%o %f")
-   org-latex-listings 'minted
-   org-latex-packages-alist '(("" "minted") ("margin=1cm" "geometry" nil))
+   org-latex-listings 'engraved
+   org-latex-packages-alist  '(("margin=1cm" "geometry" nil))
    org-cite-global-bibliography '("~/org/library.bib")
    )
   )
@@ -773,7 +777,39 @@ functionality as in LaTeX. Let's try viewing possible output files with this.
 (defvar org-view-external-file-extensions '("html")
   "File formats that should be opened externally.")
 #+end_src
-** LaTeX fragments
+** TODO org Fast Latex Preview
+#+begin_src emacs-lisp :tangle "packages.el"
+;; Use tecosaur development branch
+(package! org :recipe
+  (:host nil :repo "https://git.tecosaur.net/mirrors/org-mode.git" :remote "mirror" :fork
+         (:host nil :repo "https://git.tecosaur.net/tec/org-mode.git" :branch "dev" :remote "tecosaur")
+         :files
+         (:defaults "etc")
+         :build t :pre-build
+         (with-temp-file "org-version.el"
+           (require 'lisp-mnt)
+           (let
+               ((version
+                 (with-temp-buffer
+                   (insert-file-contents "lisp/org.el")
+                   (lm-header "version")))
+                (git-version
+                 (string-trim
+                  (with-temp-buffer
+                    (call-process "git" nil t nil "rev-parse" "--short" "HEAD")
+                    (buffer-string)))))
+             (insert
+              (format "(defun org-release () \"The release version of Org.\" %S)\n" version)
+              (format "(defun org-git-version () \"The truncate git commit hash of Org mode.\" %S)\n" git-version)
+              "(provide 'org-version)\n"))))
+  :pin  "36e168dfd418021b4dbad50f382887ff8b498bd8")
+#+end_src
+
+#+begin_src emacs-lisp
+
+#+end_src
+
+** LaTeX fragments :noexport:
 
 It's nice to customize the look of LaTeX fragments so they fit better in the
 text: like this \(\sqrt{\beta^2+3}-\sum_{\phi=1}^\infty \frac{x^\phi-1}{\Gamma(a)}\).
@@ -809,7 +845,6 @@ text: like this \(\sqrt{\beta^2+3}-\sum_{\phi=1}^\infty \frac{x^\phi-1}{\Gamma(a
 \\DeclareMathOperator*{\\vertiii}{\\vert\\!\\vert\\!\\vert}
 \\newcommand{\\st}{\\quad\\mathrm{s.t}\\quad}
 \\newcommand{\\prox}{\\operatorname{prox}}
-\\newcommand{\\prox}{\\operatorname{div}}
 \\newcommand{\\sgn}{\\operatorname{sgn}}
 \\newcommand{\\divv}{\\operatorname{div}}
 \\newcommand{\\dom}{\\operatorname{dom}}
@@ -820,43 +855,43 @@ text: like this \(\sqrt{\beta^2+3}-\sum_{\phi=1}^\infty \frac{x^\phi-1}{\Gamma(a
 #+end_src
 *** Fragment scaling
 Also , lets update the ~org-format-latex-option~
-#+begin_src emacs-lisp
-(defun my/text-scale-adjust-latex-previews ()
-  "Adjust the size of latex preview fragments when changing the
-buffer's text scale."
+#+begin_src emacs-lisp :tangle nil
+;; (defun my/text-scale-adjust-latex-previews ()
+;;   "Adjust the size of latex preview fragments when changing the
+;; buffer's text scale."
 
-  (pcase major-mode
-    ('latex-mode
-     (dolist (ov (overlays-in (point-min) (point-max)))
-       (if (eq (overlay-get ov 'category)
-               'preview-overlay)
-           (my/text-scale--resize-fragment ov))))
-    ('org-mode
-     (dolist (ov (overlays-in (point-min) (point-max)))
-       (if (eq (overlay-get ov 'org-overlay-type)
-               'org-latex-overlay)
-           (my/text-scale--resize-fragment ov)))))
-  )
+;;   (pcase major-mode
+;;     ('latex-mode
+;;      (dolist (ov (overlays-in (point-min) (point-max)))
+;;        (if (eq (overlay-get ov 'category)
+;;                'preview-overlay)
+;;            (my/text-scale--resize-fragment ov))))
+;;     ('org-mode
+;;      (dolist (ov (overlays-in (point-min) (point-max)))
+;;        (if (eq (overlay-get ov 'org-overlay-type)
+;;                'org-latex-overlay)
+;;            (my/text-scale--resize-fragment ov)))))
+;;   )
 
-(defun my/text-scale--resize-fragment (ov)
-  (overlay-put
-   ov 'display
-   (cons 'image
-         (plist-put
-          (cdr (overlay-get ov 'display))
-          :scale  (* +org-latex-preview-scale-current (expt text-scale-mode-step text-scale-mode-amount))))
-  ))
+;; (defun my/text-scale--resize-fragment (ov)
+;;   (overlay-put
+;;    ov 'display
+;;    (cons 'image
+;;          (plist-put
+;;           (cdr (overlay-get ov 'display))
+;;           :scale  (* +org-latex-preview-scale-current (expt text-scale-mode-step text-scale-mode-amount))))
+;;   ))
 
-;; (add-hook 'text-scale-mode-hook #'org-auctex-preview-buffer)
+;; ;; (add-hook 'text-scale-mode-hook #'org-auctex-preview-buffer)
 
-(add-hook 'text-scale-mode-hook #'my/text-scale-adjust-latex-previews)
+;; (add-hook 'text-scale-mode-hook #'my/text-scale-adjust-latex-previews)
 
-(advice-add 'org-fragtog--post-cmd :after #'my/text-scale-adjust-latex-previews)
+;; (advice-add 'org-fragtog--post-cmd :after #'my/text-scale-adjust-latex-previews)
 
-(defun my/scale-big-font (&optional toggle)
-  (setq +org-latex-preview-scale-current (if doom-big-font-mode +org-latex-preview-scale-big +org-latex-preview-scale-normal))
-  (my/text-scale-adjust-latex-previews))
-(advice-add 'doom-big-font-mode :after #'my/scale-big-font)
+;; (defun my/scale-big-font (&optional toggle)
+;;   (setq +org-latex-preview-scale-current (if doom-big-font-mode +org-latex-preview-scale-big +org-latex-preview-scale-normal))
+;;   (my/text-scale-adjust-latex-previews))
+;; (advice-add 'doom-big-font-mode :after #'my/scale-big-font)
 #+end_src
 Some text \(\sqrt{x} = \frac{1}{2}\) Some text
 
@@ -867,7 +902,6 @@ Rincing Org /easily/ with *markup* _test_
 #+begin_src emacs-lisp :tangle "packages.el"
 (package! org-modern)
 (package! org-appear :recipe (:host github :repo "awth13/org-appear"))
-(package! org-fragtog)
 #+end_src
 #+begin_src emacs-lisp
 (after! org
@@ -893,8 +927,8 @@ Rincing Org /easily/ with *markup* _test_
         org-appear-autoentities t
         org-appear-autosubmarkers t
         org-appear-autolinks nil)
+  (run-at-time nil nil #'org-appear--set-elements)
 )
-(add-hook 'org-mode-hook 'org-fragtog-mode)
 #+end_src
 *** Org Roam UI
 A nice graph of knowledge.
