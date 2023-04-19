@@ -52,8 +52,8 @@ Behold, the big =setq=
 
  doom-theme 'doom-one
  ;; font configuration
- doom-font (font-spec :family "Iosevka" :size 18)
- doom-variable-pitch-font (font-spec :family "Iosevka" :size 18)
+ doom-font (font-spec :family "Iosevka" :size 14)
+ doom-variable-pitch-font (font-spec :family "Iosevka" :size 14)
  doom-big-font (font-spec :family "Iosevka" :size 24)
  doom-serif-font (font-spec :family "Iosevka" :weight 'light)
  doom-unicode-font (font-spec :family "Symbola")
@@ -70,7 +70,8 @@ Behold, the big =setq=
  password-cache-expiry nil                   ; I can trust my computers ... can't I?
  projectile-ignored-projects '("~/" "/tmp" "~/.emacs.d/.local/straight/repos/")
  projectile-ignored-projects '("~/" "/tmp" "~/.emacs.d/.local/straight/repos/")
- projectile-project-search-path '(("~/gits/nsp/" . 1) ("~/gits/rep/" . 1))
+ projectile-project-search-path '(("~/gits/nsp/code" . 1) ("~/gits/rep/" . 1))
+ projectile-auto-discover t
  read-process-output-max (* 1024 1024)
  scroll-margin 2
  system-time-locale "C"
@@ -84,21 +85,6 @@ Behold, the big =setq=
  vterm-kill-buffer-on-exit t
  )
 (display-time-mode)
-(setq frame-title-format
-      '(""
-        (:eval
-         (if (s-contains-p org-roam-directory (or buffer-file-name ""))
-             (replace-regexp-in-string
-              ".*/[0-9]*-?" "☰ "
-              (subst-char-in-string ?_ ?  buffer-file-name))
-           "%b"))
-        (:eval
-         (let ((project-name (projectile-project-name)))
-           (unless (string= "-" project-name)
-             (format (if (buffer-modified-p)  " ◉ %s" "  ●  %s")
-                     project-name))))))
-
-
 
 (setq +lookup-provider-url-alist
       '(("Doom Emacs issues" "https://github.com/hlissner/doom-emacs/issues?q=is%%3Aissue+%s")
@@ -496,9 +482,15 @@ At some point I would like this to be a dash board of all my projects.
           (:help-echo "Local changes not in upstream")))
         ("Path"    99 magit-repolist-column-path ())))
 (setq magit-repository-directories '(("~/gits/nsp" . 1) ("~/gits/rep/" . 1)))
+;; Better visualisation of current branch.
+(set-face-attribute 'magit-branch-current nil :weight 'ultra-bold :underline t)
 )
 #+end_src
-
+Then we are also setting up code reviews
+#+begin_src emacs-lisp
+(add-hook 'code-review-mode-hook #'emojify-mode)
+(setq code-review-auth-login-marker 'forge)
+#+end_src
 *** Conventional Commit
 inspired by:
  - http://www.modernemacs.com/post/pretty-magit/ for the elisp
@@ -636,37 +628,22 @@ Open scad is a programming language to create 3d parametric objects.
 #+end_src
 
 ** Theme switching
-#+begin_src emacs-lisp :tangle "packages.el"
-;; In packages.el
-(package! heaven-and-hell)
-#+end_src
 
 #+begin_src  emacs-lisp
+(defun pac/custom-toggle-theme ()
+  (interactive)
+  (setq doom-theme (if (eq doom-theme 'doom-one-light) 'doom-one  'doom-one-light))
+  (load-theme doom-theme)
 
-;; In config.el
-(after! heaven-and-hell
-  (setq heaven-and-hell-themes
-        '((light . modus-operandi)
-          (dark . doom-one)))
-  ;; Optionall, load themes without asking for confirmation.
-  (setq heaven-and-hell-load-theme-no-confirm t)
-
-  (defun pac/custom-toggle-theme ()
-    (interactive)
-    (heaven-and-hell-toggle-theme)
-    (doom/reload-theme)
-    (when (and (eq major-mode 'org-mode ) org-startup-with-latex-preview)
-      (org-clear-latex-preview)
-      (let ((current-prefix-arg '(16))) ;; magic number in the code.
+  (when (and (eq major-mode 'org-mode ) org-startup-with-latex-preview)
+    (org-clear-latex-preview)
+    (let ((current-prefix-arg '(16))) ;; magic number in the code.
       (call-interactively 'org-latex-preview))))
 
-  (map!
-   :g "<f6>" 'pac/custom-toggle-theme
-   ;; Sometimes loading default theme is broken. I couldn't figured that out yet.
-   :leader "<f6>" 'heaven-and-hell-load-default-theme)
+(map!
+ :g "<f6>" 'pac/custom-toggle-theme
+ ;; Sometimes loading default theme is broken. I couldn't figured that out yet.
 )
-
-(add-hook 'after-init-hook 'heaven-and-hell-init-hook)
 #+end_src
 ** TRAMP
 #+begin_src emacs-lisp
