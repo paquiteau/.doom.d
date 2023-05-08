@@ -31,8 +31,8 @@
        doom              ; what makes DOOM look the way it does
        ;;doom-dashboard    ; a nifty splash screen for Emacs
        doom-quit         ; DOOM quit-message prompts when you quit Emacs
-       (emoji
-        +github)  ; 🙂
+       ;;(emoji
+        ;;+github)  ; 🙂
        hl-todo           ; highlight TODO/FIXME/NOTE/DEPRECATED/HACK/REVIEW
        ;;hydra
        ;;indent-guides     ; highlighted indent columns
@@ -87,11 +87,11 @@
 
        :checkers
        syntax              ; tasing you for every semicolon you forget
-       (spell
-        +flyspell
+       ;;(spell
+        ;;+flyspell
         ;+everywhere
-        ) ; tasing you for misspelling mispelling
-       grammar           ; tasing grammar mistake every you make
+        ;) ; tasing you for misspelling mispelling
+       ;;grammar           ; tasing grammar mistake every you make
 
        :tools
        ;;ansible
@@ -163,7 +163,7 @@
        ;;kotlin            ; a better, slicker Java(Script)
        (latex             ; writing papers in Emacs has never been so fun
         +latexmk
-        +cdlatex
+        ;;+cdlatex
    ;;     +lsp
         +fold)
        ;;lean              ; for folks with too much to prove
