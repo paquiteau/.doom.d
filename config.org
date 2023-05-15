@@ -188,33 +188,41 @@ than having to call `add-to-list' multiple times."
 
 
 The following function reformat the paragraph so that each sentence has its own line.
+
 #+begin_src emacs-lisp :tangle yes
-  (defun wrap-at-sentences ()
-  "Fills the current paragraph, but starts each sentence on a new line."
+(defun pac/one-sentence-per-line-paragraph ()
+  "Format a paragraph where each sentence is on a single line."
   (interactive)
   (save-excursion
-    ;; Select the entire paragraph.
+    ;; Paragraph are a lot of stuff in emacs, we only care about text.
+    (when (and (eq major-mode 'org-mode) (org-in-subtree-not-table-p) (not (org-in-src-block-p)) (not (texmathp)))
     (mark-paragraph)
-    ;; Move to the start of the paragraph.
-    (goto-char (region-beginning))
-    ;; Record the location of the end of the paragraph.
-    (setq end-of-paragraph (region-end))
-    ;; Wrap lines with 'hard' newlines (i.e., real line breaks).
-    (let ((use-hard-newlines 't))
-      ;; Loop over each sentence in the paragraph.
-      (while (< (point) end-of-paragraph)
-        ;; Determine the region spanned by the sentence.
-        (setq start-of-sentence (point))
-        (forward-sentence)
-        (forward-char)
-        ;; Wrap the sentence with hard newlines.
-        ;(fill-region start-of-sentence (point))
-        ;; Delete the whitespace following the period, if any.
-        (while (char-equal (char-syntax (preceding-char)) ?\s)
-          (delete-char -1))
-        ;; Insert a newline before the next sentence.
-        (insert "\n")))))
+    (let ((use-hard-newlines 't)
+          (fill-column 99999))
+      (fill-region (region-beginning) (region-end))
+      (goto-char (region-beginning)))
+    ;; look for sentences end.
+    (while (re-search-forward (sentence-end) (region-end) t)
+      ;; Remove false positives
+      (let* ((previous-word-beginning (save-excursion (backward-word) (point)))
+             (previous-word (downcase (buffer-substring previous-word-beginning (- (point) 2)))))
+        (unless (or (< (length previous-word) 1) ; single letter
+                    (string-match-p "^-?[0-9]+$" previous-word) ; numbers
+                    (member previous-word '("m" "mr" "mrs" "dr" "etc" "ph" )))) ; common abbreviations
+        (insert "\n")))
+    ; Remove an extra newline at the end.
+    (delete-char -1)
+    )))
 
+(defun pac/one-sentence-per-line (arg)
+  "Format a paragraph with one sentence per line. If called with a prefix argument, do this for the whole buffer."
+  (interactive "P")
+  (save-excursion
+  (if (eq arg '(4))
+    (while (< (point) (point-max)) (forward-paragraph) (pac/one-sentence-per-line-paragraph))
+    (pac/one-sentence-per-line-paragraph))))
+
+;; Apply the fnuction only for org roam notes.
 #+end_src
 
 *** Emacs client wrapper
