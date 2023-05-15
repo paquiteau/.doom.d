@@ -491,7 +491,7 @@ At some point I would like this to be a dash board of all my projects.
         ("Path"    99 magit-repolist-column-path ())))
 (setq magit-repository-directories '(("~/gits/nsp" . 1) ("~/gits/rep/" . 1)))
 ;; Better visualisation of current branch.
-(set-face-attribute 'magit-branch-current nil :weight 'ultra-bold :underline t)
+(set-face-attribute 'magit-branch-current nil :weight 'ultra-bold :box t)
 )
 #+end_src
 Then we are also setting up code reviews
