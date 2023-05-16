@@ -223,6 +223,8 @@ The following function reformat the paragraph so that each sentence has its own 
     (pac/one-sentence-per-line-paragraph))))
 
 ;; Apply the fnuction only for org roam notes.
+;; (add-hook 'before-save-hook #'(lambda () (when (string-prefix-p (expand-file-name org-roam-directory) (buffer-file-name)))
+;;                                              (pac/one-sentence-per-line '(4))))
 #+end_src
 
 *** Emacs client wrapper
@@ -340,87 +342,6 @@ than Objective-C. As such, it'll be switching the icon associated with =.m=.
           (cdr (assoc "matlab" all-the-icons-extension-icon-alist))))
 #+end_src
 
-** Completions
-*** Marginalia
-From Tecosaur
-#+begin_src emacs-lisp
-(after! marginalia
-  (setq marginalia-censor-variables nil)
-
-  (defadvice! +marginalia--anotate-local-file-colorful (cand)
-    "Just a more colourful version of `marginalia--anotate-local-file'."
-    :override #'marginalia--annotate-local-file
-    (when-let (attrs (file-attributes (substitute-in-file-name
-                                       (marginalia--full-candidate cand))
-                                      'integer))
-      (marginalia--fields
-       ((marginalia--file-owner attrs)
-        :width 12 :face 'marginalia-file-owner)
-       ((marginalia--file-modes attrs))
-       ((+marginalia-file-size-colorful (file-attribute-size attrs))
-        :width 7)
-       ((+marginalia--time-colorful (file-attribute-modification-time attrs))
-        :width 12))))
-
-  (defun +marginalia--time-colorful (time)
-    (let* ((seconds (float-time (time-subtract (current-time) time)))
-           (color (doom-blend
-                   (face-attribute 'marginalia-date :foreground nil t)
-                   (face-attribute 'marginalia-documentation :foreground nil t)
-                   (/ 1.0 (log (+ 3 (/ (+ 1 seconds) 345600.0)))))))
-      ;; 1 - log(3 + 1/(days + 1)) % grey
-      (propertize (marginalia--time time) 'face (list :foreground color))))
-
-  (defun +marginalia-file-size-colorful (size)
-    (let* ((size-index (/ (log10 (+ 1 size)) 7.0))
-           (color (if (< size-index 10000000) ; 10m
-                      (doom-blend 'orange 'green size-index)
-                    (doom-blend 'red 'orange (- size-index 1)))))
-      (propertize (file-size-human-readable size) 'face (list :foreground color)))))
-#+end_src
-*** Company
-It's nice to have completions almost all the time, in my opinion. Key strokes
-are just waiting to be saved!
-#+begin_src emacs-lisp
-(after! company
-  (setq company-idle-delay 0.1
-        company-minimum-prefix-length 2)
-  (add-hook 'evil-normal-state-entry-hook #'company-abort)) ;; make aborting less annoying
-
-#+end_src
-Now, the improvements from ~precedent~ are mostly from remembering history, so
-let's improve that memory.
-~Ispell~ is nice, let's have it in ~text~, ~markdown~, and ~GFM~.
-#+begin_src emacs-lisp
-(set-company-backend!
-  '(text-mode
-    markdown-mode
-    gfm-mode)
-  '(:seperate
-    company-ispell
-    company-files
-    company-yasnippet))
-#+end_src
-
-*** Copilot
-Github copilot is too great to be ignored this days.
-#+begin_src emacs-lisp :tangle "packages.el"
-(package! copilot
-  :recipe (:host github :repo "zerolfx/copilot.el" :files ("*.el" "dist")))
-#+end_src
-#+begin_src emacs-lisp
-;; accept completion from copilot and fallback to company
-(use-package! copilot
-  :hook (prog-mode . copilot-mode)
-  :bind (("C-TAB" . 'copilot-accept-completion-by-word)
-         ("C-<tab>" . 'copilot-accept-completion-by-word)
-         :map copilot-completion-map
-         ("<tab>" . 'copilot-accept-completion)
-         ("TAB" . 'copilot-accept-completion)))
-#+end_src
-**** TODO BetterIntegration of copilot
-https://robert.kra.hn/posts/2023-02-22-copilot-emacs-setup/
-https://github.com/rksm/copilot-emacsd
 ** Spell
 #+begin_src emacs-lisp
 (setq ispell-personal-dictionary (expand-file-name ".ispell_personal" doom-private-dir))
@@ -693,43 +614,75 @@ let's change that, and do a few other similar tweaks while we're at it.
    org-directory "~/org"                      ; let's put files here
    org-ellipsis " ▾ "
    org-export-in-background t                  ; run export processes in external emacs process
+   org-export-allow-bind-keywords t
    org-use-sub-superscripts t       ; don't treat lone _ / ^ as sub/superscripts, require _{} / ^{}
    org-highlight-latex-and-related '(native script entities)
-   org-highlight-latex-and-related nil ;
-   ;;org-preview-latex-default-process 'dvisvgm   ;No blur when scaling
-   ;; org-startup-with-latex-preview t
-   ;;org-hide-emphasis-markers t                 ; hide the emphasis.
-   org-pretty-entities-include-sub-superscripts t ;  hide the _ and ^
+   ;; org-preview-latex-default-process 'dvisvgm   ;No blur when
+   org-startup-with-latex-preview t
+   org-pretty-entities t
+   org-appear-inside-latex t
+   org-hide-emphasis-markers t                 ; hide the emphasis.
+   org-pretty-entities-include-sub-superscripts nil ;  hide the _ and ^
    org-list-allow-alphabetical t               ; have a. A. a) A) list bullets
    org-list-demote-modify-bullet '(("+" . "-") ("-" . "+") ("*" . "+") ("1." . "a."))
    org-log-done 'time                          ; having the time a item is done sounds convenient
    org-startup-indented nil
    org-use-property-inheritance t              ; it's convenient to have properties inherited
-   )
-  )
-; cd-latex support
-(add-hook 'org-mode-hook 'turn-on-org-cdlatex)
-#+end_src
-** LaTeX Export
-#+begin_src emacs-lisp :tangle "packages.el"
-(package! engrave-faces)
-#+end_src
-
-#+begin_src emacs-lisp
-(use-package! engrave-faces-latex :after ox-latex)
-#+end_src
-#+begin_src emacs-lisp
-(after! org
-  (setq
    org-latex-pdf-process '("latexmk -f -pdf -%latex -shell-escape -interaction=nonstopmode -output-directory=%o %f")
-   org-latex-listings 'engraved
-   org-latex-packages-alist  '(("margin=1cm" "geometry" nil))
    org-cite-global-bibliography '("~/org/library.bib")
-   )
-  )
+   org-cite-biblatex-options "sorting=none, doi=false,url=false,isbn=false,style=ieee"
+   org-latex-default-packages-alist '(("AUTO" "inputenc" t ("pdflatex"))
+                                    ("T1" "fontenc" t  ("pdflatex"))
+                                    ("table,dvipsnames,x11names" "xcolor" nil)
+                                    ("colorlinks=true, linkcolor=MidnightBlue,citecolor=OliveGreen,filecolor=magenta,urlcolor=BlueViolet" "hyperref" nil))
+   org-latex-packages-alist '(
+                              "\\usepackage[margin=1in]{geometry}"
+                              "\\usepackage{mathtools}"
+                              "\\usepackage{amsfonts}"
+                              "\\usepackage{amssymb}"
+                              "\\usepackage{amsmath}"
+                              "\\usepackage{bm}"
+                              "\\usepackage{cleveref}"
+                              "\\usepackage{caption}"
+                              "\\DeclareMathOperator*{\\argmin}{arg\\,min}"
+                              "\\DeclareMathOperator*{\\diag}{diag}"
+                              "\\DeclareMathOperator*{\\tr}{tr}"
+                              "\\DeclareMathOperator*{\\vertiii}{\\vert\\!\\vert\\!\\vert}"
+                              "\\newcommand{\\st}{\\quad\\mathrm{s.t}\\quad}"
+                              "\\newcommand{\\prox}{\\operatorname{prox}}"
+                              "\\newcommand{\\sgn}{\\operatorname{sgn}}"
+                              "\\newcommand{\\divv}{\\operatorname{div}}"
+                              "\\newcommand{\\dom}{\\operatorname{dom}}"
+                              "\\newcommand{\\Fix}{\\operatorname{Fix}}"
+                              "\\newcommand{\\Ker}{\\operatorname{Ker}}"
+                              "\\newcommand{\\Zer}{\\operatorname{Zer}}"
+                              )))
+                                        ; cd-latex support
+(defun org-latex-preview-buffer ()
+  (interactive)
+  (let ((current-prefix-arg '(16)))
+    (call-interactively 'org-latex-preview)))
 
+(map! :map org-mode-map
+      :localleader
+      :desc "LaTeX Preview Buffer" "M"  #'org-latex-preview-buffer)
+
+;; (add-hook 'org-mode-hook 'turn-on-org-cdlatex)
+
+;; (add-hook 'org-mode-hook '(lambda () (when (string-prefix-p (expand-file-name org-roam-directory) (buffer-file-name))
+;;                                        (let ((current-prefix-arg '(16))) ;; magic number in the code.
+;;                                          (call-interactively 'org-latex-preview)))))
 #+end_src
 
+** Org-Ref
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! org-ref)
+#+end_src
+#+begin_src emacs-lisp
+(use-package! org-ref)
+(setq org-ref-insert-cite-function
+      (lambda () (org-cite-insert nil)))
+#+end_src
 ** View exported file
 ='localeader v= has no pre-existing binding, so I may as well use it with the same
 functionality as in LaTeX. Let's try viewing possible output files with this.
@@ -787,98 +740,15 @@ functionality as in LaTeX. Let's try viewing possible output files with this.
               (format "(defun org-release () \"The release version of Org.\" %S)\n" version)
               (format "(defun org-git-version () \"The truncate git commit hash of Org mode.\" %S)\n" git-version)
               "(provide 'org-version)\n"))))
-  :pin  "36e168dfd418021b4dbad50f382887ff8b498bd8")
+  :pin  "382990505b96973791f4fc14f5283d70d3da9183")
 #+end_src
 
 #+begin_src emacs-lisp
-
+(after! org
+(add-hook 'org-mode-hook 'org-latex-preview-auto-mode))
+(after! org-roam
+(add-hook 'org-roam-mode-hook 'org-latex-preview-buffer))
 #+end_src
-
-** LaTeX fragments :noexport:
-
-It's nice to customize the look of LaTeX fragments so they fit better in the
-text: like this \(\sqrt{\beta^2+3}-\sum_{\phi=1}^\infty \frac{x^\phi-1}{\Gamma(a)}\).
-#+name: org-latex-preamble
-#+begin_src emacs-lisp
-(setq org-format-latex-header "\\documentclass{article}
-\\usepackage[usenames]{xcolor}
-\\usepackage[T1]{fontenc}
-\\usepackage{booktabs}
-\\pagestyle{empty}             % do not remove
-% The settings below are copied from fullpage.sty
-\\setlength{\\textwidth}{\\paperwidth}
-\\addtolength{\\textwidth}{-3cm}
-\\setlength{\\oddsidemargin}{1.5cm}
-\\addtolength{\\oddsidemargin}{-2.54cm}
-\\setlength{\\evensidemargin}{\\oddsidemargin}
-\\setlength{\\textheight}{\\paperheight}
-\\addtolength{\\textheight}{-\\headheight}
-\\addtolength{\\textheight}{-\\headsep}
-\\addtolength{\\textheight}{-\\footskip}
-\\addtolength{\\textheight}{-3cm}
-\\setlength{\\topmargin}{1.5cm}
-\\addtolength{\\topmargin}{-2.54cm}
-% my custom stuff
-\\usepackage{mathtools}
-\\usepackage{amsfonts}
-\\usepackage{amssymb}
-\\usepackage{mathrsfs}
-\\usepackage{bm}
-\\DeclareMathOperator*{\\argmin}{arg\\,min}
-\\DeclareMathOperator*{\\diag}{diag}
-\\DeclareMathOperator*{\\tr}{tr}
-\\DeclareMathOperator*{\\vertiii}{\\vert\\!\\vert\\!\\vert}
-\\newcommand{\\st}{\\quad\\mathrm{s.t}\\quad}
-\\newcommand{\\prox}{\\operatorname{prox}}
-\\newcommand{\\sgn}{\\operatorname{sgn}}
-\\newcommand{\\divv}{\\operatorname{div}}
-\\newcommand{\\dom}{\\operatorname{dom}}
-\\newcommand{\\Fix}{\\operatorname{Fix}}
-\\newcommand{\\Ker}{\\operatorname{Ker}}
-\\newcommand{\\Zer}{\\operatorname{Zer}}
-                ")
-#+end_src
-*** Fragment scaling
-Also , lets update the ~org-format-latex-option~
-#+begin_src emacs-lisp :tangle nil
-;; (defun my/text-scale-adjust-latex-previews ()
-;;   "Adjust the size of latex preview fragments when changing the
-;; buffer's text scale."
-
-;;   (pcase major-mode
-;;     ('latex-mode
-;;      (dolist (ov (overlays-in (point-min) (point-max)))
-;;        (if (eq (overlay-get ov 'category)
-;;                'preview-overlay)
-;;            (my/text-scale--resize-fragment ov))))
-;;     ('org-mode
-;;      (dolist (ov (overlays-in (point-min) (point-max)))
-;;        (if (eq (overlay-get ov 'org-overlay-type)
-;;                'org-latex-overlay)
-;;            (my/text-scale--resize-fragment ov)))))
-;;   )
-
-;; (defun my/text-scale--resize-fragment (ov)
-;;   (overlay-put
-;;    ov 'display
-;;    (cons 'image
-;;          (plist-put
-;;           (cdr (overlay-get ov 'display))
-;;           :scale  (* +org-latex-preview-scale-current (expt text-scale-mode-step text-scale-mode-amount))))
-;;   ))
-
-;; ;; (add-hook 'text-scale-mode-hook #'org-auctex-preview-buffer)
-
-;; (add-hook 'text-scale-mode-hook #'my/text-scale-adjust-latex-previews)
-
-;; (advice-add 'org-fragtog--post-cmd :after #'my/text-scale-adjust-latex-previews)
-
-;; (defun my/scale-big-font (&optional toggle)
-;;   (setq +org-latex-preview-scale-current (if doom-big-font-mode +org-latex-preview-scale-big +org-latex-preview-scale-normal))
-;;   (my/text-scale-adjust-latex-previews))
-;; (advice-add 'doom-big-font-mode :after #'my/scale-big-font)
-#+end_src
-Some text \(\sqrt{x} = \frac{1}{2}\) Some text
 
 ** Visuals Style
 *** Org-Modern
@@ -889,20 +759,20 @@ Rincing Org /easily/ with *markup* _test_
 (package! org-appear :recipe (:host github :repo "awth13/org-appear"))
 #+end_src
 #+begin_src emacs-lisp
-(after! org
-  (global-org-modern-mode)
-)
-(use-package! org-modern
-  :hook (org-mode . org-modern-mode)
-  :config
-  (setq org-modern-table-vertical 1
-        org-modern-table-horizontal 0.2
-        org-modern-horizontal-rule nil
-        org-modern-list '((43 . "➤")
-                          (45 . "–")
-                          (42 . "•"))
-        org-modern-block-fringe nil
-        ))
+;; (after! org
+;;   (global-org-modern-mode)
+;; )
+;; (use-package! org-modern
+;;   :hook (org-mode . org-modern-mode)
+;;   :config
+;;   (setq org-modern-table-vertical 1
+;;         org-modern-table-horizontal 0.2
+;;         org-modern-horizontal-rule nil
+;;         org-modern-list '((43 . "➤")
+;;                           (45 . "–")
+;;                           (42 . "•"))
+;;         org-modern-block-fringe nil
+;;         ))
 
 ;; also needs org-hide-emphasis-marker to be set.
 (use-package! org-appear
@@ -948,7 +818,7 @@ This makes sure that org-roam buffer are open in a dedicated workspace, to preve
   :before #'org-roam-node-random
   :before #'org-roam-buffer-display-dedicated
   :before #'org-roam-buffer-toggle
-  (when (featurep! :ui workspaces)
+  (when (modulep! :ui workspaces)
     (+workspace-switch "*roam*" t)))
 #+end_src
 *** Org Roam Basic Configuration
@@ -1170,8 +1040,6 @@ See also  [[id:e20503eb-2a58-46b6-a071-311956b594c2][Workflow]]
 (after! latex
 (add-to-list 'auto-mode-alist '("\\.tikz" . LaTeX-mode))
 (add-to-list 'auto-mode-alist '("\\.pgf" . LaTeX-mode))
-)
-(after! latex
 (add-to-list 'TeX-view-program-selection '(output-pdf "PDF Tools"))
 (add-to-list 'TeX-view-program-list '("PDF Tools" TeX-pdf-tools-sync-view))
 ;; Update PDF buffers after successful LaTeX runs.
@@ -1301,130 +1169,391 @@ Such special cases should be remapped to another value, as given in `string-offs
 #+end_src
 ** cdlatex
 #+begin_src emacs-lisp
-(after! cdlatex
-  (setq cdlatex-env-alist
-        '(("bmatrix" "\\begin{bmatrix}\n?\n\\end{bmatrix}" nil)
-          ("equation*" "\\begin{equation*}\n?\n\\end{equation*}" nil)))
-  (setq ;; cdlatex-math-symbol-prefix ?\; ;; doesn't work at the moment :(
-   cdlatex-math-symbol-alist
-   '( ;; adding missing functions to 3rd level symbols
-     (?_    ("\\downarrow"  ""           "\\inf"))
-     (?2    ("^2"           "\\sqrt{?}"     ""     ))
-     (?3    ("^3"           "\\sqrt[3]{?}"  ""     ))
-     (?^    ("\\uparrow"    ""           "\\sup"))
-     (?k    ("\\kappa"      ""           "\\ker"))
-     (?m    ("\\mu"         ""           "\\lim"))
-     (?c    (""             "\\circ"     "\\cos"))
-     (?d    ("\\delta"      "\\partial"  "\\dim"))
-     (?D    ("\\Delta"      "\\nabla"    "\\deg"))
-     ;; no idea why \Phi isnt on 'F' in first place, \phi is on 'f'.
-     (?F    ("\\Phi"))
-     ;; now just convenience
-     (?.    ("\\cdot" "\\dots"))
-     (?:    ("\\vdots" "\\ddots"))
-     (?*    ("\\times" "\\star" "\\ast")))
-   cdlatex-math-modify-alist
-   '( ;; my own stuff
-     (?B    "\\mathbb"        nil          t    nil  nil)
-     (?m    "\\bm"           "\\mbox"      t    nil  nil)
-     (?a    "\\abs"           nil          t    nil  nil))))
+;; (after! cdlatex
+;;   (setq cdlatex-env-alist
+;;         '(("bmatrix" "\\begin{bmatrix}\n?\n\\end{bmatrix}" nil)
+;;           ("equation*" "\\begin{equation*}\n?\n\\end{equation*}" nil)))
+;;   (setq ;; cdlatex-math-symbol-prefix ?\; ;; doesn't work at the moment :(
+;;    cdlatex-math-symbol-alist
+;;    '( ;; adding missing functions to 3rd level symbols
+;;      (?_    ("\\downarrow"  ""           "\\inf"))
+;;      (?2    ("^2"           "\\sqrt{?}"     ""     ))
+;;      (?3    ("^3"           "\\sqrt[3]{?}"  ""     ))
+;;      (?^    ("\\uparrow"    ""           "\\sup"))
+;;      (?k    ("\\kappa"      ""           "\\ker"))
+;;      (?m    ("\\mu"         ""           "\\lim"))
+;;      (?c    (""             "\\circ"     "\\cos"))
+;;      (?d    ("\\delta"      "\\partial"  "\\dim"))
+;;      (?D    ("\\Delta"      "\\nabla"    "\\deg"))
+;;      ;; no idea why \Phi isnt on 'F' in first place, \phi is on 'f'.
+;;      (?F    ("\\Phi"))
+;;      ;; now just convenience
+;;      (?.    ("\\cdot" "\\dots"))
+;;      (?:    ("\\vdots" "\\ddots"))
+;;      (?*    ("\\times" "\\star" "\\ast")))
+;;    cdlatex-math-modify-alist
+;;    '( ;; my own stuff
+;;      (?B    "\\mathbb"        nil          t    nil  nil)
+;;      (?m    "\\bm"           "\\mbox"      t    nil  nil)
+;;      (?a    "\\abs"           nil          t    nil  nil))))
 
 #+end_src
-* lsp-ltex
 #+begin_src emacs-lisp :tangle "packages.el"
-(package! lsp-ltex)
-;; Optional dependency of lsp-ltex,
-;; needed for installing/updating ltex-ls LSP server
-(package! github-tags
-    :recipe (:host github
-            :repo "jcs-elpa/github-tags")
-    :pin "4253db4b6280640202e1d5db25239b165baa0467")
+(package! aas)
+(package! laas)
+#+end_src
+#+begin_src emacs-lisp
+(use-package! laas
+  :hook (org-mode . laas-mode)
+  :hook (LaTeX-mode . laas-mode))
+(after! laas
+  (aas-set-snippets 'laas-mode
+                    ;; set condition!
+                    :cond #'texmathp ; expand only while in math-)
+                    "sum" (lambda () (interactive) (yas-expand-snippet "\\sum_{$1}^{$2} $0"))
+                    "CC" "\\mathbb{C}"
+                    "EE" "\\mathbb{E}"
+                    "FF" "\\mathbb{F}"
+                    "HH" "\\mathbb{H}"
+                    "NN" "\\mathbb{N}"
+                    "PP" "\\mathbb{P}"
+                    "QQ" "\\mathbb{Q}"
+                    "RR" "\\mathbb{R}"
+                    "RN" "\\mathbb{R}^N"
+                    "ZZ" "\\mathbb{Z}"
+                    "arg" "\\arg"
+                    "min" "\\min"
+                    "max" "\\min"
+                    "amin" "\\argmin"
+                    ))
+#+end_src
+
+* Completions
+** Marginalia
+From Tecosaur
+#+begin_src emacs-lisp
+(after! marginalia
+  (setq marginalia-censor-variables nil)
+
+  (defadvice! +marginalia--anotate-local-file-colorful (cand)
+    "Just a more colourful version of `marginalia--anotate-local-file'."
+    :override #'marginalia--annotate-local-file
+    (when-let (attrs (file-attributes (substitute-in-file-name
+                                       (marginalia--full-candidate cand))
+                                      'integer))
+      (marginalia--fields
+       ((marginalia--file-owner attrs)
+        :width 12 :face 'marginalia-file-owner)
+       ((marginalia--file-modes attrs))
+       ((+marginalia-file-size-colorful (file-attribute-size attrs))
+        :width 7)
+       ((+marginalia--time-colorful (file-attribute-modification-time attrs))
+        :width 12))))
+
+  (defun +marginalia--time-colorful (time)
+    (let* ((seconds (float-time (time-subtract (current-time) time)))
+           (color (doom-blend
+                   (face-attribute 'marginalia-date :foreground nil t)
+                   (face-attribute 'marginalia-documentation :foreground nil t)
+                   (/ 1.0 (log (+ 3 (/ (+ 1 seconds) 345600.0)))))))
+      ;; 1 - log(3 + 1/(days + 1)) % grey
+      (propertize (marginalia--time time) 'face (list :foreground color))))
+
+  (defun +marginalia-file-size-colorful (size)
+    (let* ((size-index (/ (log10 (+ 1 size)) 7.0))
+           (color (if (< size-index 10000000) ; 10m
+                      (doom-blend 'orange 'green size-index)
+                    (doom-blend 'red 'orange (- size-index 1)))))
+      (propertize (file-size-human-readable size) 'face (list :foreground color)))))
+#+end_src
+** Company
+It's nice to have completions almost all the time, in my opinion. Key strokes
+are just waiting to be saved!
+#+begin_src emacs-lisp
+(after! company
+  (setq company-idle-delay 0.1
+        company-minimum-prefix-length 2)
+  (add-hook 'evil-normal-state-entry-hook #'company-abort)) ;; make aborting less annoying
+
+#+end_src
+Now, the improvements from ~precedent~ are mostly from remembering history, so
+let's improve that memory.
+~Ispell~ is nice, let's have it in ~text~, ~markdown~, and ~GFM~.
+#+begin_src emacs-lisp
+(set-company-backend!
+  '(text-mode
+    markdown-mode
+    gfm-mode)
+  '(:seperate
+    company-ispell
+    company-files
+    company-yasnippet))
+#+end_src
+
+** Copilot
+Github copilot is too great to be ignored this days.
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! copilot
+  :recipe (:host github :repo "zerolfx/copilot.el" :files ("*.el" "dist")))
+#+end_src
+#+begin_src emacs-lisp
+;; accept completion from copilot and fallback to company
+(defvar pac/copilot-manual-mode nil
+  "When t, will only show completion when triggered by M-C-RET")
+(defvar pac/no-copilot-mode
+  '(shell-mode
+    inferior-python-mode
+    eshell-mode
+    term-mode
+    vterm-mode
+    comint-mode
+    compilation-mode
+    debugger-mode
+    dired-mode-hook
+    compilation-mode-hook
+    flutter-mode-hook
+    minibuffer-mode-hook)
+  "Modes in which copilot is inconvenient.")
+(use-package! copilot
+  :hook (prog-mode . copilot-mode)
+  :bind (:map copilot-completion-map
+              ("<tab>" . 'copilot-accept-completion)
+              ("TAB" . 'copilot-accept-completion)
+              ("C-TAB" . 'copilot-accept-completion-by-word)
+              ("C-<tab>" . 'copilot-accept-completion-by-word))
+  :config
+  (add-to-list 'copilot-disable-predicates #'(lambda () (or (member major-mode pac/no-copilot-mode)) (company--active-p))))
+
+
+(map! :leader :desc "Toggle AI Completion" :n "c p"  (global-copilot-mode))
+
+#+end_src
+
+*** TODO Better integration of copilot
+https://robert.kra.hn/posts/2023-02-22-copilot-emacs-setup/
+https://github.com/rksm/copilot-emacsd
+
+** Codeium
+Codeium is a free (as a beer) alternative to copilot, with direct support for emacs.
+
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! codeium :recipe (:host github :repo "Exafunction/codeium.el") :disable t)
 #+end_src
 
 #+begin_src emacs-lisp
-;;; lsp-ltex
-
-(use-package! lsp-ltex
-  :commands (+lsp-ltex-toggle
-             +lsp-ltex-enable
-             +lsp-ltex-disable
-             +lsp-ltex-setup)
-  :hook ((latex-mode LaTeX-mode org-mode markdown-mode) . #'+lsp-ltex-setup)
+(use-package! codeium
   :init
-  ;; There is some problematic modes when it comes to enabling LSP
-  (defvar +lsp-ltex-disabled-modes '(org-msg-edit-mode))
+  (add-to-list 'completion-at-point-functions #'codeium-completion-at-point)
   :config
-  ;; Add doom-docs-mode to LSP language IDs
-  (add-to-list 'lsp-language-id-configuration '(doom-docs-org-mode . "org"))
+;;  (setq codeium/metadata/api_key (funcall (plist-get (nth 0 (auth-source-search :max 1 :host "codeium.com" :require '(:secret))) :secret)))
+(defun my-codeium/document/text ()
+        (buffer-substring-no-properties (max (- (point) 3000) (point-min)) (min (+ (point) 1000) (point-max))))
+    ;; if you change the text, you should also change the cursor_offset
+    ;; warning: this is measured by UTF-8 encoded bytes
+    (defun my-codeium/document/cursor_offset ()
+        (codeium-utf8-byte-length
+            (buffer-substring-no-properties (max (- (point) 3000) (point-min)) (point))))
+    (setq codeium/document/text 'my-codeium/document/text)
+    (setq codeium/document/cursor_offset 'my-codeium/document/cursor_offset))
+#+end_src
+
+
+* LSP
+** Text Modes
+There is two main LSP server for plain text editing:
+- LSP-LTeX
+- Grammarly-ls
+
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! lsp-ltex)
+(package! lsp-grammarly)
+#+end_src
+
+#+begin_src emacs-lisp
+(use-package! lsp-ltex
   :init
-  (setq
-        lsp-ltex-ls-path (expand-file-name "~/softs/ltex-ls-15.2.0")
-        lsp-ltex-check-frequency "save"
+  (setq lsp-ltex-version "16.0.0")
+  (setq lsp-ltex-check-frequency "save"
         lsp-ltex-log-level "warning" ;; No need to log everything
-        lsp-ltex-diagnostic-severity "warning"
+        lsp-ltex-diagnostic-severity "information" ;; warning, or hint
         lsp-ltex-enabled ["bibtex" "context" "context.tex"
                           "html" "latex" "markdown" "org"
                           "restructuredtext" "rsweave"]
         ;; Path in which, interactively added words and rules will be stored.
         lsp-ltex-user-rules-path (expand-file-name "lsp-ltex" doom-data-dir))
-
-  ;; When n-gram data sets are available, use them to detect errors with words
-  ;; that are often confused (like their and there).
-  (when (file-directory-p "/usr/share/ngrams")
+ ;; ngrams extensions: check for common mistakes in English (their/ there, etc.)
+ ;; language-tools-ngrams package must be installed.
+ (when (file-directory-p "/usr/share/ngrams")
     (setq lsp-ltex-additional-rules-language-model "/usr/share/ngrams"))
 
-  (defun +lsp-ltex-setup ()
-    "Load LTeX LSP server."
-    (interactive)
-    (require 'lsp-ltex)
-    (require 'guess-language)
-    (when (and (+lsp-ltex--enabled-p)
-               (not (memq major-mode +lsp-ltex-disabled-modes)))
-      (setq-local lsp-ltex-language (alist-get (guess-language-buffer) guess-language-langcodes))
-      (lsp-deferred)))
+)
 
-  (defun +lsp-ltex--enabled-p ()
-    (not (memq 'ltex-ls lsp-disabled-clients)))
+(use-package! lsp-grammarly
+  :init
+  (setq lsp-grammarly-suggestions-passive-voice nil)
+)
+#+end_src
 
-  (defun +lsp-ltex-enable ()
-    "Enable LTeX LSP for the current buffer."
-    (interactive)
-    (unless (+lsp-ltex--enabled-p)
-      (setq-local lsp-disabled-clients (delq 'ltex-ls lsp-disabled-clients))
-      (message "Enabled ltex-ls"))
-    (+lsp-ltex-setup))
+#+begin_src emacs-lisp
 
-  (defun +lsp-ltex-disable ()
-    "Disable LTeX LSP for the current buffer."
-    (interactive)
-    (when (+lsp-ltex--enabled-p)
-      (setq-local lsp-disabled-clients (cons 'ltex-ls lsp-disabled-clients))
-      (lsp-disconnect)
-      (message "Disabled ltex-ls")))
+(defvar +lsp-disabled-modes '(org-msg-edit-mode)
+  "Major modes where lsp-ltex should be disabled.")
 
-  (defun +lsp-ltex-toggle ()
-    "Toggle LTeX LSP for the current buffer."
-    (interactive)
-    (if (+lsp-ltex--enabled-p)
-        (+lsp-ltex-disable)
-      (+lsp-ltex-enable)))
+(defun pac/lsp-text--setup (server)
+  "Setup lsp client for text."
+  (cond ((eq server 'ltex-ls) (require 'lsp-ltex))
+        ((eq server 'grammarly-ls) (require 'lsp-grammarly)))
+  (when (and (not (memq major-mode +lsp-disabled-modes))
+             (not (memq server lsp-disabled-clients))
+             (lsp-deferred))))
 
-  (map! :localleader
-        :map (text-mode-map latex-mode-map LaTeX-mode-map org-mode-map markdown-mode-map)
-        :desc "Toggle grammar check" "G" #'+lsp-ltex-toggle))
+(defun pac/lsp-text--enabled-p (server)
+  "Return t if lsp client is not disable for the current buffer."
+  (not (memq server lsp-disabled-clients)))
 
-;; (after! lsp-ltex
-;;   (advice-add
-;;    '+lsp-ltex-setup :after
-;;    (lambda ()
-;;      (setq-local lsp-idle-delay 5.0
-;;                  lsp-progress-function #'lsp-on-progress-legacy
-;;                  lsp-progress-spinner-type 'half-circle
-;;                  lsp-ui-sideline-show-code-actions nil
-;;                  lsp-ui-sideline-show-diagnostics nil
-;;                  lsp-ui-sideline-enable nil)))
-;;   )
+(defun pac/lsp-text--enable (server)
+  "Enable text lsp server for the current buffer."
+  (unless (pac/lsp-text--enabled-p server)
+    (setq-local lsp-disabled-clients (delq server lsp-disabled-clients))
+    (message  (concat "Enabled " (symbol-name server)))
+  (pac/lsp-text--setup server)))
 
+(defun pac/lsp-text--disable (server)
+  (when (pac/lsp-text--enabled-p server)
+    (setq-local lsp-disabled-clients (cons server lsp-disabled-clients))
+    (lsp-disconnect)
+    (message (concat "Disabled " (symbol-name server)))))
+
+(defun pac/lsp-text-server-toggle (server)
+  (interactive (or current-prefix-arg (when (eq lsp-disabled-clients nil) 'grammarly-ls) (list (intern (completing-read "LSP server: " lsp-disabled-clients)))))
+  (cond ((eq server 4) (pac/lsp-text--disable 'ltex-ls) (pac/lsp-text--disable 'grammarly-ls))
+        ((eq server 'ltex-ls) (pac/lsp-text--enable 'ltex-ls) (pac/lsp-text--disable 'grammarly-ls))
+        ((eq server 'grammarly-ls) (pac/lsp-text--enable 'grammarly-ls) (pac/lsp-text--disable 'ltex-ls))
+        ))
+
+(map! :map text-mode-map
+      :localleader
+      :desc "Toggle lsp client for text" :n "G" #'pac/lsp-text-server-toggle)
+#+end_src
+
+*** TODO  Customization of the doc of grammarly
+
+#+begin_src  emacs-lisp
+;; TODO only run this function when the lsp client is grammarly.
+(defun lsp-grammarly-format-span nil
+  "find all strings in a span tag and propertize them with a color"
+  (interactive)
+  (save-excursion
+    (goto-char (point-min))
+    (while (re-search-forward "\n?\n?<span style=\"color:#F00;\">\\(.*?\\)</span>\n?\\(.*?\\)\n?\u2026" nil t)
+      (let* ((len-err (length (match-string 1)))
+             (len-cor (length (match-string 2)))
+             (err (match-string 1))
+             (cor (match-string 2)))
+        (set-text-properties 0 len-err (list 'face '(:foreground "#ff6c6b" :weight bold :strike-through t)) err)
+        (set-text-properties 0 len-cor (list 'face '(:foreground "#98be65" :weight bold :strike-through nil)) cor)
+        (replace-match (concat " " err cor " …"))
+        )
+      )
+    ;; Second pass with simpler regex if the first one did no
+    (goto-char (point-min))
+    (while (re-search-forward "\n?\n?<span style=\"color:#F00;\">\\(.*?\\)</span>\n?" nil t)
+      (let* ((len-err (length (match-string 1)))
+             (err (match-string 1)))
+        (set-text-properties 0 len-err (list 'face '(:foreground "#ff6c6b" :weight bold :strike-through t)) err)
+        (replace-match  err)
+        ))))
+
+;;<span style="color:#F00;">test</span>
+;;<span style="color:#F00;">test</span>
+;;… possibilities for \n<span style=\"color:#F00;\">~~the analysis of~~</span>\nanalyzing …"
+
+(advice-add 'lsp-ui-doc--fill-document :after #'lsp-grammarly-format-span)
+#+end_src
+#+begin_src emacs-lisp
+(after! lsp
+    (add-to-list 'lsp-disabled-clients 'ltex-ls)
+    (add-to-list 'lsp-disabled-clients 'grammarly-ls)
+)
+
+#+end_src
+
+#+begin_src  emacs-lisp
+#+end_src
+
+
+
+** UI
+#+begin_src emacs-lisp
+(setq!
+ lsp-use-plists "true"  ;; faster
+ lsp-headerline-breadcrumb-enable t
+ lsp-enable-symbol-highlighting t
+ lsp-ui-doc-enable t
+ lsp-ui-doc-show-with-cursor t
+ lsp-ui-doc-show-with-mouse t
+ lsp-ui-doc-position 'at-point
+ lsp-ui-doc-include-signature t
+ lsp-ui-sideline-enable t
+ lsp-ui-sideline-show-code-actions t
+ lsp-ui-sideline-show-diagnostics t
+ lsp-ui-sideline-show-hover t
+ lsp-ui-sideline-show-symbol t
+ lsp-eldoc-enable-hover t
+ lsp-modeline-diagnostics-enable t
+ lsp-signature-auto-activate t
+ lsp-signature-render-documentation t
+)
+#+end_src
+** LSP for Python
+
+pylsp is install system-wide, with plugins (notably the ruff one)
+
+#+begin_src emacs-lisp
+(setq!
+ lsp-pylsp-plugins-jedi-use-pyenv-environment t
+ lsp-pylsp-plugins-pyflakes-enabled nil
+ lsp-pylsp-plugins-pydocstyle-enabled nil
+ lsp-pylsp-plugins-pylint-enabled nil
+ lsp-pylsp-plugins-pycodestyle-ignore ["D102"]
+ lsp-pylsp-plugins-flake8-enabled nil
+ lsp-pylsp-plugins-mccabe-enabled nil
+ lsp-pylsp-plugins-flake8-max-line-length 180
+ lsp-pylsp-plugins-pycodestyle-max-line-length 180
+ )
+#+end_src
+
+** Ruff LSP
+
+Ruff is awesome, and it has a lsp client !
+#+begin_src emacs-lisp
+
+(after! lsp-mode
+    ;; (lsp-register-client
+    ;; (make-lsp-client :new-connection (lsp-stdio-connection '("ruff-lsp"))
+    ;;                 :major-modes '(python-mode)
+    ;;                 :priority -1
+    ;;                 :server-id 'lsp-python-ruff)
+    ;; )
+    ;; (defcustom-lsp lsp-ruff-args ["--line-length=10"]
+    ;;   "arguments for ruff."
+    ;;   :group 'lsp-pytohn-ruff
+    ;;   :type 'vector
+    ;;   :lsp-path "ruff-lsp.args"
+    ;; )
+
+    ;; pylsp integration, not really working....
+  (defcustom-lsp lsp-pylsp-plugin-ruff-enabled t
+    "enable ruff linting."
+    :group 'lsp-pylsp
+    :type 'boolean
+    :lsp-path "pylsp.plugins.ruff.enabled")
+  ;; (defcustom-lsp lsp-pylsp-plugin-ruff-select ["F", "E", "W", "I"]
+  ;;   "select ruff error codes"
+  ;;   :group 'lsp-pylsp
+  ;;   :type 'vector
+  ;;   :lsp-path "pylsp.plugins.ruff.select")
+                )
 #+end_src
 
 * Python
@@ -1473,7 +1602,6 @@ Fix highlighting errors from tree-sitter.
   #+end_src
 
 ** Configure Flycheck RST-sphinx to use the correct pyenv
-
 
 #+begin_src emacs-lisp
 (require 'pyenv-mode)
@@ -1551,59 +1679,6 @@ Adapted and improve from https://gist.github.com/fleimgruber/cd2386d8326fad3e0e2
       :desc "Edit docstring in RST" "d" #'edit-indirect-rst)
 #+end_src
 
-** LSP-mode config
-
-Basically, enable flake8, and lets the local configuratio do it job with flake8 plugins.
-#+begin_src emacs-lisp
-(setq!
- lsp-use-plists "true"
- lsp-headerline-breadcrumb-enable t
- lsp-enable-symbol-highlighting t
- lsp-ui-doc-show-with-mouse t
- lsp-pylsp-plugins-jedi-use-pyenv-environment t
- lsp-pylsp-plugins-pyflakes-enabled nil
- lsp-pylsp-plugins-pydocstyle-enabled nil
- lsp-pylsp-plugins-pylint-enabled nil
- lsp-pylsp-plugins-pycodestyle-ignore ["D102"]
- lsp-pylsp-plugins-flake8-enabled nil
- lsp-pylsp-plugins-mccabe-enabled nil
- lsp-pylsp-plugins-flake8-max-line-length 180
- lsp-pylsp-plugins-pycodestyle-max-line-length 180
- )
-#+end_src
-
-** Ruff LSP
-
-Ruff is awesome, and it has a lsp client !
-#+begin_src emacs-lisp
-
-(after! lsp-mode
-    ;; (lsp-register-client
-    ;; (make-lsp-client :new-connection (lsp-stdio-connection '("ruff-lsp"))
-    ;;                 :major-modes '(python-mode)
-    ;;                 :priority -1
-    ;;                 :server-id 'lsp-python-ruff)
-    ;; )
-    ;; (defcustom-lsp lsp-ruff-args ["--line-length=10"]
-    ;;   "arguments for ruff."
-    ;;   :group 'lsp-pytohn-ruff
-    ;;   :type 'vector
-    ;;   :lsp-path "ruff-lsp.args"
-    ;; )
-
-    ;; pylsp integration, not really working....
-  (defcustom-lsp lsp-pylsp-plugin-ruff-enabled t
-    "enable ruff linting."
-    :group 'lsp-pylsp
-    :type 'boolean
-    :lsp-path "pylsp.plugins.ruff.enabled")
-  ;; (defcustom-lsp lsp-pylsp-plugin-ruff-select ["F", "E", "W", "I"]
-  ;;   "select ruff error codes"
-  ;;   :group 'lsp-pylsp
-  ;;   :type 'vector
-  ;;   :lsp-path "pylsp.plugins.ruff.select")
-                )
-#+end_src
 * LaTeX OCR
 Using [[pix2tex][https://github.com/lukas-blecher/LaTeX-OCR]], a free alternative to mathpix OCR
 
@@ -1643,22 +1718,3 @@ Using [[pix2tex][https://github.com/lukas-blecher/LaTeX-OCR]], a free alternativ
        "M" (cmd! (interactive) (pac/latex-ocr-insert "\\[\\]"))
       )
 #+end_src
-* Test
-
-This a test heading
-
-| Table             | Column       |
-|-------------------+--------------|
-| Row               | <2022-10-01> |
-| Row2 <2021-10-02> |              |
-
-
-*** Test headings
-IMHO this looks great.
-**** TODO Test
-**** NEXT Test
-**** WAIT test
-**** START Test
-**** DONE Test
-**** MAYBE  test
-**** ABORT Test

@@ -106,6 +106,7 @@
        ;;gist              ; interacting with github gists
        (lookup              ; navigate your code and its documentation
         +dictionnary
+        +offline
         +docsets)
        tree-sitter
 
