@@ -38,7 +38,7 @@ Behold, the big =setq=
  all-the-icons-scale-factor 1.0
  all-the-icons-alltheicon-scale-factor 1.0
  auto-save-default t                         ; Nobody likes to loose work, I certainly don't
- display-line-numbers-type nil
+ display-line-numbers-type t
  display-time-default-load-average t
  display-time-mode t
  display-time-24hr-format t
@@ -583,6 +583,27 @@ Open scad is a programming language to create 3d parametric objects.
  (connection-local-set-profiles
    '(:application tramp :machine "zachs") 'remote-path-with-bin)
 )
+#+end_src
+** Treemacs
+#+begin_src emacs-lisp
+(defvar pac/treemacs-ignore-patterns
+  '(".egg-info"
+    ".coverage"
+    "__pycache__"
+    "coverage.xml"
+    "_build"
+   "_cache"))
+
+
+(defun pac/treemacs-ignore (filename absolute-path)
+  (let ((ignore nil))
+    (dolist (pattern pac/treemacs-ignore-patterns)
+      (when (string-match-p pattern filename)
+        (setq ignore t)))
+    ignore))
+(after! treemacs
+  (add-to-list 'treemacs-ignored-file-predicates #'pac/treemacs-ignore)
+  )
 #+end_src
 ** Which-key
 I also think that having =evil-= appear in so many popups is a bit too verbose,
