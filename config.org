@@ -1380,6 +1380,13 @@ Codeium is a free (as a beer) alternative to copilot, with direct support for em
 
 
 * LSP
+#+begin_src emacs-lisp :tangle "packages.el"
+(unpin! lsp-mode)
+(unpin! lsp-ui)
+(unpin! lsp-treemacs)
+(unpin! consult-lsp)
+(unpin! dap-mode)
+#+end_src
 ** Text Modes
 There is two main LSP server for plain text editing:
 - LSP-LTeX
