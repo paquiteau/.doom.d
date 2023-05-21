@@ -226,7 +226,13 @@ The following function reformat the paragraph so that each sentence has its own 
 ;; (add-hook 'before-save-hook #'(lambda () (when (string-prefix-p (expand-file-name org-roam-directory) (buffer-file-name)))
 ;;                                              (pac/one-sentence-per-line '(4))))
 #+end_src
-
+*** Config Workspace
+#+begin_src  emacs-lisp :tangle yes
+(defadvice! pac/config-workspace (&rest _)
+ :before #'doom/find-file-in-private-config
+ (when (modulep! :ui workspaces)
+   (+workspace-switch ".doom.d" t)))
+#+end_src
 *** Emacs client wrapper
 I frequently want to make use of Emacs while in a terminal emulator. To make
 this easier, I can construct a few handy aliases.
