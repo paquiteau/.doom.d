@@ -1384,7 +1384,6 @@ Codeium is a free (as a beer) alternative to copilot, with direct support for em
     (setq codeium/document/cursor_offset 'my-codeium/document/cursor_offset))
 #+end_src
 
-
 * LSP
 #+begin_src emacs-lisp :tangle "packages.el"
 (unpin! lsp-mode)
@@ -1556,38 +1555,30 @@ pylsp is install system-wide, with plugins (notably the ruff one)
  lsp-pylsp-plugins-pycodestyle-max-line-length 180
  )
 #+end_src
-
-** Ruff LSP
-
-Ruff is awesome, and it has a lsp client !
+*** DAP mode
 #+begin_src emacs-lisp
 
-(after! lsp-mode
-    ;; (lsp-register-client
-    ;; (make-lsp-client :new-connection (lsp-stdio-connection '("ruff-lsp"))
-    ;;                 :major-modes '(python-mode)
-    ;;                 :priority -1
-    ;;                 :server-id 'lsp-python-ruff)
-    ;; )
-    ;; (defcustom-lsp lsp-ruff-args ["--line-length=10"]
-    ;;   "arguments for ruff."
-    ;;   :group 'lsp-pytohn-ruff
-    ;;   :type 'vector
-    ;;   :lsp-path "ruff-lsp.args"
-    ;; )
+(after! dap-mode
+  (setq dap-python-debugger 'debugpy))
+#+end_src
+*** FIXME python-lsp-ruff plugin
 
+#+begin_src  emacs-lisp
+
+(after! lsp-mode
     ;; pylsp integration, not really working....
-  (defcustom-lsp lsp-pylsp-plugin-ruff-enabled t
-    "enable ruff linting."
-    :group 'lsp-pylsp
-    :type 'boolean
-    :lsp-path "pylsp.plugins.ruff.enabled")
+  ;;
+  ;; (defcustom-lsp lsp-pylsp-plugin-ruff-enabled t
+  ;;   "enable ruff linting."
+  ;;   :group 'lsp-pylsp
+  ;;   :type 'boolean
+  ;;   :lsp-path "pylsp.plugins.ruff.enabled")
   ;; (defcustom-lsp lsp-pylsp-plugin-ruff-select ["F", "E", "W", "I"]
   ;;   "select ruff error codes"
   ;;   :group 'lsp-pylsp
   ;;   :type 'vector
   ;;   :lsp-path "pylsp.plugins.ruff.select")
-                )
+)
 #+end_src
 
 * Python
