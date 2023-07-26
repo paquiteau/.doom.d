@@ -9,7 +9,7 @@
 (require 'org-roam)
 (require 'ox)
 
-(defvar org-roam-multi-export-depth 1
+(defvar oer-max-depth 4
   "Depth of recursive export for a note.")
 
 
@@ -43,24 +43,15 @@
 
 (defvar oer-visited-nodes-list nil
   "List of visited nodes.")
+(defvar oer-excluded-tags '("noexport" "empty")
+  "List of tags to exclude from export.")
 
-(defun oer-get-begin-of-content (tree)
-  "Return the position of the first heading or paragraph in the org-tree."
-  (org-element-map tree '(paragraph headline)
-    (lambda (el) (org-element-property :begin el))
-    :first-match t))
+(defun oer-ignore-node-p (node)
+  "Return t if the node should be ignored."
+  (or (member node oer-visited-nodes-list)
+      (cl-intersection (org-roam-node-tags node) oer-excluded-tags :test #'string=)))
 
-(defun oer-strip-tree-from-header (tree)
-  "Remove everything from the tree before the first headline or paragraph."
-  (let ((begin-of-content (oer-get-begin-of-content tree)))
-        (org-element-map tree org-element-all-elements
-          (lambda (el) (when ( <= (org-element-property :end el) begin-of-content)
-                    (org-element-extract-element el))
-            (>= (org-element-property :begin el) begin-of-content))
-          :first-match t
-          )
-        )
-  tree )
+(define-error 'oer-empty-node-error "The node is empty.")
 
 (defun oer-demote (tree depth)
   "Demote all headers in the tree by depth level."
@@ -69,93 +60,114 @@
     )
   tree)
 
-(defun oer-merge-subfiles (node-id &optional depth)
-  "Merge all the child nodes on headings"
-  (unless depth (setq depth 1))
-  (when (eq depth 1) (setq oer-visited-nodes-list nil))
+(defun oer-node-as-subtree (node depth)
+  """Get the NODE as a subtree of org-element, indent to DEPTH,
+  and return the org-element tree, expanded again."""
   (with-temp-buffer
-    (insert-file-contents (condition-case nil (org-roam-node-file node-id) (error node-id)))
-    (let* ((tree-doc (org-element-parse-buffer)))
-      (when (> depth 1)
-        (setq tree-doc (oer-strip-tree-from-header tree-doc)))
-      (org-element-map tree-doc 'headline
-        (lambda (headline)
-          (when-let* ((raw-title (org-element-property :raw-value headline))
-                      (headline-loc (org-element-property :begin headline))
-                      (headline-level (org-element-property :level headline))
-                      (linked-headline (when (string-match oer-linkid-re raw-title)
-                                         (list :ID (match-string 1 raw-title)
-                                               :title (match-string 2 raw-title))))
-                     (child-node  (org-roam-node-from-id (plist-get linked-headline :ID))))
-            ;; Reformat the headline with title and id properties.
-            (org-element-put-property headline :title (plist-get linked-headline :title))
-            (org-element-adopt-elements headline (format ":PROPERTIES:\n:ID: %s\n:END:\n"
-                                                         (plist-get linked-headline :ID)))
-            (unless (member child-node oer-visited-nodes-list)       ;; Avoid infinite loop
-              (push child-node oer-visited-nodes-list)
-              (org-element-adopt-elements headline
-              (oer-merge-subfiles child-node (+ headline-level depth))))
-        )))
-      (if (eq depth 1)
-          (progn
-            (delete-region (point-min) (point-max))
-            (insert (org-element-interpret-data tree-doc))
-            (buffer-substring-no-properties (point-min) (point-max)))
-        (progn
-          ;;If we are in a subfile, return the tree,with indented headlines.
-          (oer-demote tree-doc (1- depth))
-           tree-doc)
-      );; endif
-    ) ;; let
-  ) ;; with-temp-buffer
-); defun
+    (insert
+     (org-roam-with-temp-buffer (org-roam-node-file node)
+       (if (> (org-roam-node-level node) 0)
+           (progn
+             (goto-char (org-roam-node-point node))
+             (org-narrow-to-element)
+             (re-search-forward org-property-drawer-re nil t 1))
+         (progn
+           (goto-char (point-min))
+           (re-search-forward "#\\+.*?\n[^#]" nil t 1)))
+       (if (>= (match-end 0) (point-max))(signal 'oer-empty-node-error '(node)))
+       (buffer-substring-no-properties (match-end 0) (point-max))))
+    (let ((tree (org-element-parse-buffer))
+          (new-depth (1+ depth)))
+      (oer-demote tree new-depth)
+      (oer-expand-tree tree new-depth)
+    tree)))
 
-(defun oer-prepare-export (filename &optional related)
-  "Prepare the export of the note with FILENAME."
-  (with-temp-buffer
-    ;; First un-nest headline nodes.
-    (insert (oer-merge-subfiles filename))
-    (when related
-    (goto-char (point-max))
-    (insert "\n* Related Content")
-    (let ((unique-links '()))
-      (org-element-map (org-element-parse-buffer) 'link
-        (lambda (link)
-          (when-let* ((link-id (org-element-property :path link))
-                      (link-node (org-roam-node-from-id link-id))
-                      (link-node-file (org-roam-node-file link-node))
-                      (link-node-title (org-roam-node-title link-node)))
-            (unless (member link-id unique-links)
-              (save-excursion
-                (push link-id unique-links)
-                (goto-char (point-max))
-                (insert (format "\n** %s\n" link-node-title))
-                (insert (format ":PROPERTIES:\n:ID: %s\n:END:\n" link-id))
-                (insert
-                 (with-temp-buffer
-                   (insert-file-contents link-node-file)
-                   (let ((tree (oer-strip-tree-from-header (org-element-parse-buffer))))
-                         (oer-demote tree 2) ; 1: Related Content, 2: link title
-                         (org-element-interpret-data tree))))
-                (insert "\n")
-                )))))
-      ))
-    ;; Remove all bibliography statements.
-    (replace-regexp "#\\+print_bibliography:.*" "" nil (point-min) (point-max))
-    (goto-char (point-max))
-    (insert "\n#+print_bibliography:\n")
-    (buffer-substring-no-properties (point-min) (point-max))
-    )   ; with-temp-buffer
-  )   ; defu n
+(defun oer-expand-tree (tree depth)
+  """Expand the TREE recursively"""
+  (if (>= depth oer-max-depth)
+    (org-element-map tree 'headline
+      (lambda (headline)
+        (when-let* ((raw-title (org-element-property :raw-value headline))
+                    (headline-loc (org-element-property :begin headline))
+                    (headline-level (org-element-property :level headline))
+                    (headline-tag (or (org-element-property :tags headline) '('notags)))
+                    (linked-headline (when (string-match oer-linkid-re raw-title)
+                                       (list :ID (match-string 1 raw-title)
+                                             :title (match-string 2 raw-title))))
+                    (child-node  (org-roam-node-from-id (plist-get linked-headline :ID))))
+          (unless (or (oer-ignore-node-p child-node) (member "noexport" headline-tag))
+            (cl-pushnew child-node oer-visited-nodes-list)
+            (org-element-adopt-elements headline (oer-node-as-subtree child-node 1))))))
+        tree)
+)
 
-
-(defun oer-export (&optional dest)
-  "Export the current node to DEST."
-  (interactive)
-  (unless dest (setq dest (expand-file-name (read-file-name "Export to: "))))
-  (let ((root-node (buffer-file-name)))
+(defun oer-export (&optional arg)
+  (interactive "P")
+  (let* ((node (org-roam-node-at-point))
+         (dest (pcase arg
+                (`nil (expand-file-name (concat (file-name-as-directory org-directory) "exports/" (org-roam-node-slug node) "_extended.org")))
+                (`(4) (expand-file-name (read-file-name "Export to: ")))
+                ((pred stringp) (expand-file-name arg)))
+               ))
+    (setq oer-visited-nodes-list nil)
     (with-temp-file dest
       (erase-buffer)
       (insert "# this file is generated by oer-export.el\n")
-      (insert (oer-prepare-export root-node t))))
-  (message "Exported to %s" dest))
+      (insert-file-contents (org-roam-node-file node))
+      (let ((tree (org-element-parse-buffer)))
+        (org-element-map tree 'headline
+          (lambda (headline)
+            (when-let* ((raw-title (org-element-property :raw-value headline))
+                        (headline-loc (org-element-property :begin headline))
+                        (headline-level (org-element-property :level headline))
+                        (headline-tag (or (org-element-property :tags headline) '('notags)))
+                        (linked-headline (when (string-match oer-linkid-re raw-title)
+                                           (list :ID (match-string 1 raw-title)
+                                                 :title (match-string 2 raw-title))))
+                        (child-node  (org-roam-node-from-id (plist-get linked-headline :ID))))
+              ;; Reformat the headline with title and id properties.
+              (unless (or (member child-node oer-visited-nodes-list)
+                          (member "noexport" headline-tag)
+                          (cl-intersection (org-roam-node-tags child-node) oer-excluded-tags))
+                (cl-pushnew child-node oer-visited-nodes-list)
+                (org-element-put-property headline :title (plist-get linked-headline :title))
+                (org-element-adopt-elements headline (format ":PROPERTIES:\n:ID: %s\n:END:\n"
+                                                             (plist-get linked-headline :ID)))
+                (org-element-adopt-elements headline (oer-node-as-subtree child-node (1+ headline-level)))))))
+        (erase-buffer)
+        (insert (org-element-interpret-data tree)))
+      ;; Add the Content of related nodes
+      (goto-char (point-max))
+      (insert "\n* Appendix\n")
+      (let ((unique-links '()))
+        (org-element-map (org-element-parse-buffer) 'link
+          (lambda (link)
+            (when-let* ((link-id (org-element-property :path link))
+                        (link-node (org-roam-node-from-id link-id))
+                        (link-node-file (org-roam-node-file link-node))
+                        (link-node-title (org-roam-node-title link-node)))
+              (unless (or  (member link-id unique-links) (oer-ignore-node-p link-node))
+                (save-excursion
+                  (push link-id unique-links)
+                  (condition-case nil
+                      (progn
+                        (goto-char (point-max))
+                        (insert (format "\n** %s\n" link-node-title))
+                        (insert (format ":PROPERTIES:\n:ID: %s\n:END:\n" link-id))
+                        (insert (org-element-interpret-data (oer-node-as-subtree link-node 2)))
+                        )
+                    (oer-empty-node-error
+                     (set-mark (point)
+                     (line-move -4)
+                         (delete-region (mark) (point)))
+                     (message "Node %s is empty" link-node-title)
+                     ))
+                  ))))))
+
+      ;; Cleanup: Remove the print_bibliography from all the imported notes,
+      ;; and create a single one at the end.
+      (goto-char (point-min))
+      (while (re-search-forward  "#\\+print_bibliography:.*?\n" nil t) (replace-match "" nil t))
+      (goto-char (point-max))
+      (insert "\n#+print_bibliography:\n"))
+    (message "Exported to %s" dest)))

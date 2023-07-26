@@ -44,9 +44,9 @@
        ;;neotree           ; a project drawer, like NERDTree for vim
        ophints           ; highlight the region an operation acts on
        (popup +defaults)   ; tame sudden yet inevitable temporary windows
-       ;;tabs              ; a tab bar for Emacs
-       (treemacs          ; a project drawer, like neotree but cooler
-        +lsp)
+       tabs              ; a tab bar for Emacs
+       treemacs          ; a project drawer, like neotree but cooler
+
        ;;unicode           ; extended unicode support for various languages
        (vc-gutter         ; vcs diff in the fringe
         +diff-hl
@@ -112,6 +112,7 @@
 
        (lsp               ; M-x vscode
         +peek)
+
        (magit             ; a git porcelain for Emacs
         +forge)
        ;;make              ; run make tasks from Emacs
@@ -146,8 +147,6 @@
        ;;elm               ; care for a cup of TEA?
        emacs-lisp        ; drown in parentheses
        ;;erlang            ; an elegant language for a more civilized age
-       (ess               ; emacs speaks statistics
-        +lsp)
        ;;factor
        ;;faust             ; dsp, but you get to keep your soul
        ;;fsharp            ; ML stands for Microsoft's Language
@@ -164,8 +163,6 @@
        ;;kotlin            ; a better, slicker Java(Script)
        (latex             ; writing papers in Emacs has never been so fun
         +latexmk
-        ;;+cdlatex
-   ;;     +lsp
         +fold)
        ;;lean              ; for folks with too much to prove
        ;;ledger            ; be audit you can be
@@ -227,5 +224,3 @@
        :config
        literate
        (default +bindings +smartparens))
-
-(setenv "LSP_USE_PLISTS" "1")

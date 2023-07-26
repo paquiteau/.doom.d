@@ -52,8 +52,7 @@
 
 (eval-when-compile
   (require 'cc-langs)
-  (require 'cc-fonts)
-  (require 'cl))
+  (require 'cc-fonts))
 
 (eval-and-compile
   (c-add-language 'scad-mode 'c-mode))

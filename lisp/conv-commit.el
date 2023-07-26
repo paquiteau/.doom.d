@@ -1,6 +1,13 @@
 ;;; lisp/conv-commit.el -*- lexical-binding: t; -*-
 
+
+;; TODO add a completion prompt for the scope, and a function to detect scopes from git logs.
+;; The availables scope for each projects should be save in file (plist ? table?) and loaded when the project is opened.
+;; Once this is done, let's make a package out of it.
+;;
+
 (require 'consult)
+(require 'subr-x)
 (defvar conv-commit-type-desc nil
   "The type of conventional commit.")
 (setq conv-commit-type-desc
