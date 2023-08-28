@@ -1366,6 +1366,10 @@ This makes sure that org-roam buffer are open in a dedicated workspace, to preve
            :target (file+head "publish/${slug}.org"
                               "#+title: ${title}\n")
            :unnarrowed t)
+          ("b" "blog" plain "%?"
+           :target (file+head "blog/${slug}.org"
+                              "#+title: ${title}\n")
+           :unnarrowed t)
           ("c" "config" plain "%?"
            :target (file+head "config/${slug}.org"
                               "#+title: ${title}\n")
