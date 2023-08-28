@@ -175,14 +175,17 @@ Behold, the big =setq=
 )
 #+end_src
 
-Lets patch nerd-icons to my taste
+Lets patch n erd-icons to my taste
 #+begin_src emacs-lisp
-(after! nerd-icons
+(after! doom-modeline
 (mapcar (lambda (mode)
           (setf (alist-get mode nerd-icons-mode-icon-alist) '(nerd-icons-devicon "nf-dev-git" :face nerd-icons-red)))
         '(magit-popup-mode magit-status-mode magit-log-mode))
+(setf (alist-get 'org-mode nerd-icons-mode-icon-alist) '(nerd-icons-mdicon "nf-md-unicorn_variant" :face nerd-icons-lgreen))
 )
 #+end_src
+
+
 
 *** Ligature tweaking
 I don't like the default -- and --- ligature (they messed up with RST headlines).
@@ -547,7 +550,7 @@ Lets directly blame others
                     :height 100
                     :italic t)))
   :config
-  (setq blamer-author-formatter " ✎ %s "
+  (setq blamer-author-formatter "󰙏  %s "
         blamer-datetime-formatter "[%s]"
         blamer-commit-formatter " ● %s"
         blamer-idle-time 1
