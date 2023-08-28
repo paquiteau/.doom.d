@@ -781,6 +781,8 @@ let's change that, and do a few other similar tweaks while we're at it.
    org-startup-indented nil
    org-use-property-inheritance t              ; it's convenient to have properties inherited
    org-latex-pdf-process '("latexmk -f -pdf -%latex -shell-escape -interaction=nonstopmode -output-directory=%o %f")
+   org-latex-inputenc-alist '(("utf8" . "utf8x"))
+   org-latex-precompile nil
    org-cite-global-bibliography '("~/org/library.bib")
    org-cite-biblatex-options "sorting=none, doi=false,url=false,isbn=false,style=authoryear"
    ;; org-latex-default-packages-alist '(("AUTO" "inputenc" t ("pdflatex"))
