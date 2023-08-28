@@ -175,6 +175,15 @@ Behold, the big =setq=
 )
 #+end_src
 
+Lets patch nerd-icons to my taste
+#+begin_src emacs-lisp
+(after! nerd-icons
+(mapcar (lambda (mode)
+          (setf (alist-get mode nerd-icons-mode-icon-alist) '(nerd-icons-devicon "nf-dev-git" :face nerd-icons-red)))
+        '(magit-popup-mode magit-status-mode magit-log-mode))
+)
+#+end_src
+
 *** Ligature tweaking
 I don't like the default -- and --- ligature (they messed up with RST headlines).
 #+begin_src emacs-lisp
