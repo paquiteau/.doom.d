@@ -2014,7 +2014,7 @@ Adapted and improve from https://gist.github.com/fleimgruber/cd2386d8326fad3e0e2
 
 (map! :map python-mode-map
       :localleader
-      :desc "Edit docstring in RST" "d" #'edit-indirect-rst)
+      :desc "Edit docstring in RST" "r" #'edit-indirect-rst)
 #+end_src
 ** LSP Eglot Tramp
 #+begin_src emacs-lisp
