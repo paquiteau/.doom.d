@@ -13,19 +13,19 @@
 (setq conv-commit-type-desc
 '(("build"
       :desc "Changes that affect the build system or external dependencies."
-      :icon ?🧰
+      :icon ?
       :props (:foreground "#00008B" :height 1.2))
      ("chore"
       :desc "Updating grunt tasks."
-      :icon ?🔧
+      :icon ?󰑌
       :props (:foreground "gray" :height 1.2))
      ("ci"
       :desc "Changes to CI configuration files and scripts."
-      :icon ?🛠
+      :icon ?
       :props (:foreground "gray" :height 1.2))
      ("docs"
       :desc "Documentation only changes."
-      :icon ?🖹
+      :icon ?󰈙
       :props (:foreground "dark blue" :height 1.2))
      ("feat"
       :desc "A new feature."
@@ -37,8 +37,8 @@
       :props (:foreground "dark red" :height 1.2))
      ("perf"
       :desc "A code change that improves performance."
-      :icon ?🚀
-      :props (:foreground "dark green" :height 1.2))
+      :icon ?🗲
+      :props (:foreground "" :height 1.2))
      ("refactor"
       :desc "A code changes that neither fixes a bug nor adds a feature."
       :icon ?✀
