@@ -1,0 +1,6 @@
+# -*- mode: snippet -*-
+# name:
+# key: __
+# condition: t
+# --
+`(conv-commit-type-prompt)``(conv-commit-scope-prompt)``(if (y-or-n-p "Breaking change? ") "!" "")`}: ${1:Description}
