@@ -45,8 +45,9 @@
        ophints           ; highlight the region an operation acts on
        (popup +defaults)   ; tame sudden yet inevitable temporary windows
        tabs              ; a tab bar for Emacs
-       (treemacs          ; a project drawer, like neotree but cooler
-                +lsp)
+       treemacs
+       ;; (treemacs          ; a project drawer, like neotree but cooler
+       ;;          +lsp)
 
        ;;unicode           ; extended unicode support for various languages
        (vc-gutter         ; vcs diff in the fringe
@@ -97,8 +98,8 @@
        :tools
        ;;ansible
        biblio
-       (debugger          ; FIXME stepping through code, to help you add bugs
-        +lsp)
+       ;; (debugger          ; FIXME stepping through code, to help you add bugs
+       ;;  +lsp)
        ;;direnv
        ;;docker
        ;;editorconfig      ; let someone else argue about tabs vs spaces
@@ -112,7 +113,8 @@
        tree-sitter
 
        (lsp               ; M-x vscode
-        +peek)
+        +eglot
+        )
 
        (magit             ; a git porcelain for Emacs
         +forge)

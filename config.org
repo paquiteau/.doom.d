@@ -1918,7 +1918,6 @@ https://tex.stackexchange.com/questions/557959/emacs-auctex-tabular-vertical-ali
 
 ** TODO Auto updating of bibliography
 When writing paper, I have a local-bib file (to be shared with coworker, publisher etc ,).
-
 #+begin_src emacs-lisp
 (after! citar
   (add-hook! LaTeX-mode 'citar-capf-setup)
@@ -2282,13 +2281,24 @@ Adapted and improve from https://gist.github.com/fleimgruber/cd2386d8326fad3e0e2
 #+end_src
 ** Grammarly
 #+begin_src emacs-lisp :tangle "packages.el"
-(package! lsp-grammarly)
+(package! lsp-grammarly :disable t)
 #+end_src
 #+begin_src emacs-lisp
 (use-package! lsp-grammarly
   :defer-incrementally lsp)
 #+end_src
 
+* Eglot
+** Python
+#+begin_src emacs-lisp :tangle "~/gits/nsp/code/.dir-locals.el"
+((nil . ((eglot-workspace-configuration . (:pylsp (:plugins (:pylint (:enabled :json-false)
+                                                       :ruff (:enabled t)
+                                                       :mypy (:enabled t)
+                                                       :pydocstyle (:convention "numpy")
+                                                       :jedi (:include_params t
+                                                              :fuzzy t))))))))
+
+#+end_src
 * COMMENT LaTeX OCR
 Using rapid_latex_ocr (a faster alternative to pix2tex, which is a free alternative to mathpix)
 
