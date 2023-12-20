@@ -1929,7 +1929,8 @@ When writing paper, I have a local-bib file (to be shared with coworker, publish
 Github copilot is too great to be ignored this days.
 #+begin_src emacs-lisp :tangle "packages.el"
 (package! copilot
-  :recipe (:host github :repo "zerolfx/copilot.el" :files ("*.el" "dist")))
+  :recipe (:host github :repo "zerolfx/copilot.el" :files ("*.el" "dist"))
+  :disable t)
 #+end_src
 #+begin_src emacs-lisp
 
@@ -2060,35 +2061,6 @@ annoying, sometimes be useful, that's why this can be handly."
   (interactive)
   (setq rk/copilot-enable-for-org (not rk/copilot-enable-for-org))
   (message "copilot for org is %s" (if rk/copilot-enable-for-org "enabled" "disabled")))
-#+end_src
-
-#+begin_src emacs-lisp :tangle no
-(use-package! copilot)
-(map! :map copilot-mode-map
-      :i "M-C-<next>" #'copilot-next-completion
-      :i "M-C-<prior>" #'copilot-previous-completion
-      :i "M-C-<right>" #'copilot-accept-completion-by-word
-      :i "M-C-<down>" #'copilot-accept-completion-by-line
-                )
-
-(map! :map global-map
-      :i "M-C-<return>" #'rk/copilot-complete-or-accept
-      :n "M-C-<escape>" #'rk/copilot-change-activation
-      )
-(advice-add 'keyboard-quit :before #'rk/copilot-quit)
-
-;; complete by pressing right or tab but only when copilot completions are
-;; shown. This means we leave the normal functionality intact.
-(advice-add 'right-char :around #'rk/copilot-complete-if-active)
-(advice-add 'indent-for-tab-command :around #'rk/copilot-complete-if-active)
-
-
-(after! copilot
-;; deactivate copilot for certain modes
-(add-to-list 'copilot-enable-predicates #'rk/copilot-enable-predicate)
-(add-to-list 'copilot-disable-predicates #'rk/copilot-disable-predicate)
-(global-copilot-mode)
-)
 #+end_src
 ** Codeium
 #+begin_src emacs-lisp :tangle "packages.el"
@@ -2267,7 +2239,7 @@ Adapted and improve from https://gist.github.com/fleimgruber/cd2386d8326fad3e0e2
       :localleader
       :desc "Edit docstring in RST" "r" #'edit-indirect-rst)
 #+end_src
-* LSP-Mode
+* COMMENT LSP-Mode
 ** Python
 #+begin_src emacs-lisp
 
