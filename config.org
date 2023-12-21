@@ -28,8 +28,8 @@
 **  org-element cache warnings
 #+begin_src emacs-lisp
 (setq warning-suppress-types (append warning-suppress-types '((org-element-cache))))
+(setq warning-minimum-level :emergency)
 #+end_src
-
 
 * Simple Configuration
 ** Headers for tangle
@@ -1923,6 +1923,34 @@ When writing paper, I have a local-bib file (to be shared with coworker, publish
   (add-hook! LaTeX-mode 'citar-capf-setup)
 )
 #+end_src
+#+begin_src emacs-lisp
+(after! citar
+(defun pac/citar-double-insert (citekeys)
+  "Prompt for CITEKEYS and insert the key in the file as well as a bibtex-formatted reference in the local bibliography."
+;; insert the citation key
+  (interactive (list (citar-select-refs)))
+  (citar-insert-keys citekeys)
+;; check if exists in LaTeX bib file
+  (let ((bibfiles (citar-latex-local-bib-files))
+        (citekeys-to-insert '()))
+    (mapcar (lambda (bibfile)
+              (let ((bibfile-buffer (find-file-noselect bibfile)))
+                (with-current-buffer bibfile-buffer
+                  (mapcar (lambda (citekey)
+                            (if (not (re-search-forward citekey nil t))
+                                (setq citekeys-to-insert (cons citekey citekeys-to-insert))))
+                          citekeys))))
+            bibfiles)
+     (when citekeys-to-insert
+       (with-current-buffer (find-file-noselect (car bibfiles))
+         (goto-char (point-max))
+         (insert "\n")
+        (citar-insert-bibtex citekeys))
+         (save-buffer)))
+  )
+)
+#+end_src
+
 * Completions
 ** Copilot
 Github copilot is too great to be ignored this days.
