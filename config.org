@@ -7,6 +7,7 @@
 #+property: header-args :tangle no :results silent :eval no-export
 #+startup: fold
 
+[[https://github.com/doomemacs/doomemacs]]
 #+begin_src emacs-lisp :comments no
 ;;; config.el -*- lexical-binding: t; -*-
 #+end_src
@@ -19,11 +20,9 @@
 #!/bin/bash
 #+end_src
 * HOTFIX
-** Unpin magit
+** Unpinning
 #+begin_src emacs-lisp :tangle "packages.el"
-;;(unpin! magit)
-;;(unpin! forge)
-;;(unpin! emacsql)
+(unpin! doom-modeline)
 #+end_src
 **  org-element cache warnings
 #+begin_src emacs-lisp
@@ -41,8 +40,30 @@
 #+end_src
 ** Configuration Variables
 Behold, the big =setq=
-
-#+begin_src emacs-lisp
+*** Detecting the light/dark theme
+#+name: default-theme
+#+begin_src emacs-lisp :noweb-ref none
+(let ((light-theme 'modus-operandi)
+      (dark-theme 'doom-dracula)
+      (system-light-p
+       (and
+        (executable-find "gdbus")
+        (string= "<<uint32 2>>"
+                 (with-temp-buffer
+                   (call-process "gdbus" nil t nil
+                                 "call" "--session"
+                                 "--timeout=1000"
+                                 "--dest=org.freedesktop.portal.Desktop"
+                                 "--object-path" "/org/freedesktop/portal/desktop"
+                                 "--method" "org.freedesktop.portal.Settings.Read"
+                                 "org.freedesktop.appearance" "color-scheme")
+                   (string-trim (buffer-string) "(" ",)\n"))))))
+  (if system-light-p light-theme dark-theme))
+#+end_src
+We'll use the appropriate theme as the default, but let's also accept the theme
+as an envvar for fun.
+*** General configuration
+#+begin_src emacs-lisp :noweb yes
 (setq
  +workspaces-switch-project-function #'magit-status
  auth-source-cache-expiry nil
@@ -59,11 +80,11 @@ Behold, the big =setq=
  doom-modeline-major-mode-icon t
  doom-modeline-major-mode-color-icon t
 
- doom-theme 'doom-dracula
  ;; font configuration
- doom-font (font-spec :family "Iosevka Nerd Font" :size 14)
- doom-variable-pitch-font (font-spec :family "Iosevka Nerd Font" :size 14)
- doom-big-font (font-spec :family "Iosevka Nerd Font" :size 24)
+ ;; setting to float ensures consistency in hidpi.
+ doom-font (font-spec :family "Iosevka Nerd Font" :size 14.0)
+ doom-variable-pitch-font (font-spec :family "Iosevka Nerd Font" :size 14.0)
+ doom-big-font (font-spec :family "Iosevka Nerd Font" :size 24.0)
  doom-serif-font (font-spec :family "Iosevka Nerd Font" :weight 'light)
 
  ;;doom-serif-font (font-spec :familly "Iosevka Term Nerd Font" :size 18)
@@ -90,6 +111,8 @@ Behold, the big =setq=
  user-mail-address "comby@crans.org"
  vterm-kill-buffer-on-exit t
  )
+
+
 (display-time-mode)
 (pixel-scroll-precision-mode)
 
@@ -102,6 +125,15 @@ Behold, the big =setq=
         ("MDN"               "https://developer.mozilla.org/en-US/search?q=%s")
         ("Arch Wiki"         "https://wiki.archlinux.org/index.php?search=%s&title=Special%3ASearch&wprov=acrw1")
         ("AUR"               "https://aur.archlinux.org/packages?O=0&K=%s")))
+#+end_src
+
+#+begin_src emacs-lisp :noweb yes
+(setq doom-theme
+      <<default-theme>>
+      )
+(delq! t custom-theme-load-path)
+(remove-hook 'window-setup-hook #'doom-init-theme-h)
+(add-hook 'after-init-hook #'doom-init-theme-h 'append)
 #+end_src
 
 #+begin_src  emacs-lisp
@@ -124,14 +156,15 @@ Behold, the big =setq=
   '(markdown-header-face-5 :height 0.90 :weight bold       :inherit markdown-header-face)
   '(markdown-header-face-6 :height 0.75 :weight extra-bold :inherit markdown-header-face)
   '(outline-1 :weight extra-bold :height 1.25)
-  '(outline-2 :weight bold :height 1.15)
-  '(outline-3 :weight bold :height 1.12)
-  '(outline-4 :weight semi-bold :height 1.09)
-  '(outline-5 :weight semi-bold :height 1.06)
-  '(outline-6 :weight semi-bold :height 1.03)
-  '(outline-8 :weight semi-bold)
-  '(outline-9 :weight semi-bold)
-  '(org-document-title :height 1.2)
+  '(outline-2 :inherit 'outline-1  :weight bold :height 0.96)
+  '(outline-3 :inherit 'outline-2  :weight bold :height 0.96)
+  '(outline-4 :inherit 'outline-3  :weight semi-bold :height 0.96)
+  '(outline-5 :inherit 'outline-4  :weight semi-bold :height 0.96)
+  '(outline-6 :inherit 'outline-5  :weight semi-bold :height 0.96)
+  '(outline-7 :inherit 'outline-6  :weight semi-bold :height 1.0)
+  '(outline-8 :inherit 'outline-7  :weight semi-bold :height 1.0)
+  '(outline-9 :inherit 'outline-8  :weight semi-bold :height 1.0)
+  '(org-document-title :height 1.3)
 )
 #+end_src
 
@@ -712,9 +745,9 @@ let's change that, and do a few other similar tweaks while we're at it.
                (format "(defun org-release () \"The release version of Org.\" %S)\n" version)
                (format "(defun org-git-version () \"The truncate git commit hash of Org mode.\" %S)\n" git-version)
                "(provide 'org-version)\n")))
-          ("make")))
+          ))
 
-   :pin  "c07cf4fbca96f25f21f085224ed737cd0095acbc")
+   :pin  "42f5c403d381da1adb6dbdd080ffd4efc94b3f23")
 #+end_src
 ** Global config
 
@@ -784,9 +817,11 @@ let's change that, and do a few other similar tweaks while we're at it.
 #+begin_src emacs-lisp
 (after! citar
   (setq citar-org-roam-subdir "bib"
-        citar-bibliography '("/home/pac/org/library.bib")
-        citar-library-paths '("/home/pac/Zotero/")
-        citar-notes-paths  '("/home/pac/org/roam/bib/")
+        citar-bibliography (list (expand-file-name  "~/org/library.bib"))
+        citar-library-paths (list (expand-file-name "~/Zotero/"))
+        citar-notes-paths (list (expand-file-name "~/org/roam/bib/"))
+        citar-latex-prompt-for-cite-style  nil
+        citar-latex-prompt-for-extra-arguments  nil
         citar-symbols
         `((file ,(nerd-icons-faicon "nf-fa-file_o" :face 'nerd-icons-green :v-adjust -0.1) . " ")
           (note ,(nerd-icons-octicon "nf-oct-note" :face 'nerd-icons-blue :v-adjust -0.3) . " ")
@@ -1655,8 +1690,8 @@ See also  [[id:e20503eb-2a58-46b6-a071-311956b594c2][Workflow]]
 (after! latex
 (add-to-list 'auto-mode-alist '("\\.tikz" . LaTeX-mode))
 (add-to-list 'auto-mode-alist '("\\.pgf" . LaTeX-mode))
-(add-to-list 'TeX-view-program-selection '(output-pdf "PDF Tools"))
-(add-to-list 'TeX-view-program-list '("PDF Tools" TeX-pdf-tools-sync-view))
+;; (add-to-list 'TeX-view-program-selection '(output-pdf "PDF Tools"))
+;; (add-to-list 'TeX-view-program-list '("PDF Tools" TeX-pdf-tools-sync-view))
 ;; Update PDF buffers after successful LaTeX runs.
 (add-hook 'TeX-after-compilation-finished-functions #'TeX-revert-document-buffer)
 )
@@ -1951,13 +1986,13 @@ When writing paper, I have a local-bib file (to be shared with coworker, publish
 )
 #+end_src
 
-* Completions
+* Languages Models
 ** Copilot
 Github copilot is too great to be ignored this days.
 #+begin_src emacs-lisp :tangle "packages.el"
 (package! copilot
-  :recipe (:host github :repo "zerolfx/copilot.el" :files ("*.el" "dist"))
-  :disable t)
+  :recipe (:host github :repo "copilot-emacs/copilot.el" :files ("*.el" "dist"))
+)
 #+end_src
 #+begin_src emacs-lisp
 
@@ -2153,12 +2188,95 @@ annoying, sometimes be useful, that's why this can be handly."
     (setq codeium/document/text 'my-codeium/document/text)
     (setq codeium/document/cursor_offset 'my-codeium/document/cursor_offset))
 #+end_src
+** Ellama
+https://github.com/s-kostyaev/ellama/
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! ellama)
+#+end_src
+
+#+begin_src emacs-lisp
+(use-package! ellama
+  :init
+  (require 'llm-ollama)
+  ;; just for convenience, we could do without it.
+  (setopt ellama-providers '(("mixtral" . (make-llm-ollama :chat-model "mixtral:latest" :embedding-model "mixtral:text")))
+  ))
+
+#+end_src
+** gpt.el
+Another gems by karthink
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! gptel)
+#+end_src
+#+begin_src emacs-lisp
+(use-package! gptel
+  :config
+  (gptel-make-ollama "Mixtral" :host "localhost:11434"
+                     :models '("mixtral:latest")
+                     :stream t))
+#+end_src
 * Python
 My main programming language, so let's make it even better.
 #+begin_src emacs-lisp :tangle "packages.el"
 (package! python-black)
 (package! xml+)
 (package!  nose :disable t)
+#+end_src
+
+
+#+begin_src emacs-lisp
+(require 'python-pytest)
+(require 'transient)
+
+(defvar pytest-local-transient nil "Local transient options for pytest")
+(transient-define-prefix python-pytest-dispatch ()
+  "Show popup for running pytest."
+  :man-page "pytest"
+  :incompatible '(("--exitfirst" "--maxfail="))
+  :value '("--color")
+  ["Output"
+   [("-c" "color" "--color")
+    ("-q" "quiet" "--quiet")
+    ("-s" "no output capture" "--capture=no")
+    (python-pytest:-v)]]
+  ["Selection, filtering, ordering"
+   [(python-pytest:-k)
+    (python-pytest:-m)
+    "                                          "] ;; visual alignment
+   [("--dm" "run doctests" "--doctest-modules")
+    ("--nf" "new first" "--new-first")
+    ("--sw" "stepwise" "--stepwise")
+    ("--co" "collect only" "--collect-only")]]
+  ["Failures, errors, debugging"
+   [("-l" "show locals" "--showlocals")
+    ("-p" "debug on error" "--pdb")
+    ("-x" "exit after first failure" "--exitfirst")]
+   [("--ff" "failed first" "--failed-first")
+    ("--ft" "full tracebacks" "--full-trace")
+    ("--mf" "exit after N failures or errors" "--maxfail=")
+    ("--rx" "run xfail tests" "--runxfail")
+    (python-pytest:--tb)
+    ("--tr" "debug on each test" "--trace")]]
+  ["Options for pytest-xdist"
+   [(python-pytest:-n)]
+   [("-f" "loop on failure" "--looponfail")]]
+  ["Local Options"
+    :setup-children (lambda (_) (transient-parse-suffixes transient--suffixes pytest-local-transient))
+    :if-non-nil pytest-local-transient
+    (:info "No Local options")]
+  ["Run tests"
+   [("t" "all" python-pytest)]
+   [("r" "repeat" python-pytest-repeat)
+    ("x" "last failed" python-pytest-last-failed)]
+   [("f" "file (dwim)" python-pytest-file-dwim)
+    ("F" "file (this)" python-pytest-file)]
+   [("m" "files" python-pytest-files)
+    ("M" "directories" python-pytest-directories)]
+   [("d" "def/class (dwim)" python-pytest-function-dwim)
+    ("D" "def/class (this)" python-pytest-function)]])
+;; (after! python-pytest
+;; (transient-append-suffix 'python-pytest-dispatch '(-2) ["Local Options" :setup-children (lambda (_) (list (transient-parse-suffixes transient--suffix pytest-local-transient)))])
+;; )
 #+end_src
 
 #+begin_src emacs-lisp
@@ -2189,6 +2307,107 @@ Fix highlighting errors from tree-sitter.
                               (string)
                               @doc)))])
   #+end_src
+
+** Debugger with dape and debugpy
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! dape)
+(package! jsonrpc :recipe (:source gnu-elpa-mirror))
+#+end_src
+#+begin_src emacs-lisp
+(use-package! dape
+
+:config
+  ;; Save buffers on startup, useful for interpreted languages
+  (add-hook 'dape-on-start-hooks
+            (defun dape--save-on-start ()
+              (save-some-buffers t t)))
+  (setq dape-cwd-fn (symbol-function 'projectile-project-root))
+                )
+;; (after! dape
+
+;;   :config
+;;   (add-to-list 'dape-configs
+;;              `(debugpy
+;;                modes (python-ts-mode python-mode)
+;;                command "python"
+;;                command-args ("-m" "debugpy.adapter")
+;;                :type "executable"
+;;                :request "launch"
+;;                :cwd dape-cwd-fn
+;;                :program dape-find-file-buffer-default))
+;;   )
+
+(after! dape
+  (setq dape-key-prefix nil)
+  (map! :leader "d" dape-global-map))
+#+end_src
+#+begin_src emacs-lisp
+(defun python-pytest-function-dwim-debug
+    (file func args)
+  "Run pytest on FILE with FUNC (or class).\n\nWhen run interactively, this tries to work sensibly using\nthe current file and function around point.\n\nAdditional ARGS are passed along to pytest.\nWith a prefix argument, allow editing."
+  (interactive
+   (list
+    (buffer-file-name)
+    (python-pytest--current-defun)
+    (transient-args 'python-pytest-dispatch)))
+  (if
+      (python-pytest--test-file-p file)
+      nil
+    (progn
+      (setq file
+            (python-pytest--sensible-test-file file))
+      (setq func
+            (python-pytest--make-test-name func)))
+    (if python-pytest-strict-test-name-matching nil
+      (let
+          ((k-option
+            (-first
+             (-partial #'s-prefix-p "-k")
+             args)))
+        (if k-option
+            (progn
+              (progn
+                (setq args
+                      (-remove-item k-option args))
+                (setq k-option
+                      (let
+                          ((it k-option))
+                        (let
+                            ((it
+                              (s-chop-prefix "-k" it)))
+                          (let
+                              ((it
+                                (s-trim it)))
+                            (if
+                                (s-contains-p " " it)
+                                (format "(%s)" it)
+                              it))))))))
+        (progn
+          (setq args
+                (-snoc args
+                       (python-pytest--shell-quote file)
+                       (if k-option
+                           (format "-k %s and %s" func k-option)
+                         (format "-k %s" func))))
+          (setq file nil)
+          (setq func nil)))))
+
+  (setq args (python-pytest--transform-arguments args))
+  (when (and file (file-name-absolute-p file))
+    (setq file (python-pytest--relative-file-name file)))
+  (when func
+    (setq func (s-replace "." "::" func)))
+  (let ((command)
+        (thing (cond
+                ((and file func) (format "%s::%s" file func))
+                (file file))))
+    (when thing
+      (setq args (-snoc args (python-pytest--shell-quote thing))))
+  (message command)
+  (dape '(debugpy (:program (shell-command-to-string "pyenv which pytest") :args (vconcat args))))))
+ ;; (python-pytest--run :args args :file file :func func :edit current-prefix-arg))
+
+#+end_src
 ** Configure Flycheck RST-sphinx to use the correct pyenv
 
 #+begin_src emacs-lisp
@@ -2318,6 +2537,7 @@ Adapted and improve from https://gist.github.com/fleimgruber/cd2386d8326fad3e0e2
 
 * Eglot
 ** Python
+Lets add this to all my code for sane defaults.
 #+begin_src emacs-lisp :tangle "~/gits/nsp/code/.dir-locals.el"
 ((nil . ((eglot-workspace-configuration . (:pylsp (:plugins (:pylint (:enabled :json-false)
                                                        :ruff (:enabled t)
