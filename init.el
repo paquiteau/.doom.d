@@ -19,8 +19,10 @@
        ;;layout            ; auie,ctsrnm is the superior home row
 
        :completion
-       (company           ; the ultimate code completion backend
-        +childframe)
+       (corfu              ; the ultimate code completion backend
+        +icons
+        +orderless
+        +dabbrev)
        ;;helm              ; the *other* search engine for love and life
        ;;ido               ; the other *other* search engine...
        (vertico
@@ -165,6 +167,7 @@
        ;;julia             ; a better, faster MATLAB
        ;;kotlin            ; a better, slicker Java(Script)
        (latex             ; writing papers in Emacs has never been so fun
+        +lsp
         +latexmk
         +fold)
        ;;lean              ; for folks with too much to prove
