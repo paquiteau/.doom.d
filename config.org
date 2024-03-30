@@ -1700,6 +1700,7 @@ See also  [[id:e20503eb-2a58-46b6-a071-311956b594c2][Workflow]]
 ;; Update PDF buffers after successful LaTeX runs.
 (add-hook 'TeX-after-compilation-finished-functions #'TeX-revert-document-buffer)
 )
+;;(add-hook 'LaTeX-mode-hook #'(lambda () (add-to-list 'TeX-complete-list '("\\\\[Cc]ref{\\([^{}\n\\%,]*\\)" 1 LaTeX-label-list "}"))))
 #+end_src
 ** Editor visuals
 Let's enhance ~TeX-fold-math~ a bit
@@ -1956,15 +1957,11 @@ https://tex.stackexchange.com/questions/557959/emacs-auctex-tabular-vertical-ali
 
 #+end_src
 
-** TODO Auto updating of bibliography
+** Auto updating of bibliography
 When writing paper, I have a local-bib file (to be shared with coworker, publisher etc ,).
 #+begin_src emacs-lisp
-(after! citar
-  (add-hook! LaTeX-mode 'citar-capf-setup)
-)
-#+end_src
-#+begin_src emacs-lisp
-(after! citar
+(after! latex
+  (require 'citar)
 (defun pac/citar-double-insert (citekeys)
   "Prompt for CITEKEYS and insert the key in the file as well as a bibtex-formatted reference in the local bibliography."
 ;; insert the citation key
@@ -1990,6 +1987,135 @@ When writing paper, I have a local-bib file (to be shared with coworker, publish
   )
 )
 #+end_src
+** CAPF
+#+begin_src emacs-lisp :tangle no
+
+;; Auxiliary functions
+
+(defun company-reftex-prefix (regexp)
+  "Return the prefix for matching given REGEXP."
+  (and (derived-mode-p 'latex-mode)
+       reftex-mode
+       (when (looking-back regexp nil)
+         (match-string-no-properties 1))))
+
+(defun company-reftex-annotate (key annotation)
+  "Annotate KEY with ANNOTATION if the latter is not nil.
+Obeys the setting of `company-reftex-max-annotation-length'."
+  (cond
+   ((not annotation) key)
+   ((not company-reftex-max-annotation-length)
+    (propertize key 'reftex-annotation annotation))
+   (t (propertize key 'reftex-annotation
+                  (s-truncate company-reftex-max-annotation-length annotation)))))
+
+(defun company-reftex-label-candidates (prefix)
+  "Find all label candidates matching PREFIX."
+  (reftex-access-scan-info)
+  (reftex-parse-all)
+  (cl-loop for entry in (symbol-value reftex-docstruct-symbol)
+           if (and (stringp (car entry)) (string-prefix-p prefix (car entry)))
+           collect
+           (company-reftex-annotate (car entry) (cl-caddr entry))))
+
+;;;###autoload
+(defun company-reftex-labels (command &optional arg &rest _)
+  "Company backend for LaTeX labels, powered by reftex.
+For more information on COMMAND and ARG see `company-backends'."
+  (interactive (list 'interactive))
+  (cl-case command
+    (interactive (company-begin-backend 'company-reftex-labels))
+    (prefix (company-reftex-prefix company-reftex-labels-regexp))
+    (candidates (company-reftex-label-candidates arg))
+    (annotation (when company-reftex-annotate-labels
+                  (concat
+                   (unless company-tooltip-align-annotations " -> ")
+                   (get-text-property 0 'reftex-annotation arg))))))
+
+;;;;
+
+#+end_src
+
+#+begin_src emacs-lisp :tangle no
+(defvar cape-reftex-max-annotation-length 20)
+(defvar cape-reftex-ref-regexp
+  (rx "\\"
+      ;; List taken from `reftex-ref-style-alist'
+      (or "autoref"
+          "autopageref"
+          "Cpageref"
+          "cpageref"
+          "Cref"
+          "cref"
+          "eqref"
+          "Fref"
+          "fref"
+          "pageref"
+          "Ref"
+          "ref"
+          "vpageref"
+          "Vref"
+          "vref")
+      "{"
+      (group (* (not (any "}"))))
+      (regexp "\\="))
+  "Regular expression to use when looking for the ref prefix.
+Group number 1 should be the prefix itself."
+  )
+
+(defun cape-reftex-collect(key annotation)
+  "Annotate KEY with ANNOTATION if the latter is not nil.
+Obeys the setting of `company-reftex-max-annotation-length'."
+  (cond
+   ((not annotation) key)
+   (t (propertize key 'reftex-annotation
+                  annotation))))
+
+
+(defun pac/cape-reftex-annotation (entry)
+  (concat "  " (s-truncate cape-reftex-max-annotation-length (get-text-property 0 'reftex-annotation entry) "...")))
+
+(defun pac/cape-reftex-doc-buffer (entry)
+  (save-window-excursion)
+  (with-current-buffer (get-buffer-create "*cape-reftex*")
+    (setf (buffer-string) (get-text-property 0 'reftex-annotation entry))
+    (current-buffer)
+    ))
+
+(defvar pac/cape-reftex--do-parse t)
+(setq pac/cape-reftex--do-parse t)
+(defvar pac/cape-reftex--parse-data nil)
+
+(defun pac/cape-reftex-get (_)
+  (when pac/cape-reftex--do-parse
+      (reftex-parse-all)
+      (setq pac/cape-reftex--do-parse nil)
+      (setq pac/cape-reftex--parse-data (cl-loop for entry in (symbol-value reftex-docstruct-symbol)
+            if (stringp (car entry)) ; (string-prefix-p prefix (car entry)))
+           collect
+       (cape-reftex-collect (car entry) (cl-caddr entry)))))
+    pac/cape-reftex--parse-data)
+
+(defun pac/cape-reftex-label ()
+  "If INTERACTIVE is nil the function acts like a Capf."
+
+  (interactive "*")
+  (when-let*
+      ((trig (and reftex-mode (looking-back cape-reftex-ref-regexp nil)))
+       (prefix (match-string-no-properties 1))
+       (beg (match-beginning 1))
+       (end (match-end 1))
+       )
+    (list beg end (completion-table-dynamic #'pac/cape-reftex-get)
+    :annotation-function #'pac/cape-reftex-annotation
+    :company-doc-buffer #'pac/cape-reftex-doc-buffer
+    :exit-function (lambda (str _status) (insert) (setq pac/cape-reftex--do-parse t)))))
+
+(add-hook 'LaTeX-mode-hook #'(lambda () (add-hook 'completion-at-point-functions #'pac/cape-reftex-label 0 t)))
+
+;;(add-hook 'LaTeX-mode-hook #'(lambda () (add-to-list 'TeX-complete-list '("\\\\[Cc]ref{\\([^{}\n\\%,]*\\)" 1 LaTeX-label-list "}"))))
+#+end_src
+
 
 * Languages Models
 ** Copilot
