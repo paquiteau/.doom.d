@@ -82,9 +82,9 @@ as an envvar for fun.
 
  ;; font configuration
  ;; setting to float ensures consistency in hidpi.
- doom-font (font-spec :family "Iosevka Nerd Font" :size 14.0)
- doom-variable-pitch-font (font-spec :family "Iosevka Nerd Font" :size 14.0)
- doom-big-font (font-spec :family "Iosevka Nerd Font" :size 24.0)
+ doom-font (font-spec :family "Iosevka Nerd Font" :size 12.0)
+ doom-variable-pitch-font (font-spec :family "Iosevka Nerd Font" :size 12.0)
+ doom-big-font (font-spec :family "Iosevka Nerd Font" :size 20.0)
  doom-serif-font (font-spec :family "Iosevka Nerd Font" :weight 'light)
 
  ;;doom-serif-font (font-spec :familly "Iosevka Term Nerd Font" :size 18)
@@ -98,7 +98,7 @@ as an envvar for fun.
  gc-cons-threshold (* 1024 1024 1024)
  password-cache-expiry nil                   ; I can trust my computers ... can't I?
  projectile-ignored-projects '("~/" "/tmp" "~/.emacs.d/.local/straight/repos/")
- projectile-project-search-path '(("~/gits/nsp/code" . 1) ("~/gits/rep/" . 1))
+ projectile-project-search-path '(("~/gits/nsp/code" . 1) ("~/gits/nsp/livrables" . 1) ("~/gits/rep/" . 1))
  projectile-auto-discover t
  read-process-output-max (* 1024 1024)
  scroll-margin 2
