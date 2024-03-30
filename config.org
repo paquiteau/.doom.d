@@ -747,7 +747,7 @@ let's change that, and do a few other similar tweaks while we're at it.
                "(provide 'org-version)\n")))
           ))
 
-   :pin  "42f5c403d381da1adb6dbdd080ffd4efc94b3f23")
+   :pin  "2fdee57c407b8e6714ae24c8613bbd399db95c59")
 #+end_src
 ** Global config
 
@@ -1573,10 +1573,15 @@ this predicate is not nil."
 
 (add-to-list 'org-roam-mode-sections #'org-roam-forwardlinks-section t)
 
-
+;; LaTeX Preview
 (after! org-roam
-  (add-to-list 'org-roam-buffer-postrender-functions (lambda () (org-latex-preview--preview-region (point-min) (point-max))) t)
-  )
+(defun my/org-roam-node-latex-preview (&rest _)
+  (let ((major-mode 'org-mode))
+    (org-latex-preview 'buffer)))
+
+(advice-add 'org-roam-node-insert-section :after
+            #'my/org-roam-node-latex-preview)
+)
 #+end_src
 
 **** Binding
