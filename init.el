@@ -115,7 +115,7 @@
        tree-sitter
 
        (lsp               ; M-x vscode
-        +eglot
+        +peek
         )
 
        (magit             ; a git porcelain for Emacs

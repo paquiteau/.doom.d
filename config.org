@@ -114,7 +114,7 @@ as an envvar for fun.
 
 
 (display-time-mode)
-(pixel-scroll-precision-mode)
+;;(pixel-scroll-precision-mode)
 
 (setq +lookup-provider-url-alist
       '(("Doom Emacs issues" "https://github.com/hlissner/doom-emacs/issues?q=is%%3Aissue+%s")
@@ -783,7 +783,7 @@ let's change that, and do a few other similar tweaks while we're at it.
    org-latex-listings 'minted
    org-latex-pdf-process '("latexmk -f -pdf -%latex -shell-escape -interaction=nonstopmode -output-directory=%o %f")
    org-latex-precompile-command "%l -shell-escape -output-directory %o -ini -jobname=%b \"&%L\" mylatexformat.ltx %f"
-   org-cite-global-bibliography '("/home/pac/org/library.bib")
+   org-cite-global-bibliography `(,(expand-file-name "~/org/library.bib"))
    org-cite-biblatex-options "sorting=none, doi=false,url=false,isbn=false,style=authoryear"
    )
 
@@ -1013,7 +1013,7 @@ Box environements
 
 Maths
 #+name: org-latex-math-conveniences
-#+begin_src LaTeX
+#+begin_src latex
     %% Maths-related packages
 % More maths environments, commands, and symbols.
 \usepackage{mathtools}
@@ -1690,6 +1690,34 @@ See also  [[id:e20503eb-2a58-46b6-a071-311956b594c2][Workflow]]
   )
 #+end_src
 
+** Ox-HUGO
+#+begin_src emacs-lisp
+(after! ox-hugo
+  (plist-put org-hugo-citations-plist :bibliography-section-heading "")
+
+
+
+(defun org-hugo--org-cite-export-bibliography (orig-fun &rest args)
+  "Insert a heading before the exported bibliography.
+
+ORIG-FUN is the original function `org-cite-export-bibliography'
+that this function is designed to advice using `:around'.  ARGS
+are the arguments of the ORIG-FUN."
+  (let ((bib (apply orig-fun args)))
+    (when (org-string-nw-p bib)
+      ;; Auto-inject Bibliography heading.
+      (let ((info (nth 2 args)) ;(org-cite-export-bibliography KEYWORD _ INFO)
+            (bib-heading (or (plist-get org-hugo-citations-plist :bibliography-section-heading) "References")))
+        (when bib-heading
+          (let* ((bib-heading (org-blackfriday--translate nil info bib-heading))
+                 (loffset (string-to-number
+                           (or (org-entry-get nil "EXPORT_HUGO_LEVEL_OFFSET" :inherit)
+                               (plist-get info :hugo-level-offset))))
+                 (level-mark (make-string (+ loffset 1) ?#)))
+            (format "%s %s\n\n%s" level-mark bib-heading bib)))))))
+
+)
+  #+end_src
 * LaTeX
 #+begin_src emacs-lisp
 (after! latex
@@ -2506,17 +2534,17 @@ Adapted and improve from https://gist.github.com/fleimgruber/cd2386d8326fad3e0e2
 ** Python
 #+begin_src emacs-lisp
 
+  (setq lsp-pylsp-plugins-pylint-enabled nil
+        lsp-pylsp-plugins-pycodestyle-max-line-length 88
+        lsp-pylsp-plugins-pyflakes-enabled nil
+        lsp-pylsp-plugins-pydocstyle-convention "numpy"
+        lsp-pylsp-plugins-pydocstyle-enabled nil
+        lsp-pylsp-plugins-flake8-enabled nil
+        lsp-pylsp-plugins-mccabe-enabled nil
+        lsp-pylsp-plugins-ruff-enabled t
+        lsp-pylsp-plugins-jedi-use-pyenv-environment t
+        )
 (after! lsp-mode
-
-(defcustom lsp-pylsp-plugins-ruff-enabled nil
-  "Enable or disable the plugin."
-  :type 'boolean
-  :group 'lsp-pylsp-remote)
-
-(defcustom lsp-pylsp-plugins-mypy-enabled nil
-  "Enable or disable the plugin."
-  :type 'boolean
-  :group 'lsp-pylsp)
 
   (setq lsp-pylsp-plugins-pylint-enabled nil
         lsp-pylsp-plugins-pycodestyle-max-line-length 88
@@ -2525,12 +2553,11 @@ Adapted and improve from https://gist.github.com/fleimgruber/cd2386d8326fad3e0e2
         lsp-pylsp-plugins-pydocstyle-enabled nil
         lsp-pylsp-plugins-flake8-enabled nil
         lsp-pylsp-plugins-mccabe-enabled nil
-        lsp-pylsp-plugins-ruff-enabled nil
         lsp-pylsp-plugins-jedi-use-pyenv-environment t
         )
 
-  (lsp-register-custom-settings '(("pylsp.plugins.ruff.enabled" lsp-pylsp-plugins-ruff-enabled  nil)))
-  (lsp-register-custom-settings '(("pylsp.plugins.mypy.enabled" lsp-pylsp-plugins-mypy-enabled  nil)))
+  ;; (lsp-register-custom-settings '(("pylsp.plugins.ruff.enabled" lsp-pylsp-plugins-ruff-enabled  t)))
+  ;; (lsp-register-custom-settings '(("pylsp.plugins.mypy.enabled" lsp-pylsp-plugins-mypy-enabled  nil)))
 
   (lsp-register-client
    (make-lsp-client :new-connection (lsp-tramp-connection "pylsp")
@@ -2566,8 +2593,7 @@ Lets add this to all my code for sane defaults.
 #+end_src
 ** LateX
 
-
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (defgroup eglot-ltex nil
   "Settings for the LTEX Language Server.
 
@@ -2625,44 +2651,47 @@ This file is use to activate the language server."
 
 (set-eglot-client! eglot-ltex-active-modes (eglot-ltex--server-command))
 #+end_src
-* COMMENT LaTeX OCR
-Using rapid_latex_ocr (a faster alternative to pix2tex, which is a free alternative to mathpix)
 
-=pix2tex= command is installed in a virtualenv of the same name.
-#+begin_src bash :tangle ~/bin/latex_ocr.sh :tangle-mode (identity #o755) :results output
-#! /usr/bin/bash
+* LaTeX OCR
 
-MODEL_DIR="$HOME/.cache/rapid_latex_ocr/models"
-IMG_FILE="$HOME/.cache/rapid_latex_ocr/tmp_img.png"
-gnome-screenshot -a -f $IMG_FILE
-
-PYENV_VERSION=pix2tex rapid_latex_ocr $IMG_FILE \
-    --image_resizer_path $MODEL_DIR/image_resizer.onnx\
-    --encoder_path $MODEL_DIR/encoder.onnx \
-    --decoder_path $MODEL_DIR/decoder.onnx \
-    --tokenizer $MODEL_DIR/tokenizer.json | sed 's/\\\\/\\/g'
+#+begin_src bash :tangle "~/bin/latex_ocr.sh"
+#!/bin/bash
+# ~/bin/latex_ocr.sh
+# Take a screenshot and extract the LaTeX code from it
+IMG_FILE="$HOME/.cache/tmp_latex_img.png"
+gnome-screenshot -a -f $IMG_FILE && rapid_latex_ocr $IMG_FILE | head -n 1
 #+end_src
 
-Then it is just a matter
 
-#+begin_src emacs-lisp
-(setq latex-ocr-cmd "~/bin/latex_ocr.sh")
-(defun pac/latex-ocr-insert (mathdelim)
+For the emacs part, we can use the following function to insert the LaTeX code at point, and surround it with the appropriate delimiters.
+
+#+begin_src emacs-lisp :results silent :exports code
+(defvar latex-ocr-cmd "~/bin/latex_ocr.sh"
+  "Command to run to extract LaTeX code from a screenshot.")
+
+(defun pac/latex-ocr-insert (pref suff)
+  "Add the LaTeX code of the equation in the buffer at point, surrounded by PREF and SUFF."
   (interactive)
-  (let ((raw_output (shell-command-to-string latex-ocr-cmd)))
-    (insert mathdelim)
-    (backward-char 2)
-    (insert (replace-regexp-in-string "'\\(.*?\\)', [0-9].[0-9]+)\n?" "\\1" raw_output))
-    (forward-char 2)
-))
+  ;; Get the LaTeX code from the screenshot, trim it,
+  (let ((raw_output (string-trim (shell-command-to-string latex-ocr-cmd))))
+    ;; Proceed only if we have a non-empty output
+    (unless (string-empty-p raw_output)
+      ;; Remove region if active
+      (when (region-active-p) (delete-region (region-beginning) (region-end)))
+        ;; Insert the LaTeX code
+      (if (texmathp)
+        (insert raw_output) ;; without delimiters
+      (insert (concat pref raw_output suff))
+    ))))
+#+end_src
 
+Adding the following keybinding to your config will allow you to insert LaTeX code from a screenshot with a single key press.
 
+#+begin_src emacs-lisp :results silent
+;; For doom emacs
 (map! :leader
       :prefix "i"
-       "m" (cmd! (pac/latex-ocr-insert "\\(\\)"))
-       "M" (cmd! (interactive) (pac/latex-ocr-insert "\\[\\]"))
-      )
+       "m" (cmd! (pac/latex-ocr-insert "\\(" " \\)"))
+       "M" (cmd! (pac/latex-ocr-insert "\\[\n" "\n\\]"))
+       )
 #+end_src
-Test
-
-\(h_{\sigma}:x\rightarrow\frac{1}{2}\,\vert\vert x\vert\vert^{2}-g_{\sigma}(x),\)
