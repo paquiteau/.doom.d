@@ -90,18 +90,22 @@
        vterm             ; the best terminal emulation in Emacs
 
        :checkers
-       syntax              ; tasing you for every semicolon you forget
-       ;;(spell
+       (syntax              ; tasing you for every semicolon you forget
+       +childframe
+       +icons)
+       ;; (spell
+       ;;  +enchant)
         ;;+flyspell
+        ;;
         ;+everywhere
         ;) ; tasing you for misspelling mispelling
-       ;;grammar           ; tasing grammar mistake every you make
+       grammar           ; tasing grammar mistake every you make
 
        :tools
        ;;ansible
        biblio
-       ;; (debugger          ; FIXME stepping through code, to help you add bugs
-       ;;  +lsp)
+       (debugger          ; FIXME stepping through code, to help you add bugs
+        +lsp)
        ;;direnv
        ;;docker
        ;;editorconfig      ; let someone else argue about tabs vs spaces
@@ -109,7 +113,7 @@
        (eval +overlay)     ; run code, run (also, repls)
        ;;gist              ; interacting with github gists
        (lookup              ; navigate your code and its documentation
-        +dictionnary
+        +dictionary
         +offline
         +docsets)
        tree-sitter
@@ -124,8 +128,6 @@
        pass              ; password manager for nerds
        pdf               ; pdf enhancements
        ;;prodigy           ; FIXME managing external services & code builders
-       rgb               ; creating color strings
-       taskrunner        ; taskrunner for all your projects
        ;;terraform         ; infrastructure as code
        ;;tmux              ; an API for interacting with tmux
        upload            ; map local to remote projects via ssh/ftp
@@ -167,7 +169,7 @@
        ;;julia             ; a better, faster MATLAB
        ;;kotlin            ; a better, slicker Java(Script)
        (latex             ; writing papers in Emacs has never been so fun
-        +lsp
+        ;;+lsp
         +latexmk
         +fold)
        ;;lean              ; for folks with too much to prove
