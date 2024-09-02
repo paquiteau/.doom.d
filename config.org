@@ -3063,6 +3063,10 @@ Adapted and improve from https://gist.github.com/fleimgruber/cd2386d8326fad3e0e2
         lsp-pylsp-plugins-jedi-use-pyenv-environment t
         lsp-pylsp-plugins-mypy-enabled t
         lsp-pylsp-plugins-mypy-overrides ["--ignore-missing-imports" t]
+        lsp-pylsp-plugins-rope-completion-enabled t
+        lsp-pylsp-plugins-rope-autoimport-enabled t
+        lsp-pylsp-rename-backend "rope"
+
         )
 
   ;; (lsp-register-custom-settings '(("pylsp.plugins.ruff.enabled" lsp-pylsp-plugins-ruff-enabled  t)))
@@ -3077,15 +3081,20 @@ Adapted and improve from https://gist.github.com/fleimgruber/cd2386d8326fad3e0e2
                                         (lsp--set-configuration (lsp-configuration-section "pylsp"))))))
 )
 #+end_src
-** Grammarly
+
 #+begin_src emacs-lisp :tangle "packages.el"
-(package! lsp-grammarly :disable t)
+(package! lsp-latex)
 #+end_src
 #+begin_src emacs-lisp
-(use-package! lsp-grammarly
-  :defer-incrementally lsp)
-#+end_src
+(use-package! lsp-latex
+  :defer-incrementally lsp
+  :config
+  (setq! lsp-latex-experimental-citation-commands ["cite" "citep" "citet" "parencite" "textcite" "autocite"]))
 
+;; For bibtex
+(after! bibtex
+ (add-hook 'bibtex-mode-hook 'lsp))
+#+end_src
 * Eglot
 ** Python
 Lets add this to all my code for sane defaults.
