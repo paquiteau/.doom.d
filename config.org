@@ -74,11 +74,11 @@ as an envvar for fun.
  display-time-mode t
  display-time-24hr-format t
  ;; doom modeline
- doom-modeline-icon t
- doom-modeline-persp-icon t
- doom-modeline-persp-name t
- doom-modeline-major-mode-icon t
- doom-modeline-major-mode-color-icon t
+ ;; doom-modeline-icon t
+ ;; doom-modeline-persp-icon t
+ ;; doom-modeline-persp-name t
+ ;; doom-modeline-major-mode-icon t
+ ;; doom-modeline-major-mode-color-icon t
 
  ;; font configuration
  ;; setting to float ensures consistency in hidpi.
@@ -372,6 +372,29 @@ alias m='e --eval "(progn (magit-status) (delete-other-windows))"'
 alias mt="m -t"
 alias et="e -t"
 #+end_src
+** Modeline
+#+begin_src emacs-lisp
+    ;; (custom-set-faces!
+    ;;   '(mode-line :family "Iosevka Nerd Font" :height 0.9)
+    ;;   '(mode-line-inactive :family "Iosevka Nerd Font" :height 0.9))
+(after! modeline)
+(defun +modeline-format-icon (icon-set icon label &optional face help-echo voffset)
+  "Build from ICON-SET the ICON with LABEL.
+Using optionals attributes FACE, HELP-ECHO and VOFFSET."
+  (let ((icon-set-fn (pcase icon-set
+                       ('octicon #'nerd-icons-octicon)
+                       ('faicon #'nerd-icons-faicon)
+                       ('codicon #'nerd-icons-codicon)
+                       ('material #'nerd-icons-mdicon))))
+    (propertize (concat (funcall icon-set-fn
+                                 icon
+                                 :face face
+                                 :height 1.0
+                                 :v-adjust 0.1)
+                        (propertize label 'face face))
+                'help-echo help-echo)))
+
+#+end_src
 * Package configuration
 ** Abbrev
 #+begin_src emacs-lisp
@@ -410,7 +433,7 @@ Jinx is faster and better than spell-fu or flycheck
   (jinx-exclude-regexps
    '((t "[A-Z]+\\>"
       "\\<[[:upper:]][[:lower:]]+\\>"
-      "\\\\[a-z]*?cite\{.*?\}"
+      "\\\\[a-z]*?cite[a-z]*?\{.*?\}"
       "\\w*?[0-9\.'\"-]\\w*"
       "[a-z]+://\\S-+"
       "<?[-+_.~a-zA-Z][-+_.~:a-zA-Z0-9]*@[-.a-zA-Z0-9]+>?")))
@@ -439,11 +462,13 @@ I write stuff mostly in English, but sometimes I have to add French in the mix.
 (package! flycheck-grammarly)
 #+end_src
 #+begin_src emacs-lisp
-(use-package! flycheck-grammarly)
-(after! flycheck
-  (flycheck-grammarly-setup))
-
-(grammarly-load-from-authinfo "pierre-antoine.comby@universite-paris-saclay.fr")
+(use-package! flycheck-grammarly
+  :defer-incrementally flycheck)
+(after! flycheck-grammary
+ (setq flycheck-grammarly-check-time 1.0)
+ (flycheck-grammarly-setup)
+ (flycheck-add-mode 'grammarly 'LaTeX-mode)
+(grammarly-load-from-authinfo "pierre-antoine.comby@universite-paris-saclay.fr"))
 #+end_src
 ** Smart Parentheses
 #+begin_src emacs-lisp
@@ -1144,7 +1169,12 @@ SQL can be either the emacsql vector representation, or a string."
                "(provide 'org-version)\n")))
           ))
 
-   :pin "b70c0cc9667415860211d37d3eb79fe823f1e723")
+   :pin "23eddc39ee406d2517ea2d6e5633be8ccbb3db56")
+(package! ox-gfm)
+#+end_src
+#+begin_src emacs-lisp
+(use-package! ox-gfm
+ :after ox)
 #+end_src
 ** Global config
 
@@ -1700,7 +1730,6 @@ theme-appropriate foreground.
   :after org)
 #+end_src
 
-
 ** Visuals Style
 *** Org-Modern
 Rincing Org /easily/ with *markup* _test_
@@ -1759,6 +1788,16 @@ A nice graph of knowledge.
           org-roam-ui-follow t
           org-roam-ui-update-on-save t
           org-roam-ui-open-on-start t))
+#+end_src
+** Source block completion
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! corg
+  :recipe (:host github :repo "isamert/corg.el"))
+#+end_src
+#+begin_src emacs-lisp
+(use-package! corg
+        :config
+        (add-hook 'org-mode-hook #'corg-setup))
 #+end_src
 ** Org-Roam
 This makes sure that org-roam buffer are open in a dedicated workspace, to prevent them to spread in others.
@@ -2101,6 +2140,7 @@ See also  [[id:e20503eb-2a58-46b6-a071-311956b594c2][Workflow]]
 #+end_src
 
 ** Ox-HUGO
+
 #+begin_src emacs-lisp
 (after! ox-hugo
   (plist-put org-hugo-citations-plist :bibliography-section-heading "")
@@ -2127,6 +2167,26 @@ are the arguments of the ORIG-FUN."
             (format "%s %s\n\n%s" level-mark bib-heading bib)))))))
 
 )
+
+(org-link-set-parameters "hfile"
+                         :complete #'org-link-complete-file
+                         :follow #'org-link-open-in-emacs
+                         :face 'org-link
+                         :help-echo "Open file"
+                         :export #'+org-hugo-export-keywords)
+(defun +org-hugo-export-keywords (path desc backend info)
+  "Export a hfile link."
+  (cond ((org-export-derived-backend-p backend 'md)
+         ;; call org-hugo-link for doing the heavy lifting for us
+  (message "[ox-hugo attachment DBG] The Hugo section is: %s" (plist-get info :hugo-section))
+  (message "[ox-hugo attachment DBG] The Hugo base dir is: %s" (plist-get info :hugo-base-dir))
+  (let* ((raw-link (org-element-property :raw-link link))
+         (raw-path (org-element-property :path link))
+         (type (org-element-property :type link))
+         (path (org-hugo--attachment-rewrite-maybe path info)))
+               ;; use our shortcode
+               (format "{{< fileDL icon=\"download\" file=\"%s\" >}} %s {{< /fileDL >}}" path (or desc "file"))))
+         (t (format "[[file:%s][%s]]" path (or desc path)))))
   #+end_src
 * LaTeX
 #+begin_src emacs-lisp
