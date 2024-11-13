@@ -12,6 +12,7 @@
 ;;
 ;;      Alternatively, press 'gd' (or 'C-c c d') on a module to browse its
 ;;      directory (for easy access to its source code).
+(setenv "LSP_USE_PLISTS" "1")
 
 (doom! :input
        ;;chinese
@@ -37,9 +38,10 @@
         ;;+github)  ; 🙂
        hl-todo           ; highlight TODO/FIXME/NOTE/DEPRECATED/HACK/REVIEW
        ;;hydra
-       ;;indent-guides     ; highlighted indent columns
-       ;; (ligatures         ; ligatures and symbols to make your code pretty again
-       ;;   +extra)
+       indent-guides     ; highlighted indent columns
+       (ligatures         ; ligatures and symbols to make your code pretty again
+        ;;+extra
+        )
        ;;minimap           ; show a map of the code on the side
        (modeline +light)          ; snazzy, Atom-inspired modeline, plus API
        nav-flash         ; blink cursor line after big motions
@@ -47,9 +49,8 @@
        ophints           ; highlight the region an operation acts on
        (popup +defaults)   ; tame sudden yet inevitable temporary windows
        tabs              ; a tab bar for Emacs
-       treemacs
-       ;; (treemacs          ; a project drawer, like neotree but cooler
-       ;;          +lsp)
+       (treemacs          ; a project drawer, like neotree but cooler
+                +lsp)
 
        ;;unicode           ; extended unicode support for various languages
        (vc-gutter         ; vcs diff in the fringe
@@ -92,6 +93,7 @@
        :checkers
        (syntax              ; tasing you for every semicolon you forget
        +childframe
+       +flymake
        +icons)
        ;; (spell
        ;;  +enchant)
@@ -99,7 +101,7 @@
         ;;
         ;+everywhere
         ;) ; tasing you for misspelling mispelling
-       grammar           ; tasing grammar mistake every you make
+       ;; grammar           ; tasing grammar mistake every you make
 
        :tools
        ;;ansible
@@ -169,7 +171,7 @@
        ;;julia             ; a better, faster MATLAB
        ;;kotlin            ; a better, slicker Java(Script)
        (latex             ; writing papers in Emacs has never been so fun
-        +lsp
+        ;;+lsp
         +latexmk
         +fold)
        ;;lean              ; for folks with too much to prove

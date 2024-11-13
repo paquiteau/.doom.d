@@ -11,6 +11,8 @@ title: Doom Emacs Literate configuration
 
 #+begin_src emacs-lisp :comments no
 ;;; config.el -*- lexical-binding: t; -*-
+
+(load! "secrets.el")
 #+end_src
 
 #+begin_src emacs-lisp :tangle "packages.el" :comments no
@@ -40,10 +42,46 @@ title: Doom Emacs Literate configuration
 #+begin_src emacs-lisp :tangle "packages.el"
 (package! modus-themes)
 #+end_src
+**** Tweak for Modus themes
+#+begin_src emacs-lisp
+
+(defun my-pdf-tools-backdrop (&rest _)
+  (modus-themes-with-colors
+    (face-remap-add-relative
+     'default
+     `(:background ,bg-dim)))
+    (face-remap-add-relative
+     'pdf-roll-default
+     `(:background ,bg-dim)))
+
+
+(defun my-pdf-tools-midnight-mode-toggle (&rest _)
+  ;; (when (derived-mode-p 'pdf-view-mode)
+        (if (eq (car custom-enabled-themes) 'modus-vivendi)
+        (pdf-view-midnight-minor-mode 1)
+        (pdf-view-midnight-minor-mode -1))
+        (my-pdf-tools-backdrop))
+
+(defun my-tex-fold-face-update (&rest _)
+  (when (eq (car custom-enabled-themes) 'modus-operandi)
+    (modus-themes-with-colors (face-remap-add-relative 'TeX-fold-unfolded-face `(:background ,bg-dim)))))
+
+
+(defun my-pdf-tools-themes-toggle (&rest _)
+  (mapc
+   (lambda (buf)
+     (with-current-buffer buf
+       (my-pdf-tools-midnight-mode-toggle)))
+   (buffer-list)))
+
+(add-hook 'pdf-view-mode-hook #'my-pdf-tools-midnight-mode-toggle)
+(add-hook 'TeX-fold-mode-hook #'my-tex-fold-face-update)
+(add-hook 'modus-themes-after-load-theme-hook #'my-pdf-tools-themes-toggle)
+#+end_src
 *** Detecting the light/dark theme
 #+name: default-theme
 #+begin_src emacs-lisp :noweb-ref none
-(let ((light-theme 'doom-one-light)
+(let ((light-theme 'modus-operandi)
       (dark-theme 'doom-dracula)
       (system-light-p
        (and
@@ -83,7 +121,7 @@ as an envvar for fun.
  ;; font configuration
  ;; setting to float ensures consistency in hidpi.
  doom-font (font-spec :family "Iosevka Nerd Font" :size 12.0)
- doom-variable-pitch-font (font-spec :family "Iosevka Nerd Font" :size 12.0)
+ doom-variable-pitch-font (font-spec :family "Latin Modern Sans" :size 12.0)
  doom-big-font (font-spec :family "Iosevka Nerd Font" :size 20.0)
  doom-serif-font (font-spec :family "Iosevka Nerd Font" :weight 'light)
 
@@ -98,7 +136,9 @@ as an envvar for fun.
  gc-cons-threshold (* 1024 1024 1024)
  password-cache-expiry nil                   ; I can trust my computers ... can't I?
  projectile-ignored-projects '("~/" "/tmp" "~/.emacs.d/.local/straight/repos/")
- projectile-project-search-path '(("~/gits/nsp/code" . 1) ("~/gits/nsp/livrables" . 1) ("~/gits/rep/" . 1))
+ projectile-project-search-path '(("~/gits/nsp/" . 2)
+                                  ("~/gits/rep/" . 1)
+                                  )
  projectile-auto-discover t
  read-process-output-max (* 1024 1024)
  scroll-margin 2
@@ -247,9 +287,10 @@ The following function reformat the paragraph so that each sentence has its own 
       ;; Remove false positives
       (let* ((previous-word-beginning (save-excursion (backward-word) (point)))
              (previous-word (downcase (buffer-substring previous-word-beginning (- (point) 2)))))
+        (message previous-word)
         (unless (or (< (length previous-word) 1) ; single letter
                     (string-match-p "^-?[0-9]+$" previous-word) ; numbers
-                    (member previous-word '("m" "mr" "mrs" "dr" "etc" "ph" )))) ; common abbreviations
+                    (member previous-word '("m" "mr" "mrs" "dr" "etc" "ph" "e.g" "i.e" "eq" "cf")))) ; common abbreviations
         (insert "\n")))
     ; Remove an extra newline at the end.
     (delete-char -1)
@@ -404,6 +445,8 @@ Using optionals attributes FACE, HELP-ECHO and VOFFSET."
             (setq abbrev-file-name (expand-file-name "abbrev.el" doom-private-dir))))
 #+end_src
 
+weionweotngwe
+
 ** CSV
 #+begin_src emacs-lisp :tangle "packages.el"
 (package! rainbow-csv
@@ -414,7 +457,7 @@ Using optionals attributes FACE, HELP-ECHO and VOFFSET."
 (add-hook! csv-mode #'rainbow-csv-mode)
 #+end_src
 
-** Spell
+** Spell with jinx :noexport:
 Jinx is faster and better than spell-fu or flycheck
 #+begin_src emacs-lisp :tangle "packages.el"
 (package! jinx)
@@ -426,21 +469,34 @@ Jinx is faster and better than spell-fu or flycheck
   :init (global-jinx-mode)
   :custom
   (jinx-languages "en_US")
-  (jinx-include-modes '(text-mode prog-mode))
+  (jinx-include-modes '(prog-mode))
   (jinx-include-faces
    '((prog-mode font-lock-doc-face)
      (conf-mode font-lock-comment-face)))
+  (jinx-exclude-faces
+   '((markdown-mode markdown-code-face markdown-html-attr-name-face markdown-html-attr-value-face markdown-html-tag-name-face markdown-inline-code-face markdown-link-face markdown-markup-face markdown-plain-url-face markdown-reference-face markdown-url-face)
+     (org-mode org-block org-block-begin-line org-block-end-line org-code org-cite org-cite-key org-date org-document-info-keyword org-done org-drawer org-footnote org-formula org-latex-and-related org-link org-macro org-meta-line org-property-value org-special-keyword org-tag org-todo org-verbatim org-warning org-modern-tag org-modern-date-active org-modern-date-inactive)
+     (LaTeX-mode tex-math font-lock-constant-face font-latex-math-face font-latex-sedate-face font-latex-verbatim-face font-lock-function-name-face font-lock-keyword-face font-lock-variable-name-face)
+     (tex-mode tex-math font-lock-constant-face font-latex-math-face font-latex-sedate-face font-latex-verbatim-face font-lock-function-name-face font-lock-keyword-face font-lock-variable-name-face)
+     (texinfo-mode font-lock-function-name-face font-lock-keyword-face font-lock-variable-name-face)
+     (rst-mode rst-literal rst-external rst-directive rst-definition rst-reference)
+     (sgml-mode font-lock-function-name-face font-lock-variable-name-face)
+     (emacs-lisp-mode font-lock-constant-face font-lock-warning-face)
+     (message-mode message-separator message-header-cc message-header-name message-header-newsgroups message-header-other message-header-to message-header-xheader message-cited-text-1 message-cited-text-2 message-cited-text-3 message-cited-text-4 gnus-cite-1 gnus-cite-2 gnus-cite-3 gnus-cite-4 gnus-cite-5 gnus-cite-6 gnus-cite-7 gnus-cite-8 gnus-cite-9 gnus-cite-10 gnus-cite-11))
+   )
   (jinx-exclude-regexps
    '((t "[A-Z]+\\>"
       "\\<[[:upper:]][[:lower:]]+\\>"
-      "\\\\[a-z]*?cite[a-z]*?\{.*?\}"
+      "\\[a-z]*?cite[a-z]*?\{.*?\}"
       "\\w*?[0-9\.'\"-]\\w*"
       "[a-z]+://\\S-+"
       "<?[-+_.~a-zA-Z][-+_.~:a-zA-Z0-9]*@[-.a-zA-Z0-9]+>?")))
   :bind
   (("M-$" . jinx-correct)))
+(set-face-attribute 'jinx-misspelled nil :underline '(:style wave :color "#ff5555"))
 #+end_src
-*** Guess-languages
+
+*** Guess-languages :noexport:
 I write stuff mostly in English, but sometimes I have to add French in the mix.
 #+begin_src emacs-lisp :tangle "packages.el"
 (package! guess-language :disable t)
@@ -457,7 +513,50 @@ I write stuff mostly in English, but sometimes I have to add French in the mix.
 (add-hook! text-mode #'guess-language-mode))
 #+end_src
 
-** Grammarly
+** Flymake-language-tools
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! flymake-languagetool
+  :recipe (:host github :repo "emacs-languagetool/flymake-languagetool" :branch "feat/incremental-checking")
+  )
+#+end_src
+#+begin_src emacs-lisp
+
+(use-package flymake-languagetool
+  :ensure t
+  :hook ((text-mode       . flymake-languagetool-load)
+         (latex-mode      . flymake-languagetool-load)
+         (org-mode        . flymake-languagetool-load)
+         (markdown-mode   . flymake-languagetool-load))
+  :init
+  ;; If using Premium Version provide the following information
+  (setq flymake-languagetool-server-jar nil)
+  (setq flymake-languagetool-url "https://api.languagetoolplus.com")
+  (setq flymake-languagetool-api-username lt-user)
+  (setq flymake-languagetool-api-key lt-api-key)
+  :config
+  (setq flymake-languagetool-check-spelling nil) ;; Use jinx instead.
+  (setq flymake-languagetool-ignore-faces-alist
+        '((LaTeX-mode font-lock-comment-face ;; comments
+                      font-lock-keyword-face ;; Keywords
+                      font-lock-constant-face ;; citations
+                      font-latex-sedate-face ;; more keywords
+                      font-latex-math-face)  ;; math
+          (org-mode org-code org-block)
+          (markdown-mode markdown-code-face
+                         markdown-inline-code-face
+                         markdown-pre-face
+                         markdown-url-face
+                         markdown-plain-url-face
+                         markdown-math-face
+                         markdown-html-tag-name-face
+                         markdown-html-tag-delimiter-face
+                         markdown-html-attr-name-face
+                         markdown-html-attr-value-face
+                         markdown-html-entity-face))
+        )
+  )
+#+end_src
+** Grammarly :noexport:
 #+begin_src emacs-lisp :tangle "packages.el"
 (package! flycheck-grammarly)
 #+end_src
@@ -466,8 +565,8 @@ I write stuff mostly in English, but sometimes I have to add French in the mix.
   :defer-incrementally flycheck)
 (after! flycheck-grammary
  (setq flycheck-grammarly-check-time 1.0)
- (flycheck-grammarly-setup)
  (flycheck-add-mode 'grammarly 'LaTeX-mode)
+ (flycheck-grammarly-setup)
 (grammarly-load-from-authinfo "pierre-antoine.comby@universite-paris-saclay.fr"))
 #+end_src
 ** Smart Parentheses
@@ -494,7 +593,9 @@ Variable pitch fontification + colouring
 Let's add personal forges:
 #+begin_src emacs-lisp
 (after! forge
-  (add-to-list 'forge-alist '("gitlab.crans.org" "gitlab.crans.org/api/v4" "gitlab.crans.org" forge-gitlab-repository)))
+  (add-to-list 'forge-alist '("gitlab.crans.org" "gitlab.crans.org/api/v4" "gitlab.crans.org" forge-gitlab-repository))
+  (setq forge-owned-accounts '(("paquiteau" . (remote-name "paquiteau"))))
+  )
 #+end_src
 And configure the repository list.
 At some point I would like this to be a dash board of all my projects.
@@ -621,6 +722,10 @@ When using tramp let's add the host name to the project name.
         project-name)))
   (setq projectile-project-name-function #'pac/projectile-project-name-tramp)
   )
+#+end_src
+** Pandoc
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! pandoc-mode)
 #+end_src
 ** PDF Tools Scrolling
 #+begin_src emacs-lisp :tangle "packages.el"
@@ -1145,8 +1250,8 @@ SQL can be either the emacsql vector representation, or a string."
 #+begin_src emacs-lisp :tangle "packages.el"
 ;; Use tecosaur development branch
  (package! org :recipe
-   (:host nil :repo "https://git.tecosaur.net/mirrors/org-mode.git" :remote "mirror" :fork
-          (:host nil :repo "https://git.tecosaur.net/tec/org-mode.git" :branch "dev" :remote "tecosaur")
+   (:host nil :repo "https://code.tecosaur.net/mirrors/org-mode.git" :remote "mirror" :fork
+          (:host nil :repo "https://code.tecosaur.net/tec/org-mode.git" :branch "latex-previews-everywhere" :remote "tecosaur")
           :files
           (:defaults "etc")
           :build t :pre-build
@@ -1168,8 +1273,9 @@ SQL can be either the emacsql vector representation, or a string."
                (format "(defun org-git-version () \"The truncate git commit hash of Org mode.\" %S)\n" git-version)
                "(provide 'org-version)\n")))
           ))
-
-   :pin "23eddc39ee406d2517ea2d6e5633be8ccbb3db56")
+  :pin "f652b0d6cf7a601390240766985a019797272aac"
+   ;;:pin "c9a4aed4dbc2f29c337141a76584a78d01e0820d"
+   )
 (package! ox-gfm)
 #+end_src
 #+begin_src emacs-lisp
@@ -2198,6 +2304,7 @@ are the arguments of the ORIG-FUN."
 ;; Update PDF buffers after successful LaTeX runs.
 (add-hook 'TeX-after-compilation-finished-functions #'TeX-revert-document-buffer)
 )
+(setq +latex-viewers '(pdf-tools zathura evince))
 ;;(add-hook 'LaTeX-mode-hook #'(lambda () (add-to-list 'TeX-complete-list '("\\\\[Cc]ref{\\([^{}\n\\%,]*\\)" 1 LaTeX-label-list "}"))))
 #+end_src
 ** Editor visuals
@@ -2226,7 +2333,7 @@ Let's enhance ~TeX-fold-math~ a bit
         ("∂{1}/∂{2}" ("pdv"))
         ;; fancification
         ("{1}" ("mathrm"))
-        (,(lambda (word) (string-offset-roman-chars 119743 word)) ("mathbf"))
+        (,(lambda (word) (string-offset-roman-chars 119743 word)) ("mathbf" "bm" "boldsymbol"))
         (,(lambda (word) (string-offset-roman-chars 119951 word)) ("mathcal"))
         (,(lambda (word) (string-offset-roman-chars 120003 word)) ("mathfrak"))
         (,(lambda (word) (string-offset-roman-chars 120055 word)) ("mathbb"))
@@ -2300,6 +2407,9 @@ Let's enhance ~TeX-fold-math~ a bit
     (120136 . 8474) ; ℚ
     (120137 . 8477) ; ℝ
     (120145 . 8484) ; ℤ
+    ;; Bold greek
+    (120543 . 120515) ;𝛃
+    (120512 . 120518) ;𝛆
     )
   "An alist of deceptive codepoints, and then where the glyph actually resides.")
 
@@ -2700,70 +2810,124 @@ Github copilot is too great to be ignored this days.
 Another gems by karthink
 #+begin_src emacs-lisp :tangle "packages.el"
 (package! gptel)
+(package! uuid)
 #+end_src
 #+begin_src emacs-lisp
 (setq pac/llamafile-server-port "9090")
 (setq pac/llamafile-cmd "Meta-Llama-3-8B-Instruct.Q5_K_M.llamafile")
 
 (use-package! gptel
-
   :config
-  (setq gptel-model "llamafile")
-  (setq gptel-backend (gptel-make-openai "llamafile"
-                        :stream t
-                        :protocol "http"
-                        :host (format "localhost:%s" pac/llamafile-server-port)
-                        :models '("llamafile"))
-
+  (setq gptel-use-curl t)
+  (setq gptel-log-level 'debug)
+  (setq gptel-backend (gptel-make-ollama "ollama"
+    :host "localhost:11434"
+    :stream t
+    :models '("llama3.1" "llama3.2")
         ))
+  (setq gptel-model "llama3.2")
+  )
+#+end_src
+*** gpt-proof
+https://github.com/benjisimon/elisp/blob/main/gptel-proof.el
+#+begin_src emacs-lisp
+;;
+;; A module to help with proofreading thanks to gptel
+;;
 
-;; written by Llama3
-(defun my-llama-launch ()
-  "Launch a llamafile in a subprocess."
+(use-package! uuid)
+
+(defvar gptel-proof-gentle-prompt
+  (concat "Please fix spelling, punctuation and grammar in the follow text. "
+          "Where possible, keep the word choice and tone unchanged. "
+          "Output only the corrected text.\n"
+          "\n"
+          "The outputed text should use a line length line breaks "
+          "that are similar to the input text. Visually, the old "
+          "and new text should look similar. They should also have "
+          "as few whitespace changes as possible. The new and old text "
+          "will be run through the unix command diff, so only "
+          "critical changes should be visible."))
+
+(defvar gptel-proof-aggressive-prompt
+  (concat "Please fix spelling, punctuation and grammar in the follow text. "
+          "Where possible, rewrite the text to use  active voice and to use fewer words."
+          "Use a tone that's appropriate to publish in a social media post, so that it's casual "
+          "but still something that my Mom would understand.\n\n"
+          "\n"
+          "The outputed text should use a line length line breaks "
+          "that are similar to the input text. Visually, the old "
+          "and new text should look similar. They should also have "
+          "as few whitespace changes as possible. The new and old text "
+          "will be run through the unix command diff, so only "
+          "critical changes should be visible."))
+
+(defun gptel-proof-apply-fix (buffer marker correction)
+  "Apply the changes chatgpt has suggested."
+  (with-current-buffer buffer
+    (goto-char (point-min))
+    (when (re-search-forward marker nil t)
+      (let* ((end (point))
+             (start (- end (length marker))))
+        (delete-region start end)
+        (insert correction)))))
+
+(defun gptel-proof (start end &optional aggressive)
+  "Proofread either the region using ChatGPT magic."
+  (interactive "r\nP")
+  (when (not (use-region-p))
+    (error "No region selected"))
+  (let* ((marker (format "{proof:%s}" (uuid-string)))
+         (input (buffer-substring start end))
+         (prompt-style (if aggressive "aggressive" "gentle"))
+         (start-conflict "<<<<<<< Original\n")
+         (sep-conflict "=======\n")
+         (end-conflict (format ">>>>>>> Proofread (%s)\n" prompt-style)))
+    (save-excursion
+      (goto-char start)
+      (insert start-conflict)
+      (goto-char (+ end (length start-conflict)))
+      (insert (concat sep-conflict marker "\n" end-conflict)))
+    (gptel-request input
+      :callback (lambda (response info)
+                  (if response
+                      (gptel-proof-apply-fix (plist-get info :buffer)
+                                             (plist-get info :context)
+                                             response)
+                    (error "Proofread error: %s" (plist-get info :status))))
+      :context marker
+      :system (if aggressive
+                  gptel-proof-aggressive-prompt
+                gptel-proof-gentle-prompt))))
+#+end_src
+** Ellama
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! ellama)
+#+end_src
+#+begin_src emacs-lisp
+(defun pac/ollama-available-models ()
   (interactive)
+  (let* ((cmd-output (shell-command-to-string "ollama list"))
+         (table (cdr (split-string cmd-output "\n" t))))
+    (mapcar (lambda (x) (car (split-string x nil t))) table)))
 
-  (let* ((process-name pac/llamafile-cmd)
-         (buffer-name "*llamafile-srv*")
-         (args (list "--server" "--port" pac/llamafile-server-port "--nobrowser" "-ngl" "99" ))  ;; Replace with the appropriate arguments for your server
-         (buffer (get-buffer-create buffer-name))
-         (process (apply 'start-process pac/llamafile-cmd buffer pac/llamafile-cmd  args)))
-    ;; Set up the process sentinel
-    (message "Started  %s ." process-name)
-    (set-process-sentinel
-     process
-     (lambda (proc event)
-       (when doom-debug-mode
-         (message "Process %s received event %s" (process-name proc) event))
-       (cond
-        ((string-match "finished" event)
-         (when init-file-debug
-           (message "Server process finished successfully.")))
-        ((string-match "exited abnormally" event)
-         (when init-file-debug
-           (message "Server process exited abnormally."))))))
-    ;; Optionally, set up a process filter if needed
-    (set-process-filter
-     process
-     (lambda (proc output)
-       (when init-file-debug
-         (with-current-buffer (process-buffer proc)
-           (insert output)
-           (message "Process %s output: %s" (process-name proc) output)))))))
-;; Usage: M-x launch-server-process
-
-
-(defun my-llama-exit ()
-  (interactive)
-  (let* ((process-name pac/llamafile-cmd)
-         (process (get-process process-name)))
-    (if process
-        (progn
-          (delete-process process)
-          (message "Server process %s stopped." process-name))
-      (message "No server process %s is running." process-name))))
-
-;; Usage: M-x stop-server-process
-
+(use-package! llm)
+(use-package! ellama)
+(after! ellama
+  (require 'llm-ollama)
+  (setq! ellama-providers
+         '(("llama3.1:8b" . (make-llm-ollama :chat-model "llama3.1:latest" :embedding-model "llama3.1:latest")))
+         )
+  (setq! ellama-provider (car ellama-providers))
+  (setq ellama-fill-paragraphs nil)
+  (setq pac/ellama-bullet-to-text-prompt "Here is a list of bullet points: %s \n Rewrite at a full text paragraph, linking one argument to the next.")
+  (defun +ellama-bullet-to-text ()
+    (interactive)
+    (let ((text (if (region-active-p)
+                    (buffer-substring-no-properties (region-beginning) (region-end))
+                  (buffer-substring-no-properties (point-min) (point-max)))))
+          (ellama-instant (format pac/ellama-bullet-to-text-prompt text )))
+      ))
 #+end_src
 * Python
 My main programming language, so let's make it even better.
@@ -3043,15 +3207,19 @@ Adapted and improve from https://gist.github.com/fleimgruber/cd2386d8326fad3e0e2
 #+end_src
 * LSP-Mode
 #+begin_src emacs-lisp :tangle "packages.el"
-(unpin! lsp-mode)
-(unpin! lsp-ui)
-(unpin! dap-mode)
+;; (unpin! lsp-mode)
+;; (unpin! lsp-ui)
+;; (unpin! dap-mode)
+#+end_src
+
+#+begin_src emacs-lisp
+(add-hook! prog-mode #'flymake-mode)
+(setq lsp-use-plists "true")
+(after! lsp-mode (setq lsp-diagnostic-provider :flymake))
 #+end_src
 ** Python
 #+begin_src emacs-lisp
-(after! dap-python
-(setq dap-python-debugger 'debugpy)
-)
+
 (after! lsp-pylsp
   (setq lsp-pylsp-plugins-pylint-enabled nil
         lsp-pylsp-plugins-pycodestyle-max-line-length 88
@@ -3061,12 +3229,12 @@ Adapted and improve from https://gist.github.com/fleimgruber/cd2386d8326fad3e0e2
         lsp-pylsp-plugins-flake8-enabled nil
         lsp-pylsp-plugins-mccabe-enabled nil
         lsp-pylsp-plugins-jedi-use-pyenv-environment t
-        lsp-pylsp-plugins-mypy-enabled t
+        lsp-pylsp-plugins-mypy-enabled nil
+        lsp-pylsp-plugins-ruff-enabled nil
         lsp-pylsp-plugins-mypy-overrides ["--ignore-missing-imports" t]
         lsp-pylsp-plugins-rope-completion-enabled t
         lsp-pylsp-plugins-rope-autoimport-enabled t
         lsp-pylsp-rename-backend "rope"
-
         )
 
   ;; (lsp-register-custom-settings '(("pylsp.plugins.ruff.enabled" lsp-pylsp-plugins-ruff-enabled  t)))
@@ -3081,9 +3249,9 @@ Adapted and improve from https://gist.github.com/fleimgruber/cd2386d8326fad3e0e2
                                         (lsp--set-configuration (lsp-configuration-section "pylsp"))))))
 )
 #+end_src
-
+** LTEX
 #+begin_src emacs-lisp :tangle "packages.el"
-(package! lsp-latex)
+(package! lsp-latex :disable t)
 #+end_src
 #+begin_src emacs-lisp
 (use-package! lsp-latex
@@ -3091,83 +3259,33 @@ Adapted and improve from https://gist.github.com/fleimgruber/cd2386d8326fad3e0e2
   :config
   (setq! lsp-latex-experimental-citation-commands ["cite" "citep" "citet" "parencite" "textcite" "autocite"]))
 
-;; For bibtex
-(after! bibtex
- (add-hook 'bibtex-mode-hook 'lsp))
+;; ;; For bibtex
+;; (after! bibtex
+;;  (add-hook 'bibtex-mode-hook 'lsp))
 #+end_src
-* Eglot
-** Python
-Lets add this to all my code for sane defaults.
-#+begin_src emacs-lisp :tangle "~/gits/nsp/code/.dir-locals.el"
-((nil . ((eglot-workspace-configuration . (:pylsp (:plugins (:pylint (:enabled :json-false)
-                                                       :ruff (:enabled t)
-                                                       :mypy (:enabled t)
-                                                       :pydocstyle (:convention "numpy")
-                                                       :jedi (:include_params t
-                                                              :fuzzy t))))))))
+#+begin_src emacs-lisp
+;; (require 'auth-source)
+;; (when-let* ((lt-userinfo (car (auth-source-search :host "api.languagetoolplus.com")))
+;;         (lt-user (plist-get lt-userinfo :user))
+;;         (lt-api-key (funcall (plist-get lt-userinfo :secret))))
+;; (load! "secrets.el")
+;; (setq! lsp-ltex-languagetool-org-api-key lt-api-key)
+;; (setq! lsp-ltex-languagetool-org-username lt-user)
+;; (setq! lsp-ltex-languagetool-http-server-uri "https://api.languagetoolplus.com/")
+;; (setq! lsp-ltex-java-initial-heap-size 512)
+;; (setq! lsp-ltex-java-maximum-heap-size 8192)
+;; (setq! lsp-ltex-version "18.2.0")
+;; (setq! lsp-ltex-enabled t)
+;; (setq! lsp-ltex-mother-tongue "fr-FR")
+;; (load! "lsp-ltex-plus.el")
+
+;; (after! latex
+;;     (add-hook! '(tex-mode-local-vars-hook
+;;                  latex-mode-local-vars-hook
+;;                  LaTeX-mode-local-vars-hook)
+;;                :append #'lsp!))
 
 #+end_src
-** LateX
-
-#+begin_src emacs-lisp :tangle no
-(defgroup eglot-ltex nil
-  "Settings for the LTEX Language Server.
-
-https://github.com/valentjn/ltex-ls"
-  :prefix "eglot-ltex-"
-  :group 'eglot
-  :link '(url-link :tag "Github" "https://github.com/emacs-languagetool/eglot-ltex"))
-
-(defcustom eglot-ltex-active-modes
-  ;; Language ids can be found here:
-  ;; https://github.com/valentjn/ltex-ls/blob/7c031d792110a824951aa003acd3ada158a515b4/src/main/kotlin/org/bsplines/ltexls/parsing/CodeFragmentizer.kt#L46
-  '((org-mode :language-id "org")
-    ;; Hack for version >=16 of ltex-ls with git commit support. For
-    ;; earlier versions it should just fall back to plaintext. This
-    ;; requires setting git-commit-major-mode to
-    ;; 'git-commit-elisp-text-mode. This is a hack because
-    ;; git-commit-elisp-text-mode isn't a general purpose git commit
-    ;; major mode, but it does the job
-    (git-commit-elisp-text-mode :language-id "gitcommit")
-    (bibtex-mode :language-id "bibtex")
-    (context-mode :language-id "context")
-    (latex-mode :language-id "latex")
-    (markdown-mode :language-id "markdown")
-    (rst-mode :language-id "restructuredtext")
-    (text-mode :language-id "plaintext"))
-  "List of major mode that work with LanguageTool."
-  :type 'list
-  :group 'eglot-ltex)
-
-(defcustom eglot-ltex-server-path (expand-file-name "ltex-ls-16.0.0/" doom-cache-dir)
-  "The root path of the LTEX language server's folder."
-  :type 'string
-  :group 'eglot-ltex)
-
-(defcustom eglot-ltex-communication-channel 'tcp
-  "Type of the communication channel."
-  :type '(choice (const :tag "Standard IO" stdio)
-                 (const :tag "TCP/socket" tcp))
-  :group 'eglot-ltex)
-
-(defun eglot-ltex--server-entry ()
-  "Return the server entry file.
-
-This file is use to activate the language server."
-  (f-join eglot-ltex-server-path "bin" (if (eq system-type 'windows-nt)
-                                           "ltex-ls.bat"
-                                         "ltex-ls")))
-
-(defun eglot-ltex--server-command ()
-  "Generate startup command for LTEX language server."
-  (cl-case eglot-ltex-communication-channel
-    (`stdio `(,(eglot-ltex--server-entry)))
-    (`tcp `(,(eglot-ltex--server-entry) "--server-type" "TcpSocket" "--port" :autoport))
-    (t (user-error "Invalid communication channel type: %s" eglot-ltex-communication-channel))))
-
-(set-eglot-client! eglot-ltex-active-modes (eglot-ltex--server-command))
-#+end_src
-
 * LaTeX OCR
 
 #+begin_src bash :tangle "~/bin/latex_ocr.sh"
@@ -3177,7 +3295,6 @@ This file is use to activate the language server."
 IMG_FILE="$HOME/.cache/tmp_latex_img.png"
 gnome-screenshot -a -f $IMG_FILE && rapid_latex_ocr $IMG_FILE | head -n 1
 #+end_src
-
 
 For the emacs part, we can use the following function to insert the LaTeX code at point, and surround it with the appropriate delimiters.
 
@@ -3210,4 +3327,123 @@ Adding the following keybinding to your config will allow you to insert LaTeX co
        "m" (cmd! (pac/latex-ocr-insert "\\(" " \\)"))
        "M" (cmd! (pac/latex-ocr-insert "\\[\n" "\n\\]"))
        )
+#+end_src
+* LaTeX Preview from ORG Mode
+#+begin_src emacs-lisp :tangle "latex-latex-preview.el"
+;;; latex-latex-preview.el --- latex-mode previews using org-latex-preview  -*- lexical-binding: t; -*-
+
+;; Copyright (C) 2024  Karthik Chikmagalur
+
+;; Author: Karthik Chikmagalur <karthikchikmagalur@gmail.com>
+;; Keywords: tex
+
+;; This program is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+;;; Commentary:
+
+;; Plugging in org-latex-preview into LaTeX-mode.
+
+;;; Code:
+(require 'org-latex-preview)
+(require 'tex)
+
+(setf (alist-get 'LaTeX-mode org-latex-preview-interfaces)
+      `(:preamble ,#'latex-latex-preview--make-preamble
+        :section  ,#'latex-latex-preview-section-bounds
+        :context  ,#'latex-latex-preview-context
+        :type     ,#'latex-latex-preview-type
+        :property ,#'latex-latex-preview-property))
+
+(defun latex-latex-preview--make-preamble ()
+  "Slurp the preamble from the `TeX-master-file'.
+Code stolen from `TeX-region-create'."
+  (save-excursion
+    (save-restriction
+      (set-buffer                       ; TeX master
+       (find-file-noselect (TeX-master-file TeX-default-extension)))
+      (save-excursion
+        (save-restriction
+          (widen)
+          (goto-char (point-min))
+          (if (not (re-search-forward TeX-header-end nil t))
+              ""
+            (re-search-backward TeX-header-end nil t)
+            (string-replace
+             "\\pdfoutput=1"            ; HACK
+             ""
+             (buffer-substring-no-properties (point-min) (point)))))))))
+
+(defconst latex-latex-preview--start-strings
+  '(("\\$\\$" . "$$")
+    ("\\$" . "$")
+    ("\\\\(" . "\\(")
+    ("\\\\\\[" . "\\[")))
+
+(defun latex-latex-preview-context ()
+  (save-match-data
+    (save-excursion
+      (let ((opener))
+        (when (or (texmathp)
+                  (setq opener (cl-some (lambda (pair)
+                                        (and (looking-at (car pair))
+                                             (cdr pair)))
+                                      latex-latex-preview--start-strings))
+                  ;; (progn (beginning-of-line)
+                  ;;        (skip-chars-forward " \t")
+                  ;;        (looking-at "\\\\begin\\|\\\\end"))
+                  )
+          (pcase-let*
+              ((begin (or (and (car texmathp-why)
+                               (cdr texmathp-why))
+                          (point)))
+               (`(,end . ,type)
+                (progn
+                  (goto-char (1+ begin))
+                  (pcase (or (car texmathp-why) opener)
+                    ("$"   (cons (search-forward "$" nil t)   'latex-fragment))
+                    ("\\(" (cons (search-forward "\\)" nil t) 'latex-fragment))
+                    ("$$"  (cons (search-forward "$$" nil t)  'latex-environment))
+                    ("\\[" (cons (search-forward "\\]" nil t) 'latex-environment))
+                    (_     (cons (LaTeX-find-matching-end)    'latex-environment)))))
+               (element `(:begin ,begin)))
+            (when end
+              (plist-put element :type type)
+              (plist-put element :end end))
+            (plist-put element :buffer (current-buffer))
+            element))))))
+
+(defun latex-latex-preview-property (prop element)
+  (if (eq prop :value)
+      (buffer-substring-no-properties
+       (plist-get element :begin)
+       (plist-get element :end))
+    (plist-get element prop)))
+
+(defun latex-latex-preview-type (element)
+  (plist-get element :type))
+
+(defun latex-latex-preview-section-bounds ()
+  (save-excursion
+    (LaTeX-mark-section)
+    (prog1 (list (region-beginning) (region-end))
+      (deactivate-mark)
+      (pop-mark))))
+
+(provide 'latex-latex-preview)
+;;; latex-latex-preview.el ends here
+#+end_src
+
+#+begin_src emacs-lisp
+(load! "latex-latex-preview.el")
 #+end_src
