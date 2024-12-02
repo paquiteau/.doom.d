@@ -127,7 +127,8 @@
        (magit             ; a git porcelain for Emacs
         +forge)
        ;;make              ; run make tasks from Emacs
-       pass              ; password manager for nerds
+       (pass              ; password manager for nerds
+        +auth)
        pdf               ; pdf enhancements
        ;;prodigy           ; FIXME managing external services & code builders
        ;;terraform         ; infrastructure as code
@@ -197,7 +198,7 @@
        (python            ; beautiful is better than ugly
         +lsp
         +tree-sitter
-        +pyenv
+        ;; +pyenv
         )
        ;;qt                ; the 'cutest' gui framework ever
        ;;racket            ; a DSL for DSLs

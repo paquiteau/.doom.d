@@ -46,13 +46,14 @@ title: Doom Emacs Literate configuration
 #+begin_src emacs-lisp
 
 (defun my-pdf-tools-backdrop (&rest _)
-  (modus-themes-with-colors
+  (when (boundp 'modus-themes-with-colors)
+   (modus-themes-with-colors
     (face-remap-add-relative
      'default
      `(:background ,bg-dim)))
     (face-remap-add-relative
      'pdf-roll-default
-     `(:background ,bg-dim)))
+     `(:background ,bg-dim))))
 
 
 (defun my-pdf-tools-midnight-mode-toggle (&rest _)
@@ -111,8 +112,7 @@ as an envvar for fun.
 (setq
  +workspaces-switch-project-function #'magit-status
  auth-source-cache-expiry nil
- auth-sources '("~/.authinfo.gpg")
- auto-save-default t                         ; Nobody likes to loose work, I certainly don't
+ auto-save-default t
  display-line-numbers-type nil
  display-time-default-load-average t
  display-time-mode t
@@ -451,8 +451,6 @@ Using optionals attributes FACE, HELP-ECHO and VOFFSET."
             (setq abbrev-file-name (expand-file-name "abbrev.el" doom-private-dir))))
 #+end_src
 
-weionweotngwe
-
 ** CSV
 #+begin_src emacs-lisp :tangle "packages.el"
 (package! rainbow-csv
@@ -463,7 +461,7 @@ weionweotngwe
 (add-hook! csv-mode #'rainbow-csv-mode)
 #+end_src
 
-** Spell with jinx :noexport:
+** Spell with jinx
 Jinx is faster and better than spell-fu or flycheck
 #+begin_src emacs-lisp :tangle "packages.el"
 (package! jinx)
@@ -472,9 +470,7 @@ Jinx is faster and better than spell-fu or flycheck
 ;;(setq ispell-personal-dictionary (expand-file-name ".ispell_personal" doom-private-dir))
 
 
-
 (use-package! jinx
-  :defer t
   :init
   (add-hook 'doom-init-ui-hook #'global-jinx-mode)
   :config
@@ -488,7 +484,8 @@ Jinx is faster and better than spell-fu or flycheck
   ;; Extra face(s) to ignore
   (push 'org-inline-src-block
         (alist-get 'org-mode jinx-exclude-faces))
-
+  (add-to-list 'jinx-exclude-faces
+   '(LaTeX-mode tex-math font-latex-math-face font-latex-sedate-face font-latex-verbatim-face font-lock-function-name-face font-lock-keyword-face font-lock-variable-name-face))
   ;; Take over the relevant bindings.
   (after! ispell
     (global-set-key [remap ispell-word] #'jinx-correct))
@@ -499,35 +496,6 @@ Jinx is faster and better than spell-fu or flycheck
   ;; not just after the end.
   (advice-add 'jinx-next :after (lambda (_) (left-word)))
   (set-face-attribute 'jinx-misspelled nil :underline '(:style wave :color "#ff5555")))
-
-
-;; (use-package! jinx
-;;   :init (global-jinx-mode)
-;;   :custom
-;;   (jinx-languages "en_US")
-;;   (jinx-include-modes '(prog-mode LaTeX-mode))
-;;   (jinx-include-faces
-;;    '((prog-mode font-lock-doc-face)
-;;      (conf-mode font-lock-comment-face)))
-;;   (jinx-exclude-faces
-;;    '((markdown-mode markdown-code-face markdown-html-attr-name-face markdown-html-attr-value-face markdown-html-tag-name-face markdown-inline-code-face markdown-link-face markdown-markup-face markdown-plain-url-face markdown-reference-face markdown-url-face)
-;;      (org-mode org-block org-block-begin-line org-block-end-line org-code org-cite org-cite-key org-date org-document-info-keyword org-done org-drawer org-footnote org-formula org-latex-and-related org-link org-macro org-meta-line org-property-value org-special-keyword org-tag org-todo org-verbatim org-warning org-modern-tag org-modern-date-active org-modern-date-inactive)
-;;      (tex-mode tex-math font-lock-constant-face font-latex-math-face font-latex-sedate-face font-latex-verbatim-face font-lock-function-name-face font-lock-keyword-face font-lock-variable-name-face)
-;;      (texinfo-mode font-lock-function-name-face font-lock-keyword-face font-lock-variable-name-face)
-;;      (rst-mode rst-literal rst-external rst-directive rst-definition rst-reference)
-;;      (sgml-mode font-lock-function-name-face font-lock-variable-name-face)
-;;      (emacs-lisp-mode font-lock-constant-face font-lock-warning-face)
-;;      (message-mode message-separator message-header-cc message-header-name message-header-newsgroups message-header-other message-header-to message-header-xheader message-cited-text-1 message-cited-text-2 message-cited-text-3 message-cited-text-4 gnus-cite-1 gnus-cite-2 gnus-cite-3 gnus-cite-4 gnus-cite-5 gnus-cite-6 gnus-cite-7 gnus-cite-8 gnus-cite-9 gnus-cite-10 gnus-cite-11))
-;;    )
-;;   (jinx-exclude-regexps
-;;    '((t "[A-Z]+\\>"
-;;       "\\<[[:upper:]][[:lower:]]+\\>"
-;;       "\\[a-z]*?cite[a-z]*?\{.*?\}"
-;;       "\\w*?[0-9\.'\"-]\\w*"
-;;       "[a-z]+://\\S-+"
-;;       "<?[-+_.~a-zA-Z][-+_.~:a-zA-Z0-9]*@[-.a-zA-Z0-9]+>?")))
-;;   :bind
-;;   (("M-$" . jinx-correct)))
 #+end_src
 
 *** Guess-languages :noexport:
@@ -555,19 +523,20 @@ I write stuff mostly in English, but sometimes I have to add French in the mix.
 #+end_src
 #+begin_src emacs-lisp
 
-(use-package flymake-languagetool
-  :ensure t
+(use-package! flymake-languagetool
   :hook ((text-mode       . flymake-languagetool-load)
-         (latex-mode      . flymake-languagetool-load)
+         (LaTeX-mode      . flymake-languagetool-load)
          (org-mode        . flymake-languagetool-load)
          (markdown-mode   . flymake-languagetool-load))
   :init
   ;; If using Premium Version provide the following information
   (setq flymake-languagetool-server-jar nil)
   (setq flymake-languagetool-url "https://api.languagetoolplus.com")
-  (setq flymake-languagetool-api-username lt-user)
-  (setq flymake-languagetool-api-key lt-api-key)
+  (setq flymake-languagetool-api-username (auth-source-pass-get "login" "web/languagetool.org"))
+  (setq flymake-languagetool-api-key (auth-source-pass-get "api_key" "web/languagetool.org"))
   :config
+  (setq flymake-languagetool-api-username (auth-source-pass-get "login" "web/languagetool.org"))
+  (setq flymake-languagetool-api-key (auth-source-pass-get "api_key" "web/languagetool.org"))
   (setq flymake-languagetool-check-spelling nil) ;; Use jinx instead.
   (setq flymake-languagetool-ignore-faces-alist
         '((LaTeX-mode font-lock-comment-face ;; comments
@@ -1285,7 +1254,7 @@ SQL can be either the emacsql vector representation, or a string."
 ;; Use tecosaur development branch
  (package! org :recipe
    (:host nil :repo "https://code.tecosaur.net/mirrors/org-mode.git" :remote "mirror" :fork
-          (:host nil :repo "https://code.tecosaur.net/tec/org-mode.git" :branch "latex-previews-everywhere" :remote "tecosaur")
+          (:host nil :repo "https://code.tecosaur.net/tec/org-mode.git" :branch "dev" :remote "tecosaur")
           :files
           (:defaults "etc")
           :build t :pre-build
@@ -1307,8 +1276,9 @@ SQL can be either the emacsql vector representation, or a string."
                (format "(defun org-git-version () \"The truncate git commit hash of Org mode.\" %S)\n" git-version)
                "(provide 'org-version)\n")))
           ))
-  :pin "f652b0d6cf7a601390240766985a019797272aac"
-   ;;:pin "c9a4aed4dbc2f29c337141a76584a78d01e0820d"
+   :pin "cdbfed28615b3c0f6e1332f2e4d06de805dd207d"
+   ;; :pin "f652b0d6cf7a601390240766985a019797272aac"
+   ;; :pin "c9a4aed4dbc2f29c337141a76584a78d01e0820d"
    )
 (package! ox-gfm)
 #+end_src
@@ -2330,21 +2300,37 @@ are the arguments of the ORIG-FUN."
   #+end_src
 * LaTeX
 #+begin_src emacs-lisp
+(setq +latex-viewers '(pdf-tools zathura evince))
 (after! latex
 (add-to-list 'auto-mode-alist '("\\.tikz" . LaTeX-mode))
 (add-to-list 'auto-mode-alist '("\\.pgf" . LaTeX-mode))
-;; (add-to-list 'TeX-view-program-selection '(output-pdf "PDF Tools"))
-;; (add-to-list 'TeX-view-program-list '("PDF Tools" TeX-pdf-tools-sync-view))
+(add-to-list 'TeX-view-program-selection '(output-pdf "PDF Tools"))
+(add-to-list 'TeX-view-program-list '("PDF Tools" TeX-pdf-tools-sync-view))
 ;; Update PDF buffers after successful LaTeX runs.
 (add-hook 'TeX-after-compilation-finished-functions #'TeX-revert-document-buffer)
-)
-(setq +latex-viewers '(pdf-tools zathura evince))
-;;(add-hook 'LaTeX-mode-hook #'(lambda () (add-to-list 'TeX-complete-list '("\\\\[Cc]ref{\\([^{}\n\\%,]*\\)" 1 LaTeX-label-list "}"))))
+(TeX-add-style-hook
+    "cleveref"
+    (lambda ()
+      (add-to-list 'TeX-complete-list '("\\\\[Cc]ref{\\([^{}\n\\%,]*\\)" 1 LaTeX-completion-label-list "}"))
+      ;; (reftex-ref-style-activate "Cleveref")
+      ;; (TeX-add-symbols
+      ;;  '("cref" TeX-arg-ref)
+      ;;  '("Cref" TeX-arg-ref)
+      ;;  '("cpageref" TeX-arg-ref)
+      ;;  '("Cpageref" TeX-arg-ref))))
+      ))
+(setq reftex-enable-partial-scans t)
+(setq reftex-save-parse-info t)
+(setq reftex-use-multiple-selection-buffers t)
+(setq reftex-plug-into-AUCTeX t)
+(setq reftex-ref-style-default-list '("Default" "Cleveref"))
+(setq-default TeX-master t))
+(add-hook 'LaTeX-mode-hook #'outline-minor-mode)
 #+end_src
 ** Editor visuals
 Let's enhance ~TeX-fold-math~ a bit
 #+begin_src emacs-lisp
-(add-hook 'LaTeX-mode-hook #'(lambda () (font-latex-add-keywords '("bm" "mathbb") 'math-command)))
+(add-hook 'LaTeX-mode-hook #'(lambda () (font-latex-add-keywords '("bm" "mathbb" "operatorname") 'math-command)))
 (setq TeX-fold-math-spec-list
       `(;; missing/better symbols
         ("≤" ("le"))
@@ -2367,7 +2353,7 @@ Let's enhance ~TeX-fold-math~ a bit
         ("𝑑{1}/𝑑{2}" ("dv"))
         ("∂{1}/∂{2}" ("pdv"))
         ;; fancification
-        ("{1}" ("mathrm"))
+        ("{1}" ("mathrm" "operatorname"))
         ;; (,(lambda (word) (concat word `(string-bytes word) "-" (string-offset-roman-chars 119743 word))) ("mathbf" "bm" "boldsymbol"))
         (,(lambda (word) (string-offset-roman-chars 119743 word)) ("mathbf" "bm" "boldsymbol"))
         (,(lambda (word) (string-offset-roman-chars 119951 word)) ("mathcal"))
@@ -2605,7 +2591,7 @@ https://tex.stackexchange.com/questions/557959/emacs-auctex-tabular-vertical-ali
 #+end_src
 
 ** Auto updating of bibliography
-When writing paper, I have a local-bib file (to be shared with coworker, publisher etc ,).
+When writing paper, I have a local-bib file (to be shared with coworker, publisher, etc.) But all my existing bib entries are stored in =~/org/library.bib=  (which is the value of the variable =citar-bibliography=). This bib files is synchronized from zotero (using the Better Biblatex plugin)
 #+begin_src emacs-lisp
 (after! latex
   (require 'citar)
@@ -2633,139 +2619,26 @@ When writing paper, I have a local-bib file (to be shared with coworker, publish
        (with-current-buffer (find-file-noselect (car bibfiles))
          (goto-char (point-max))
          (insert "\n")
-        (citar-insert-bibtex citekeys))
-         (save-buffer)))
-  )
-)
+        (citar-insert-bibtex citekeys)
+        (save-buffer))))))
 #+end_src
-** CAPF
-#+begin_src emacs-lisp :tangle no
-
-;; Auxiliary functions
-
-(defun company-reftex-prefix (regexp)
-  "Return the prefix for matching given REGEXP."
-  (and (derived-mode-p 'latex-mode)
-       reftex-mode
-       (when (looking-back regexp nil)
-         (match-string-no-properties 1))))
-
-(defun company-reftex-annotate (key annotation)
-  "Annotate KEY with ANNOTATION if the latter is not nil.
-Obeys the setting of `company-reftex-max-annotation-length'."
-  (cond
-   ((not annotation) key)
-   ((not company-reftex-max-annotation-length)
-    (propertize key 'reftex-annotation annotation))
-   (t (propertize key 'reftex-annotation
-                  (s-truncate company-reftex-max-annotation-length annotation)))))
-
-(defun company-reftex-label-candidates (prefix)
-  "Find all label candidates matching PREFIX."
-  (reftex-access-scan-info)
-  (reftex-parse-all)
-  (cl-loop for entry in (symbol-value reftex-docstruct-symbol)
-           if (and (stringp (car entry)) (string-prefix-p prefix (car entry)))
-           collect
-           (company-reftex-annotate (car entry) (cl-caddr entry))))
-
-;;;###autoload
-(defun company-reftex-labels (command &optional arg &rest _)
-  "Company backend for LaTeX labels, powered by reftex.
-For more information on COMMAND and ARG see `company-backends'."
-  (interactive (list 'interactive))
-  (cl-case command
-    (interactive (company-begin-backend 'company-reftex-labels))
-    (prefix (company-reftex-prefix company-reftex-labels-regexp))
-    (candidates (company-reftex-label-candidates arg))
-    (annotation (when company-reftex-annotate-labels
-                  (concat
-                   (unless company-tooltip-align-annotations " -> ")
-                   (get-text-property 0 'reftex-annotation arg))))))
-
-;;;;
-
+** Xenops
+#+begin_src emacs-lisp :tangle "packages.el"
+;; (package! xenops)
 #+end_src
 
-#+begin_src emacs-lisp :tangle no
-(defvar cape-reftex-max-annotation-length 20)
-(defvar cape-reftex-ref-regexp
-  (rx "\\"
-      ;; List taken from `reftex-ref-style-alist'
-      (or "autoref"
-          "autopageref"
-          "Cpageref"
-          "cpageref"
-          "Cref"
-          "cref"
-          "eqref"
-          "Fref"
-          "fref"
-          "pageref"
-          "Ref"
-          "ref"
-          "vpageref"
-          "Vref"
-          "vref")
-      "{"
-      (group (* (not (any "}"))))
-      (regexp "\\="))
-  "Regular expression to use when looking for the ref prefix.
-Group number 1 should be the prefix itself."
-  )
-
-(defun cape-reftex-collect(key annotation)
-  "Annotate KEY with ANNOTATION if the latter is not nil.
-Obeys the setting of `company-reftex-max-annotation-length'."
-  (cond
-   ((not annotation) key)
-   (t (propertize key 'reftex-annotation
-                  annotation))))
-
-
-(defun pac/cape-reftex-annotation (entry)
-  (concat "  " (s-truncate cape-reftex-max-annotation-length (get-text-property 0 'reftex-annotation entry) "...")))
-
-(defun pac/cape-reftex-doc-buffer (entry)
-  (save-window-excursion)
-  (with-current-buffer (get-buffer-create "*cape-reftex*")
-    (setf (buffer-string) (get-text-property 0 'reftex-annotation entry))
-    (current-buffer)
-    ))
-
-(defvar pac/cape-reftex--do-parse t)
-(setq pac/cape-reftex--do-parse t)
-(defvar pac/cape-reftex--parse-data nil)
-
-(defun pac/cape-reftex-get (_)
-  (when pac/cape-reftex--do-parse
-      (reftex-parse-all)
-      (setq pac/cape-reftex--do-parse nil)
-      (setq pac/cape-reftex--parse-data (cl-loop for entry in (symbol-value reftex-docstruct-symbol)
-            if (stringp (car entry)) ; (string-prefix-p prefix (car entry)))
-           collect
-       (cape-reftex-collect (car entry) (cl-caddr entry)))))
-    pac/cape-reftex--parse-data)
-
-(defun pac/cape-reftex-label ()
-  "If INTERACTIVE is nil the function acts like a Capf."
-
-  (interactive "*")
-  (when-let*
-      ((trig (and reftex-mode (looking-back cape-reftex-ref-regexp nil)))
-       (prefix (match-string-no-properties 1))
-       (beg (match-beginning 1))
-       (end (match-end 1))
-       )
-    (list beg end (completion-table-dynamic #'pac/cape-reftex-get)
-    :annotation-function #'pac/cape-reftex-annotation
-    :company-doc-buffer #'pac/cape-reftex-doc-buffer
-    :exit-function (lambda (str _status) (insert) (setq pac/cape-reftex--do-parse t)))))
-
-(add-hook 'LaTeX-mode-hook #'(lambda () (add-hook 'completion-at-point-functions #'pac/cape-reftex-label 0 t)))
-
-;;(add-hook 'LaTeX-mode-hook #'(lambda () (add-to-list 'TeX-complete-list '("\\\\[Cc]ref{\\([^{}\n\\%,]*\\)" 1 LaTeX-label-list "}"))))
+#+begin_src emacs-lisp
+;; (after! xenops
+;;   (setq xenops-reveal-on-entry t)
+;;   (setq xenops-math-latex-excluded-preamble-line-regexps
+;;         '("^\\\\numberwithin"
+;;         "^\\\\ifSubfilesClassLoaded"
+;;         "^\\\\setcounter"))
+;;   )
 #+end_src
+\[
+\alpha = \frac{b^2-\sqrt{4ac}}{2a}
+\]
 
 * Languages Models
 ** Copilot
@@ -3043,7 +2916,7 @@ My main programming language, so let's make it even better.
 #+end_src
 
 #+begin_src emacs-lisp
-(setq! pyenv-mode-mode-line-format nil)
+;; (setq! pyenv-mode-mode-line-format nil)
 
 (use-package! python-black
   :after python
@@ -3171,25 +3044,25 @@ Fix highlighting errors from tree-sitter.
  ;; (python-pytest--run :args args :file file :func func :edit current-prefix-arg))
 
 #+end_src
-** Configure Flycheck RST-sphinx to use the correct pyenv
+** COMMENT Configure Flycheck RST-sphinx to use the correct pyenv :noexport:
 
 #+begin_src emacs-lisp
-(require 'pyenv-mode)
-(defun pac/get-pyenv-version ()
-  "return the content of project's most-closest .python-version"
-  (car (s-lines (s-trim (f-read-text
-                         (f-expand ".python-version" (f-traverse-upwards
-                                   (lambda (path) (f-exists? (f-expand ".python-version" path)))))
-                         'utf-8)))))
+;; (require 'pyenv-mode)
+;; (defun pac/get-pyenv-version ()
+;;   "return the content of project's most-closest .python-version"
+;;   (car (s-lines (s-trim (f-read-text
+;;                          (f-expand ".python-version" (f-traverse-upwards
+;;                                    (lambda (path) (f-exists? (f-expand ".python-version" path)))))
+;;                          'utf-8)))))
 
 
-;; FIXME: we should not use a custom dir-local setup to do that.
-;; add-hook rst-mode-hook does not help
-(dir-locals-set-class-variables 'gits-dirs
-                                '((rst-mode .
-                                   ((eval . (setq-local flycheck-rst-sphinx-executable (concat (pyenv-mode-full-path (pac/get-pyenv-version)) "/bin/sphinx-build"))))
-                                   )))
-(dir-locals-set-directory-class "~/gits/nsp/" 'gits-dirs)
+;; ;; FIXME: we should not use a custom dir-local setup to do that.
+;; ;; add-hook rst-mode-hook does not help
+;; (dir-locals-set-class-variables 'gits-dirs
+;;                                 '((rst-mode .
+;;                                    ((eval . (setq-local flycheck-rst-sphinx-executable (concat (pyenv-mode-full-path (pac/get-pyenv-version)) "/bin/sphinx-build"))))
+;;                                    )))
+;; (dir-locals-set-directory-class "~/gits/nsp/" 'gits-dirs)
 #+end_src
 
 ** Edit Docstring in rst-mode in separate buffer
@@ -3488,5 +3361,5 @@ Code stolen from `TeX-region-create'."
 #+end_src
 
 #+begin_src emacs-lisp
-(load! "latex-latex-preview.el")
+;; (load! "latex-latex-preview.el")
 #+end_src
