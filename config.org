@@ -23,6 +23,10 @@ title: Doom Emacs Literate configuration
 #!/bin/bash
 #+end_src
 * HOTFIX
+** LaTeX-Mode broken
+#+begin_src emacs-lisp
+(setq major-mode-remap-alist major-mode-remap-defaults)
+#+end_src
 **  org-element cache warnings
 #+begin_src emacs-lisp
 (setq warning-suppress-types (append warning-suppress-types '((org-element-cache))))
@@ -139,7 +143,7 @@ as an envvar for fun.
  evil-want-fine-undo t                       ; By default while in insert all changes are one big blob. Be more granular
  evil-kill-on-visula-paste nil               ; overwriting region without copy to kill ring.
  explicit-shell-file-name "/bin/bash"
- gc-cons-threshold (* 1024 1024 1024)
+ ;; gc-cons-threshold (* 1024 1024 1024)
  password-cache-expiry nil                   ; I can trust my computers ... can't I?
  projectile-ignored-projects '("~/" "/tmp" "~/.emacs.d/.local/straight/repos/")
  projectile-project-search-path '(("~/gits/nsp/" . 2)
@@ -449,6 +453,13 @@ Using optionals attributes FACE, HELP-ECHO and VOFFSET."
           (defun +abbrev-file-name ()
             (setq-default abbrev-mode t)
             (setq abbrev-file-name (expand-file-name "abbrev.el" doom-private-dir))))
+
+(setq dabbrev-ignored-buffer-regexps '("\\` "
+ "\\(?:\\(?:[EG]?\\|GR\\)TAGS\\|e?tags\\|GPATH\\)\\(<[0-9]+>\\)?"
+ ".*\\.gpg$"
+ "\\.\\(?:pdf\\|jpeg\\|png\\)\\'"
+ "*\\([A-z]\\|-\\)*"
+ ))
 #+end_src
 
 ** CSV
@@ -519,6 +530,7 @@ I write stuff mostly in English, but sometimes I have to add French in the mix.
 #+begin_src emacs-lisp :tangle "packages.el"
 (package! flymake-languagetool
   :recipe (:host github :repo "emacs-languagetool/flymake-languagetool" :branch "feat/incremental-checking")
+  :disable t
   )
 #+end_src
 #+begin_src emacs-lisp
@@ -557,7 +569,19 @@ I write stuff mostly in English, but sometimes I have to add French in the mix.
                          markdown-html-attr-value-face
                          markdown-html-entity-face))
         )
+  ;; not sure if this works
+(defadvice flymake-languagetool--check (around adjust-gc-cons-threshold activate)
+(let ((old-high-gc-cons-threshold gcmh-high-cons-threshold)
+      (old-low-gc-cons-threshold  gcmh-low-cons-threshold))
+  (setq gcmh-high-cons-threshold most-positive-fixnum
+        gcmh-low-cons-threshold most-positive-fixnum)
+    ad-do-it
+    (setq gcmh-high-cons-threshold old-high-gc-cons-threshold
+          gcmh-low-cons-threshold old-low-gc-cons-threshold)
+      )
   )
+  )
+
 #+end_src
 ** Grammarly :noexport:
 #+begin_src emacs-lisp :tangle "packages.el"
@@ -1276,9 +1300,7 @@ SQL can be either the emacsql vector representation, or a string."
                (format "(defun org-git-version () \"The truncate git commit hash of Org mode.\" %S)\n" git-version)
                "(provide 'org-version)\n")))
           ))
-   :pin "cdbfed28615b3c0f6e1332f2e4d06de805dd207d"
-   ;; :pin "f652b0d6cf7a601390240766985a019797272aac"
-   ;; :pin "c9a4aed4dbc2f29c337141a76584a78d01e0820d"
+   :pin "a7579581f91866d06d5a1e66ac59f9b57fb1324d"
    )
 (package! ox-gfm)
 #+end_src
@@ -1713,7 +1735,10 @@ We defines some global variable to hold the content of preamble snippets.
    :condition t
    :when microtype
    :snippet "\\ifcsname Code\\endcsname\n  \\let\\oldcode\\Code\\renewcommand{\\Code}{\\microtypesetup{protrusion=false}\\oldcode}\n\\fi"
-   :order 98.5)))
+   :order 98.5)
+
+
+  ))
 #+end_src
 xcolor is always usefull.
 #+begin_src emacs-lisp
@@ -1775,7 +1800,23 @@ let's make it transparent.
         )
   )
 
+(defun my-org-latex-format-headline-function
+    (todo todo-type priority text tags _info)
+  "Default format function for a headline.
+See `org-latex-format-headline-function' for details."
+  (concat
+   (and todo (format "{\\fcolorbox{white}{%s}{\\color{white}{\\textbf{%s}}}}\\hspace{5pt}"
+                     (pcase todo-type
+                       ('todo "orange")
+                       ('done "green"))
+                     todo))
+   (and priority (format "\\framebox{\\#%c} " priority))
+   text
+   (and tags
+    (format "\\hfill{}\\fcolorbox{gray}{gray}{\\color{white}{\\textsc{%s}}}"
+        (mapconcat #'org-latex--protect-text tags ":")))))
 
+(setq org-latex-format-headline-function 'my-org-latex-format-headline-function)
 #+end_src
 
 With the background taken care of, we just need to make sure we're using the
@@ -2301,7 +2342,9 @@ are the arguments of the ORIG-FUN."
 * LaTeX
 #+begin_src emacs-lisp
 (setq +latex-viewers '(pdf-tools zathura evince))
+(add-to-list 'auto-mode-alist '("\\.tex" . LaTeX-mode))
 (after! latex
+(add-to-list 'auto-mode-alist '("\\.tex" . LaTeX-mode))
 (add-to-list 'auto-mode-alist '("\\.tikz" . LaTeX-mode))
 (add-to-list 'auto-mode-alist '("\\.pgf" . LaTeX-mode))
 (add-to-list 'TeX-view-program-selection '(output-pdf "PDF Tools"))
@@ -2488,6 +2531,7 @@ Such special cases should be remapped to another value, as given in `string-offs
                     "RR" "\\mathbb{R}"
                     "RN" "\\mathbb{R}^N"
                     "ZZ" "\\mathbb{Z}"
+                    "argmin" "\\argmin"
                     "arg" "\\arg"
                     "min" "\\min"
                     "max" "\\min"
@@ -2546,8 +2590,6 @@ Such special cases should be remapped to another value, as given in `string-offs
                     ("'q" . "sqrt")
                     ;; "influenced" by Gilles Castel
                     (".. " . ("\\dot{" . "} "))
-                    (",." . "vec")
-                    (".," . "vec")
                     ("~ " . ("\\tilde{" . "} "))
                     ("hat" . "hat")
                     ("bar" . "overline"))
@@ -2622,23 +2664,6 @@ When writing paper, I have a local-bib file (to be shared with coworker, publish
         (citar-insert-bibtex citekeys)
         (save-buffer))))))
 #+end_src
-** Xenops
-#+begin_src emacs-lisp :tangle "packages.el"
-;; (package! xenops)
-#+end_src
-
-#+begin_src emacs-lisp
-;; (after! xenops
-;;   (setq xenops-reveal-on-entry t)
-;;   (setq xenops-math-latex-excluded-preamble-line-regexps
-;;         '("^\\\\numberwithin"
-;;         "^\\\\ifSubfilesClassLoaded"
-;;         "^\\\\setcounter"))
-;;   )
-#+end_src
-\[
-\alpha = \frac{b^2-\sqrt{4ac}}{2a}
-\]
 
 * Languages Models
 ** Copilot
@@ -2741,7 +2766,7 @@ Another gems by karthink
     :stream t
     :models '("llama3.1" "llama3.2")
         ))
-  (setq gptel-model "llama3.2")
+  (setq gptel-model 'llama3.2)
   )
 #+end_src
 *** gpt-proof
@@ -3166,6 +3191,31 @@ Adapted and improve from https://gist.github.com/fleimgruber/cd2386d8326fad3e0e2
 )
 #+end_src
 ** LTEX
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! lsp-ltex)
+#+end_src
+#+begin_src emacs-lisp
+(use-package! lsp-ltex
+  :defer-incrementally lsp
+  :init
+  (setq lsp-ltex-version "latest")
+  (setq lsp-ltex-languagetool-http-server-uri "https://api.languagetoolplus.com")
+  (setq lsp-ltex-languagetool-org-username (auth-source-pass-get "login" "web/languagetool.org"))
+  (setq lsp-ltex-languagetool-org-api-key (auth-source-pass-get "api_key" "web/languagetool.org"))
+  (setq lsp-ltex-server-store-path (expand-file-name "ltex-ls-plus" lsp-server-install-dir ))
+  :config
+  (setq lsp-ltex-enabled t)
+  (setq lsp-ltex-mother-tongue "fr-FR")
+  (setq lsp-ltex-completion-enabled nil)
+  (setq lsp-ltex-diagnostic-severity "hint")
+  )
+(after! tex
+  (add-hook! '(tex-mode-local-vars-hook
+                 latex-mode-local-vars-hook
+                 LaTeX-mode-local-vars-hook)
+               :append #'lsp!))
+#+end_src
+** LSP-LATEX
 #+begin_src emacs-lisp :tangle "packages.el"
 (package! lsp-latex :disable t)
 #+end_src

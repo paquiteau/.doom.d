@@ -23,7 +23,8 @@
        (corfu              ; the ultimate code completion backend
         +icons
         +orderless
-        +dabbrev)
+        ;;+dabbrev
+        )
        ;;helm              ; the *other* search engine for love and life
        ;;ido               ; the other *other* search engine...
        (vertico
