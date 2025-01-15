@@ -647,6 +647,13 @@ At some point I would like this to be a dash board of all my projects.
   ;; (add-hook 'magit-process-find-password-functions
   ;;    'magit-process-password-auth-source)
   )
+
+;;https://stackoverflow.com/a/58042950
+(defun pac/magit-add-current-buffer ()
+"Adds (with force) the file from the current buffer to the git repo"
+(interactive)
+(shell-command (concat "git add -f "
+        (shell-quote-argument buffer-file-name))))
 #+end_src
 Then we are also setting up code reviews
 *** Conventional Commit
@@ -2369,6 +2376,9 @@ are the arguments of the ORIG-FUN."
 (setq reftex-ref-style-default-list '("Default" "Cleveref"))
 (setq-default TeX-master t))
 (add-hook 'LaTeX-mode-hook #'outline-minor-mode)
+
+
+
 #+end_src
 ** Editor visuals
 Let's enhance ~TeX-fold-math~ a bit
