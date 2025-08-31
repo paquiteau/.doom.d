@@ -1,0 +1,8 @@
+# -*- mode: snippet -*-
+# name: bb  (block begin)
+# key:  bb
+# --
+
+#+begin_$1
+$0
+#+end_$1
