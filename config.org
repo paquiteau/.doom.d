@@ -1945,7 +1945,18 @@ A nice graph of knowledge.
           org-roam-ui-update-on-save t
           org-roam-ui-open-on-start t))
 #+end_src
+*** org-latex-preview
+#+begin_src emacs-lisp
+(after! org
+  (org-latex-preview-mode 1)
+  (setq org-startup-with-latex-preview t)
+  )
+#+end_src
 ** Source block completion
+#+begin_quote
+Corg is an Emacs package that provides completion-at-point for Org-mode source block and dynamic block headers. corg auto-completes programming language names, their parameters, and possible parameter values for source blocks. For dynamic blocks, it completes block names, their parameters, and possible parameter values.
+#+end_quote
+
 #+begin_src emacs-lisp :tangle "packages.el"
 (package! corg
   :recipe (:host github :repo "isamert/corg.el"))
