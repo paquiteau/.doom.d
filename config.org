@@ -11,8 +11,6 @@ title: Doom Emacs Literate configuration
 
 #+begin_src emacs-lisp :comments no
 ;;; config.el -*- lexical-binding: t; -*-
-
-(load! "secrets.el")
 #+end_src
 
 #+begin_src emacs-lisp :tangle "packages.el" :comments no
