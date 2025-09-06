@@ -2394,8 +2394,29 @@ are the arguments of the ORIG-FUN."
 (setq reftex-use-multiple-selection-buffers t)
 (setq reftex-plug-into-AUCTeX t)
 (setq reftex-ref-style-default-list '("Default" "Cleveref"))
-(setq-default TeX-master t))
+(setq-default TeX-master t)
+
+(defun pac/TeX-command-current-frame ()
+ "Find the outermost enclosing LaTeX 'frame' environment and execute `TeX-command-region` on it."
+  (interactive)
+  (save-excursion
+    (let ((found nil))
+      (while (and (not found) (LaTeX-current-environment))
+        (if (string= (LaTeX-current-environment) "frame")
+            (setq found t)
+          (ignore-errors (LaTeX-find-matching-begin))))
+      (if found
+          (let ((begin (save-excursion (LaTeX-find-matching-begin) (point)))
+                (end (save-excursion (LaTeX-find-matching-end) (point))))
+            (goto-char begin)
+            (push-mark end t t)
+            (TeX-command-region))
+        (message "No enclosing 'frame' environment found.")))))
+
+)
+
 (add-hook 'LaTeX-mode-hook #'outline-minor-mode)
+
 
 
 
@@ -2699,19 +2720,19 @@ When writing paper, I have a local-bib file (to be shared with coworker, publish
 ** Copilot
 Github copilot is too great to be ignored this days.
 #+begin_src emacs-lisp :tangle "packages.el"
-(package! copilot
- :recipe (:host github :repo "copilot-emacs/copilot.el" :files ("*.el" "dist"))
-)
+;(package! copilot
+; :recipe (:host github :repo "copilot-emacs/copilot.el" :files ("*.el" "dist"))
+;)
 #+end_src
 #+begin_src emacs-lisp
 
-(use-package! copilot
- :hook (prog-mode . copilot-mode)
- :bind (:map copilot-completion-map
-             ("<tab>" . 'copilot-accept-completion)
-             ("TAB" . 'copilot-accept-completion)
-             ("C-TAB" . 'copilot-accept-completion-by-word)
-             ("C-<tab>" . 'copilot-accept-completion-by-word)))
+;(use-package! copilot
+; :hook (prog-mode . copilot-mode)
+; :bind (:map copilot-completion-map
+;             ("<tab>" . 'copilot-accept-completion)
+;             ("TAB" . 'copilot-accept-completion)
+;             ("C-TAB" . 'copilot-accept-completion-by-word)
+;             ("C-<tab>" . 'copilot-accept-completion-by-word)))
 #+end_src
 * Python
 My main programming language, so let's make it even better.
