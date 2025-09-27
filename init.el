@@ -12,7 +12,6 @@
 ;;
 ;;      Alternatively, press 'gd' (or 'C-c c d') on a module to browse its
 ;;      directory (for easy access to its source code).
-(setenv "LSP_USE_PLISTS" "1")
 
 (doom! :input
        ;;chinese
@@ -43,7 +42,7 @@
         ;;+extra
         )
        ;;minimap           ; show a map of the code on the side
-       (modeline +light)          ; snazzy, Atom-inspired modeline, plus API
+       (modeline)          ; snazzy, Atom-inspired modeline, plus API
        nav-flash         ; blink cursor line after big motions
        ;;neotree           ; a project drawer, like NERDTree for vim
        ophints           ; highlight the region an operation acts on
@@ -67,7 +66,9 @@
        (evil +everywhere); come to the dark side, we have cookies
        file-templates    ; auto-snippets for empty files
        fold              ; (nigh) universal code folding
-       (format)  ; automated prettiness
+       (format
+        +onsave
+        +lsp)  ; automated prettiness
        ;;god               ; run Emacs commands without modifier keys
        ;;lispy             ; vim for lisp, for people who don't like vim
        multiple-cursors  ; editing in many places at once
@@ -82,6 +83,7 @@
        electric          ; smarter, keyword-based electric-indent
        (ibuffer +icons)         ; interactive buffer management
        undo              ; persistent, smarter undo for your inevitable mistakes
+       tramp             ; don't leave home
        vc                ; version-control and Emacs, sitting in a tree
 
        :term
@@ -92,15 +94,15 @@
 
        :checkers
        (syntax              ; tasing you for every semicolon you forget
-       +childframe
-       +flymake
-       +icons)
+        +childframe
+        +flymake
+        +icons)
        ;; (spell
        ;;  +enchant)
-        ;;+flyspell
-        ;;
-        ;+everywhere
-        ;) ; tasing you for misspelling mispelling
+       ;;+flyspell
+       ;;
+                                        ;+everywhere
+                                        ;) ; tasing you for misspelling mispelling
        ;; grammar           ; tasing grammar mistake every you make
 
        :tools
