@@ -229,6 +229,7 @@ as an envvar for fun.
   (consult-buffer))
 #+end_src
 ** Custom functions
+*** Lisp Stuff
 #+begin_src emacs-lisp :tangle yes
 (defun pac/concat-newline ( &rest lines)
   "concat with newline between each strings"
@@ -240,6 +241,17 @@ than having to call `add-to-list' multiple times."
   (interactive)
   (dolist (item to-add)
     (add-to-list l item)))
+
+
+(defun pac/insert-before (lst new-elt sym)
+  "Insert NEW-ELT before SYM in LST by mutating the list.
+Does nothing if SYM is not found or is the first element."
+  (let ((cur lst))
+    (while (and (cdr cur) (not (eq (cadr cur) sym)))
+      (setq cur (cdr cur)))
+    (when (and (cdr cur) (eq (cadr cur) sym))
+      (setcdr cur (cons new-elt (cdr cur)))))
+  lst)
 #+end_src
 
 #+name: grab
@@ -663,10 +675,14 @@ At some point I would like this to be a dash board of all my projects.
 
 ;;https://stackoverflow.com/a/58042950
 (defun pac/magit-add-current-buffer ()
-"Adds (with force) the file from the current buffer to the git repo"
-(interactive)
-(shell-command (concat "git add -f "
-        (shell-quote-argument buffer-file-name))))
+  "Adds (with force) the file from the current buffer to the git repo"
+  (interactive)
+  (shell-command (concat "git add -f "
+                         (shell-quote-argument buffer-file-name))))
+
+
+
+
 #+end_src
 Then we are also setting up code reviews
 *** Conventional Commit
@@ -747,6 +763,27 @@ And add some custom functions provided by =blamer= author:
 (setq auto-revert-buffer-list-filter
       'magit-auto-revert-repository-buffer-p)
 #+end_src
+*** Ignored files in status buffer
+Getting a potential view of ignored files can be helpfull as well
+per [[https://emacs.stackexchange.com/a/28506]]
+#+begin_src emacs-lisp
+
+(defun magit-ignored-files ()
+  (magit-git-items "ls-files" "--others" "--ignored" "--exclude-standard" "-z" "--directory"))
+
+(defun magit-insert-ignored-files ()
+  (-when-let (files (magit-ignored-files))
+    (magit-insert-section (ignored)
+      (magit-insert-heading "Ignored files:")
+      (magit-insert-un/tracked-files-1 files nil)
+      (insert ?\n))))
+
+(after! magit
+  (pac/insert-before magit-status-sections-hook #'magit-insert-ignored-files #'magit-insert-untracked-files)
+  )
+#+end_src
+
+
 ** Markdown
 #+begin_src emacs-lisp
 (after! markdown
