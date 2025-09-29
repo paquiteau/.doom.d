@@ -43,7 +43,7 @@
         ;;+extra
         )
        ;;minimap           ; show a map of the code on the side
-       (modeline +light)          ; snazzy, Atom-inspired modeline, plus API
+       (modeline )          ; snazzy, Atom-inspired modeline, plus API
        nav-flash         ; blink cursor line after big motions
        ;;neotree           ; a project drawer, like NERDTree for vim
        ophints           ; highlight the region an operation acts on
@@ -119,7 +119,9 @@
         +docsets)
        llm
        (lsp               ; M-x vscode
-        +peek
+        ;; +peek
+        +eglot
+        +booster
         )
 
        (magit             ; a git porcelain for Emacs
@@ -169,7 +171,7 @@
        (latex             ; writing papers in Emacs has never been so fun
         ;;+lsp
         +latexmk
-        +fold)
+        )
        ;;lean              ; for folks with too much to prove
        ;;ledger            ; be audit you can be
        ;;lua               ; one-based indices? one-based indices

@@ -50,6 +50,7 @@ title: Doom Emacs Literate configuration
 ** Configuration Variables
 *** Themes
 #+begin_src emacs-lisp :tangle "packages.el"
+(package! catppuccin-theme)
 (package! modus-themes)
 #+end_src
 **** Tweak for Modus themes
@@ -2999,7 +3000,7 @@ Adapted and improve from https://gist.github.com/fleimgruber/cd2386d8326fad3e0e2
       :localleader
       :desc "Edit docstring in RST" "r" #'edit-indirect-rst)
 #+end_src
-* LSP-Mode
+* COMMENT LSP-Mode :noexport:
 #+begin_src emacs-lisp :tangle "packages.el"
 ;; (unpin! lsp-mode)
 ;; (unpin! lsp-ui)
@@ -3077,6 +3078,40 @@ Adapted and improve from https://gist.github.com/fleimgruber/cd2386d8326fad3e0e2
 ;;                  latex-mode-local-vars-hook
 ;;                  LaTeX-mode-local-vars-hook)
 ;;                :append #'lsp!))
+
+#+end_src
+* Eglot
+** Python
+#+begin_src emacs-lisp
+(use-package! eglot
+  :config
+    (add-to-list 'eglot-server-programs '(
+      (python-mode python-ts-mode)
+         "basedpyright-langserver" "--stdio"
+    ))
+    (setq-default
+       eglot-workspace-configuration
+       '(:basedpyright (
+           :typeCheckingMode "recommended"
+         )
+         :basedpyright.analysis (
+           :diagnosticSeverityOverrides (
+             :reportUnusedCallResult "none"
+           )
+           :inlayHints (
+             :callArgumentNames :json-false
+           )
+         )))
+)
+#+end_src
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! flymake-ruff)
+#+end_src
+#+begin_src emacs-lisp
+(use-package! flymake-ruff
+  :config
+    (add-hook 'eglot-managed-mode-hook #'flymake-ruff-load)
+  )
 
 #+end_src
 * LaTeX OCR
