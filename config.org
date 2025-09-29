@@ -99,22 +99,22 @@ title: Doom Emacs Literate configuration
 *** Detecting the light/dark theme
 #+name: default-theme
 #+begin_src emacs-lisp :noweb-ref none
-(let ((light-theme 'modus-operandi)
-      (dark-theme 'doom-dracula)
-      (system-light-p
-       (and
-        (executable-find "gdbus")
-        (string= "<<uint32 2>>"
-                 (with-temp-buffer
-                   (call-process "gdbus" nil t nil
-                                 "call" "--session"
-                                 "--timeout=1000"
-                                 "--dest=org.freedesktop.portal.Desktop"
-                                 "--object-path" "/org/freedesktop/portal/desktop"
-                                 "--method" "org.freedesktop.portal.Settings.Read"
-                                 "org.freedesktop.appearance" "color-scheme")
-                   (string-trim (buffer-string) "(" ",)\n"))))))
-  (if system-light-p light-theme dark-theme))
+;; (let ((light-theme 'modus-operandi)
+;;       (dark-theme 'doom-dracula)
+;;       (system-light-p
+;;        (and
+;;         (executable-find "gdbus")
+;;         (string= "<<uint32 2>>"
+;;                  (with-temp-buffer
+;;                    (call-process "gdbus" nil t nil
+;;                                  "call" "--session"
+;;                                  "--timeout=1000"
+;;                                  "--dest=org.freedesktop.portal.Desktop"
+;;                                  "--object-path" "/org/freedesktop/portal/desktop"
+;;                                  "--method" "org.freedesktop.portal.Settings.Read"
+;;                                  "org.freedesktop.appearance" "color-scheme")
+;;                    (string-trim (buffer-string) "(" ",)\n"))))))
+;;   (if system-light-p light-theme dark-theme))
 #+end_src
 We'll use the appropriate theme as the default, but let's also accept the theme
 as an envvar for fun.
@@ -137,10 +137,10 @@ as an envvar for fun.
 
  ;; font configuration
  ;; setting to float ensures consistency in hidpi.
- doom-font (font-spec :family "Iosevka Nerd Font" :size 12.0)
- doom-variable-pitch-font (font-spec :family "LM Sans10" :size 12.0)
- doom-big-font (font-spec :family "Iosevka Nerd Font" :size 20.0)
- doom-serif-font (font-spec :family "Iosevka Nerd Font" :weight 'light)
+ doom-font (font-spec :family "Iosevka Nerd Font" :weight 'regular :size 18)
+ doom-variable-pitch-font (font-spec :family "LM Sans10" :size 12)
+ doom-big-font (font-spec :family "Iosevka Nerd Font" :weight 'regular :size 30)
+ doom-serif-font (font-spec :family "Iosevka Nerd Font" :weight 'regular :size 18)
 
  ;;doom-serif-font (font-spec :familly "Iosevka Term Nerd Font" :size 18)
  ;; A nice font with ligature -> <- __
@@ -185,12 +185,9 @@ as an envvar for fun.
 #+end_src
 
 #+begin_src emacs-lisp :noweb yes
-(setq doom-theme
-      <<default-theme>>
-      )
-(delq! t custom-theme-load-path)
-(remove-hook 'window-setup-hook #'doom-init-theme-h)
-(add-hook 'after-init-hook #'doom-init-theme-h 'append)
+(setq catppuccin-flavor 'mocha)
+(setq doom-theme 'catppuccin)
+
 #+end_src
 
 #+begin_src  emacs-lisp
@@ -2759,18 +2756,18 @@ When writing paper, I have a local-bib file (to be shared with coworker, publish
 Github copilot is too great to be ignored this days.
 #+begin_src emacs-lisp :tangle "packages.el"
 ;(package! copilot
-; :recipe (:host github :repo "copilot-emacs/copilot.el" :files ("*.el" "dist"))
+;:recipe (:host github :repo "copilot-emacs/copilot.el" :files ("*.el" "dist"))
 ;)
 #+end_src
 #+begin_src emacs-lisp
 
 ;(use-package! copilot
-; :hook (prog-mode . copilot-mode)
-; :bind (:map copilot-completion-map
-;             ("<tab>" . 'copilot-accept-completion)
-;             ("TAB" . 'copilot-accept-completion)
-;             ("C-TAB" . 'copilot-accept-completion-by-word)
-;             ("C-<tab>" . 'copilot-accept-completion-by-word)))
+;:hook (prog-mode . copilot-mode)
+;:bind (:map copilot-completion-map
+;            ("<tab>" . 'copilot-accept-completion)
+;            ("TAB" . 'copilot-accept-completion)
+;            ("C-TAB" . 'copilot-accept-completion-by-word)
+;            ("C-<tab>" . 'copilot-accept-completion-by-word)))
 #+end_src
 * Python
 My main programming language, so let's make it even better.
@@ -2856,94 +2853,6 @@ Add option to define local pytest options.
 ;; And be able to see the coverage direcly in buffer is nice.
 (load! "lisp/python-coverage.el")
 #+end_src
-
-#+begin_src emacs-lisp
-;; (defun python-pytest-function-dwim-debug
-;;     (file func args)
-;;   "Run pytest on FILE with FUNC (or class).\n\nWhen run interactively, this tries to work sensibly using\nthe current file and function around point.\n\nAdditional ARGS are passed along to pytest.\nWith a prefix argument, allow editing."
-;;   (interactive
-;;    (list
-;;     (buffer-file-name)
-;;     (python-pytest--current-defun)
-;;     (transient-args 'python-pytest-dispatch)))
-;;   (if
-;;       (python-pytest--test-file-p file)
-;;       nil
-;;     (progn
-;;       (setq file
-;;             (python-pytest--sensible-test-file file))
-;;       (setq func
-;;             (python-pytest--make-test-name func)))
-;;     (if python-pytest-strict-test-name-matching nil
-;;       (let
-;;           ((k-option
-;;             (-first
-;;              (-partial #'s-prefix-p "-k")
-;;              args)))
-;;         (if k-option
-;;             (progn
-;;               (progn
-;;                 (setq args
-;;                       (-remove-item k-option args))
-;;                 (setq k-option
-;;                       (let
-;;                           ((it k-option))
-;;                         (let
-;;                             ((it
-;;                               (s-chop-prefix "-k" it)))
-;;                           (let
-;;                               ((it
-;;                                 (s-trim it)))
-;;                             (if
-;;                                 (s-contains-p " " it)
-;;                                 (format "(%s)" it)
-;;                               it))))))))
-;;         (progn
-;;           (setq args
-;;                 (-snoc args
-;;                        (python-pytest--shell-quote file)
-;;                        (if k-option
-;;                            (format "-k %s and %s" func k-option)
-;;                          (format "-k %s" func))))
-;;           (setq file nil)
-;;           (setq func nil)))))
-
-;;   (setq args (python-pytest--transform-arguments args))
-;;   (when (and file (file-name-absolute-p file))
-;;     (setq file (python-pytest--relative-file-name file)))
-;;   (when func
-;;     (setq func (s-replace "." "::" func)))
-;;   (let ((command)
-;;         (thing (cond
-;;                 ((and file func) (format "%s::%s" file func))
-;;                 (file file))))
-;;     (when thing
-;;       (setq args (-snoc args (python-pytest--shell-quote thing))))
-;;   (message command)
-;;   (dape '(debugpy (:program (shell-command-to-string "pyenv which pytest") :args (vconcat args))))))
-;;  ;; (python-pytest--run :args args :file file :func func :edit current-prefix-arg))
-#+end_src
-** COMMENT Configure Flycheck RST-sphinx to use the correct pyenv :noexport:
-
-#+begin_src emacs-lisp
-;; (require 'pyenv-mode)
-;; (defun pac/get-pyenv-version ()
-;;   "return the content of project's most-closest .python-version"
-;;   (car (s-lines (s-trim (f-read-text
-;;                          (f-expand ".python-version" (f-traverse-upwards
-;;                                    (lambda (path) (f-exists? (f-expand ".python-version" path)))))
-;;                          'utf-8)))))
-
-
-;; ;; FIXME: we should not use a custom dir-local setup to do that.
-;; ;; add-hook rst-mode-hook does not help
-;; (dir-locals-set-class-variables 'gits-dirs
-;;                                 '((rst-mode .
-;;                                    ((eval . (setq-local flycheck-rst-sphinx-executable (concat (pyenv-mode-full-path (pac/get-pyenv-version)) "/bin/sphinx-build"))))
-;;                                    )))
-;; (dir-locals-set-directory-class "~/gits/nsp/" 'gits-dirs)
-#+end_src
-
 ** Edit Docstring in rst-mode in separate buffer
 #+begin_src emacs-lisp
 (setq numpy-doc-keywords
@@ -3008,9 +2917,12 @@ Adapted and improve from https://gist.github.com/fleimgruber/cd2386d8326fad3e0e2
 #+end_src
 
 #+begin_src emacs-lisp
-(add-hook! prog-mode #'flymake-mode)
-(setq lsp-use-plists "true")
-(after! lsp-mode (setq lsp-diagnostic-provider :flymake))
+;;(after! lsp-mode (setq lsp-diagnostic-provider :flymake))
+#+end_src
+** Copilot
+#+begin_src emacs-lisp
+(setq lsp-copilot-enabled t)
+
 #+end_src
 ** Python
 #+begin_src emacs-lisp
@@ -3156,8 +3068,6 @@ Adding the following keybinding to your config will allow you to insert LaTeX co
        "M" (cmd! (pac/latex-ocr-insert "\\[\n" "\n\\]"))
        )
 #+end_src
-
-
 * Code Assistant :testing:
 
 #+begin_src emacs-lisp :tangle "packages.el"
