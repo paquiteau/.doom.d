@@ -2756,24 +2756,22 @@ When writing paper, I have a local-bib file (to be shared with coworker, publish
 ** Copilot
 Github copilot is too great to be ignored this days.
 #+begin_src emacs-lisp :tangle "packages.el"
-;(package! copilot
-;:recipe (:host github :repo "copilot-emacs/copilot.el" :files ("*.el" "dist"))
-;)
+(package! copilot
+:recipe (:host github :repo "copilot-emacs/copilot.el" :files ("*.el" "dist"))
+)
 #+end_src
 #+begin_src emacs-lisp
-
-;(use-package! copilot
-;:hook (prog-mode . copilot-mode)
-;:bind (:map copilot-completion-map
-;            ("<tab>" . 'copilot-accept-completion)
-;            ("TAB" . 'copilot-accept-completion)
-;            ("C-TAB" . 'copilot-accept-completion-by-word)
-;            ("C-<tab>" . 'copilot-accept-completion-by-word)))
+(use-package! copilot
+:hook (prog-mode . copilot-mode)
+:bind (:map copilot-completion-map
+           ("<tab>" . 'copilot-accept-completion)
+           ("TAB" . 'copilot-accept-completion)
+           ("C-TAB" . 'copilot-accept-completion-by-word)
+           ("C-<tab>" . 'copilot-accept-completion-by-word)))
 #+end_src
 * Python
 My main programming language, so let's make it even better.
 #+begin_src emacs-lisp :tangle "packages.el"
-(package! python-black)
 (package! xml+)
 (package!  nose :disable t)
 (package! code-cells)

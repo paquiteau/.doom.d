@@ -61,7 +61,9 @@
         +number)
        workspaces        ; tab emulation, persistence & separate workspaces
        zen               ; distraction-free coding or writing
-
+       (smooth-scroll  ; good vibes only
+        +interpolate)
+       
        :editor
        (evil +everywhere); come to the dark side, we have cookies
        file-templates    ; auto-snippets for empty files
@@ -216,7 +218,9 @@
        ;;solidity          ; do you need a blockchain? No.
        ;;swift             ; who asked for emoji variables?
        ;;terra             ; Earth and Moon in alignment for performance.
-       web               ; the tubes
+       (web               ; the tubes
+        +lsp
+        +tree-sitter)
        yaml              ; JSON, but readable
        ;;zig               ; C, but simpler
 
