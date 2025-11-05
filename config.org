@@ -2604,8 +2604,10 @@ Such special cases should be remapped to another value, as given in `string-offs
                     :cond #'texmathp ; expand only while in math-)
                     "sum" (lambda () (interactive) (yas-expand-snippet "\\sum_{$1}^{$2} $0"))
                     "int" (lambda () (interactive) (yas-expand-snippet  "\\int_{$1}^{$2} $0"))
-                    "eip" (lambda () (interactive (yas-expand-snippet "e^{i\\pi $1} $0")))
-                    "ei2p" (lambda () (interactive (yas-expand-snippet "e^{i2\\pi $1} $0")))
+                    "ej" (lambda () (interactive) (yas-expand-snippet "e^{j $1} $0"))
+                    "ei2p" (lambda () (interactive) (yas-expand-snippet "e^{2\\imath\\pi $1} $0"))
+                    "dp" (lambda () (interactive) (yas-expand-snippet "\\frac{\\partial $1}{\\partial $2} $0"))
+                    "j2p" "j2\\pi"
                     "CC" "\\mathbb{C}"
                     "CN" "\\mathbb{C}^N"
                     "EE" "\\mathbb{E}"
@@ -2617,7 +2619,6 @@ Such special cases should be remapped to another value, as given in `string-offs
                     "RR" "\\mathbb{R}"
                     "RN" "\\mathbb{R}^N"
                     "ZZ" "\\mathbb{Z}"
-                    "argmin" "\\argmin"
                     "arg" "\\arg"
                     "min" "\\min"
                     "max" "\\min"
@@ -2785,7 +2786,8 @@ My main programming language, so let's make it even better.
           (lambda ()
             (setq-local python-shell-interpreter (pet-executable-find "python")
                         python-pytest-executable (pet-executable-find "pytest")
-                        python-shell-virtualenv-root (pet-virtualenv-root)))))
+                        python-shell-virtualenv-root (pet-virtualenv-root))
+            (pet-dape-setup))))
 #+end_src
 #+begin_src emacs-lisp
 (use-package! code-cells)
@@ -2847,7 +2849,52 @@ Add option to define local pytest options.
 ;; ;; (transient-append-suffix 'python-pytest-dispatch '(-2) ["Local Options" :setup-children (lambda (_) (list (transient-parse-suffixes transient--suffix pytest-local-transient)))])
 ;; ;; )
 #+end_src
+#+begin_src emacs-lisp 
+(after! dape
+  (add-to-list 'dape-configs
+               `(pytest modes (python-mode python-ts-mode)
+                        ensure (lambda (config) (dape-ensure-command config)
+                                 (let ((python (dape-config-get config 'command)))
+                                   (unless
+                                       (zerop
+                                        (call-process-shell-command
+                                         (format "%s -c \"import debugpy.adapter\"" python)))
+                                     (user-error "%s module debugpy is not installed"
+                                                 python))))
+                        command (pet-executable-find "python")
+                        command-args ("-m" "debugpy.adapter" "--host" "0.0.0.0" "--port" :autoport)
+                        port :autoport
+                        :request "launch"
+                        :type "python"
+                        :mode "test"
+                        :cwd dape-cwd
+                        :module "pytest"
+                        :args [dape-buffer-default]
+                        :justMyCode nil
+                        :console "integratedTerminal"
+                        :showReturnValue t
+                        :stopOnEntry nil))
+  )
+#+end_src
 
+#+begin_src emacs-lisp
+;; Add a pytest-debug-this test
+(defun pytest-dape-this-test ()
+  (interactive)
+  (dape `(command ,(pet-executable-find "python")
+          command-args ("-m" "debugpy.adapter" "--host" "0.0.0.0" "--port" :autoport)
+          port :autoport
+          :request "launch"
+          :type "python"
+          :mode "test"
+          :cwd ,(dape-cwd)
+          :module "pytest"
+          :args ["-k" ,(python-pytest--node-id-def-at-point-treesit)]
+          :justMyCode nil
+          :console "integratedTerminal"
+          :showReturnValue t
+          :stopOnEntry nil)))
+#+end_src
 
 #+begin_src emacs-lisp
 ;; And be able to see the coverage direcly in buffer is nice.
