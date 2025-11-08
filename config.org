@@ -158,7 +158,7 @@ as an envvar for fun.
                                   )
  projectile-auto-discover t
  read-process-output-max (* 1024 1024)
- scroll-margin 2
+ scroll-margin 0
  system-time-locale "C"
  TeX-save-query nil
  TeX-show-compilation t
@@ -2768,6 +2768,22 @@ Github copilot is too great to be ignored this days.
            ("C-TAB" . 'copilot-accept-completion-by-word)
            ("C-<tab>" . 'copilot-accept-completion-by-word)))
 #+end_src
+** Copilot-chat
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! copilot-chat
+  :recipe (:host github :repo "chep/copilot-chat.el" :files ("*.el"))
+)
+#+end_src
+#+begin_src emacs-lisp
+(use-package! copilot-chat
+  :after (org markdown-mode request))
+#+end_src
+** Code Assistant :testing:
+
+#+begin_src emacs-lisp :tangle "packages.el"
+;;(package! eca :recipe (:host github :repo "editor-code-assistant/eca-emacs" :files ("*.el")))
+#+end_src
+
 * Python
 My main programming language, so let's make it even better.
 #+begin_src emacs-lisp :tangle "packages.el"
@@ -3066,9 +3082,3 @@ Adding the following keybinding to your config will allow you to insert LaTeX co
        "M" (cmd! (pac/latex-ocr-insert "\\[\n" "\n\\]"))
        )
 #+end_src
-* Code Assistant :testing:
-
-#+begin_src emacs-lisp :tangle "packages.el"
-(package! eca :recipe (:host github :repo "editor-code-assistant/eca-emacs" :files ("*.el")))
-#+end_src
-
