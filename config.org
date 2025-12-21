@@ -30,15 +30,6 @@ title: Doom Emacs Literate configuration
 ;; (setq warning-suppress-types (append warning-suppress-types '((org-element-cache))))
 ;; (setq warning-minimum-level :emergency)
 #+end_src
-** org-latex-preview cache
-#+begin_src emacs-lisp
-(after! org
-  (setq org-latex-preview-cache 'temp)
-  (setq org-element-cache-persistent nil)
-  (setq org-element-use-cache nil)
-  (setq org-persist--inhibit-write t)
-  )
-#+end_src
 * Simple Configuration
 ** Headers for tangle
 
@@ -47,79 +38,67 @@ title: Doom Emacs Literate configuration
 (when (file-exists-p custom-file)
   (load custom-file))
 #+end_src
-** Configuration Variables
-*** Themes
+** Themes
 #+begin_src emacs-lisp :tangle "packages.el"
 (package! catppuccin-theme)
-(package! modus-themes)
 #+end_src
-**** Tweak for Modus themes
+*** Theme switching
+Even better, theme switching following the dbus signal
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! auto-dark)
+#+end_src
 #+begin_src emacs-lisp
+(setq inhibit-x-resources t)
+;;(load-theme 'catppuccin t t)
 
-(defun my-pdf-tools-backdrop (&rest _)
-  (when (boundp 'modus-themes-with-colors)
-   (modus-themes-with-colors
-    (face-remap-add-relative
-     'default
-     `(:background ,bg-dim)))
-    (face-remap-add-relative
-     'pdf-roll-default
-     `(:background ,bg-dim))))
+(defun pac/load-catppuccin (flavor)
+  (let ((cursor-color (catppuccin-color 'rosewater flavor)))
+    (evil-set-cursor-color cursor-color)
+    (put 'cursor 'evil-normal-color cursor-color))
+    (catppuccin-load-flavor flavor))
+(defun pac/load-catppuccin-mocha ()
+  (pac/load-catppuccin 'mocha))
 
+(defun pac/load-modus-operandi ()
+  (let ((cursor-color "#000000"))
+    (evil-set-cursor-color cursor-color)
+    (put 'cursor 'evil-normal-color cursor-color))
+    (load-theme 'modus-operandi))
 
-(defun my-pdf-tools-midnight-mode-toggle (&rest _)
-  ;; (when (derived-mode-p 'pdf-view-mode)
-        (if (eq (car custom-enabled-themes) 'modus-vivendi)
-        (pdf-view-midnight-minor-mode 1)
-        (pdf-view-midnight-minor-mode -1))
-        (my-pdf-tools-backdrop))
-
-(defun my-tex-fold-face-update (&rest _)
-  (when (eq (car custom-enabled-themes) 'modus-operandi)
-    (modus-themes-with-colors (face-remap-add-relative 'TeX-fold-unfolded-face `(:background ,bg-dim)))))
-
-
-(defun my-pdf-tools-themes-toggle (&rest _)
-  (mapc
-   (lambda (buf)
-     (with-current-buffer buf
-       (my-pdf-tools-midnight-mode-toggle)))
-   (buffer-list)))
+(defun pac/load-doom-dracula ()
+  (let ((cursor-color "#bd93f9"))
+    (evil-set-cursor-color cursor-color)
+    (put 'cursor 'evil-normal-color cursor-color))
+    (load-theme 'modus-operandi))
 
 
-(add-hook 'pdf-view-mode-hook #'my-pdf-tools-midnight-mode-toggle)
-(add-hook 'TeX-fold-mode-hook #'my-tex-fold-face-update)
-(add-hook 'modus-themes-after-load-theme-hook #'my-pdf-tools-themes-toggle)
+(use-package! auto-dark
+  :defer t
+  :init
+  (setq! doom-theme nil)
 
+  ;; Light and dark themes
+  (setq! auto-dark-themes '((catppuccin) (modus-operandi)))
+  (setq! custom-safe-themes t) ;; all themes are safe to load
+  (add-hook 'auto-dark-light-mode-hook #'pac/load-modus-operandi)
+  (add-hook 'auto-dark-dark-mode-hook #'pac/load-catppuccin-mocha)
 
-(custom-theme-set-faces! '(modus-operandi modus-vivendi)
- '(jinx-misspelled :inherit 'modus-themes-lang-error)
-  )
+  (defun my-auto-dark-init-h ()
+    (auto-dark-mode)
+    (remove-hook 'server-after-make-frame-hook #'my-auto-dark-init-h)
+    (remove-hook 'after-init-hook #'my-auto-dark-init-h))
+  (let ((hook (if (daemonp)
+                  'server-after-make-frame-hook
+                'after-init-hook)))
+    ;; Depth -95 puts this before doom-init-theme-h, which sounds like a good
+    ;; idea, if only for performance reasons.
+    (add-hook hook #'my-auto-dark-init-h -95)))
+
 #+end_src
-*** Detecting the light/dark theme
-#+name: default-theme
-#+begin_src emacs-lisp :noweb-ref none
-;; (let ((light-theme 'modus-operandi)
-;;       (dark-theme 'doom-dracula)
-;;       (system-light-p
-;;        (and
-;;         (executable-find "gdbus")
-;;         (string= "<<uint32 2>>"
-;;                  (with-temp-buffer
-;;                    (call-process "gdbus" nil t nil
-;;                                  "call" "--session"
-;;                                  "--timeout=1000"
-;;                                  "--dest=org.freedesktop.portal.Desktop"
-;;                                  "--object-path" "/org/freedesktop/portal/desktop"
-;;                                  "--method" "org.freedesktop.portal.Settings.Read"
-;;                                  "org.freedesktop.appearance" "color-scheme")
-;;                    (string-trim (buffer-string) "(" ",)\n"))))))
-;;   (if system-light-p light-theme dark-theme))
-#+end_src
-We'll use the appropriate theme as the default, but let's also accept the theme
-as an envvar for fun.
-*** General configuration
+
+** General configuration
 #+begin_src emacs-lisp :noweb yes
+(pixel-scroll-precision-mode -1)
 (setq
  +workspaces-switch-project-function #'magit-status
  auth-source-cache-expiry nil
@@ -128,19 +107,13 @@ as an envvar for fun.
  display-time-default-load-average t
  display-time-mode t
  display-time-24hr-format t
- ;; doom modeline
- ;; doom-modeline-icon t
- ;; doom-modeline-persp-icon t
- ;; doom-modeline-persp-name t
- ;; doom-modeline-major-mode-icon t
- ;; doom-modeline-major-mode-color-icon t
 
  ;; font configuration
  ;; setting to float ensures consistency in hidpi.
- doom-font (font-spec :family "Iosevka Nerd Font" :weight 'regular :size 18)
+ doom-font (font-spec :family "Iosevka Nerd Font" :size 18)
  doom-variable-pitch-font (font-spec :family "LM Sans10" :size 12)
- doom-big-font (font-spec :family "Iosevka Nerd Font" :weight 'regular :size 30)
- doom-serif-font (font-spec :family "Iosevka Nerd Font" :weight 'regular :size 18)
+ doom-big-font (font-spec :family "Iosevka Nerd Font" :size 30)
+ doom-serif-font (font-spec :family "Iosevka Nerd Font" :size 18)
 
  ;;doom-serif-font (font-spec :familly "Iosevka Term Nerd Font" :size 18)
  ;; A nice font with ligature -> <- __
@@ -184,11 +157,6 @@ as an envvar for fun.
         ("AUR"               "https://aur.archlinux.org/packages?O=0&K=%s")))
 #+end_src
 
-#+begin_src emacs-lisp :noweb yes
-(setq catppuccin-flavor 'mocha)
-(setq doom-theme 'catppuccin)
-
-#+end_src
 
 #+begin_src  emacs-lisp
 (setq-default
@@ -304,6 +272,10 @@ The following function reformat the paragraph so that each sentence has its own 
     ;; Paragraph are a lot of stuff in emacs, we only care about text.
 ;;    (when (and (eq major-mode 'org-mode) (org-in-subtree-not-table-p) (not (org-in-src-block-p)) (not (texmathp)))
     (mark-paragraph)
+    ;; First remove line wrap that cuts wor-
+    ;; ds in two
+    (goto-char (region-beginning))
+    (replace-regexp-in-region "-\s?\n" "" (region-beginning) (region-end))
     (let ((use-hard-newlines 't)
           (fill-column 99999))
       (fill-region (region-beginning) (region-end))
@@ -461,6 +433,26 @@ Using optionals attributes FACE, HELP-ECHO and VOFFSET."
                         (propertize label 'face face))
                 'help-echo help-echo)))
 
+#+end_src
+** Buffer Managements
+*** Burry Compilation buffer when success
+#+begin_src emacs-lisp
+(defun bury-compile-buffer-if-successful (buffer string)
+  "Bury a compilation buffer if succeeded without warnings "
+  (when (and (eq major-mode 'comint-mode)
+             (string-match "finished" string)
+             (not
+              (with-current-buffer buffer
+                (search-forward "warning" nil t))))
+    (run-with-timer 1 nil
+                    (lambda (buf)
+                      (let ((window (get-buffer-window buf)))
+                        (when (and (window-live-p window)
+                                   (eq buf (window-buffer window)))
+                          (delete-window window))))
+                    buffer)))
+
+(add-hook 'compilation-finish-functions #'bury-compile-buffer-if-successful)
 #+end_src
 * Package configuration
 ** Abbrev
@@ -783,12 +775,49 @@ per [[https://emacs.stackexchange.com/a/28506]]
   )
 #+end_src
 
-
 ** Markdown
 #+begin_src emacs-lisp
 (after! markdown
   (setq markdown-fontify-code-blocks-natively t)
 )
+#+end_src
+
+** Marginalia
+Quite good ootb, but there is some things from Teco:
+#+begin_src emacs-lisp
+(after! marginalia
+  (setq marginalia-censor-variables nil)
+
+  (defadvice! +marginalia--anotate-local-file-colorful (cand)
+    "Just a more colourful version of `marginalia--anotate-local-file'."
+    :override #'marginalia--annotate-local-file
+    (when-let (attrs (file-attributes (substitute-in-file-name
+                                       (marginalia--full-candidate cand))
+                                      'integer))
+      (marginalia--fields
+       ((marginalia--file-owner attrs)
+        :width 12 :face 'marginalia-file-owner)
+       ((marginalia--file-modes attrs))
+       ((+marginalia-file-size-colorful (file-attribute-size attrs))
+        :width 7)
+       ((+marginalia--time-colorful (file-attribute-modification-time attrs))
+        :width 12))))
+
+  (defun +marginalia--time-colorful (time)
+    (let* ((seconds (float-time (time-subtract (current-time) time)))
+           (color (doom-blend
+                   (face-attribute 'marginalia-date :foreground nil t)
+                   (face-attribute 'marginalia-documentation :foreground nil t)
+                   (/ 1.0 (log (+ 3 (/ (+ 1 seconds) 345600.0)))))))
+      ;; 1 - log(3 + 1/(days + 1)) % grey
+      (propertize (marginalia--time time) 'face (list :foreground color))))
+
+  (defun +marginalia-file-size-colorful (size)
+    (let* ((size-index (/ (log10 (+ 1 size)) 7.0))
+           (color (if (< size-index 10000000) ; 10m
+                      (doom-blend 'orange 'green size-index)
+                    (doom-blend 'red 'orange (- size-index 1)))))
+      (propertize (file-size-human-readable size) 'face (list :foreground color)))))
 #+end_src
 
 ** Projectile
@@ -819,7 +848,25 @@ When using tramp let's add the host name to the project name.
                 )
 #+end_src
 #+begin_src emacs-lisp
-(add-hook 'pdf-view-mode-hook #'(lambda () (pdf-view-roll-minor-mode)))
+(add-hook 'pdf-view-mode-hook #'(lambda ()
+                                  (ultra-scroll-mode -1) ;; disable ultra-scroll to avoid conflict on mapping scroll wheel
+                                  (pdf-view-roll-minor-mode)))
+
+(after! pdf-tools
+  (defun pac/pdf-view-bounding-box ()
+    (interactive)
+    (save-excursion
+    (pdf-view-roll-minor-mode -1)
+    (pdf-view--push-mark)
+    (pdf-view-first-page)
+    (pdf-view-next-page)
+    (pdf-view-set-slice-from-bounding-box)
+    (pdf-view-roll-minor-mode 1)
+    (pdf-view-fit-width-to-window)
+    ))
+  )
+
+
 #+end_src
 ** String Inflection
 
@@ -868,19 +915,19 @@ Open scad is a programming language to create 3d parametric objects.
 https://protesilaos.com/codelog/2023-11-15-spacious-padding-extra-ui-dev/
 
 #+begin_src emacs-lisp :tangle "packages.el"
-(package! spacious-padding)
+;; (package! spacious-padding)
 #+end_src
 #+begin_src emacs-lisp
-(use-package! spacious-padding
-  :config
-(setq spacious-padding-widths
-      '( :internal-border-width 10
-         :header-line-width 4
-         :mode-line-width 4
-         :tab-width 4
-         :right-divider-width 20
-         :scroll-bar-width 8))
-(spacious-padding-mode 1))
+;; (use-package! spacious-padding
+;;   :config
+;; (setq spacious-padding-widths
+;;       '( :internal-border-width 10
+;;          :header-line-width 4
+;;          :mode-line-width 4
+;;          :tab-width 4
+;;          :right-divider-width 20
+;;          :scroll-bar-width 8))
+;; (spacious-padding-mode 1))
 
 #+end_src
 ** Singularity Containers
@@ -931,34 +978,129 @@ https://protesilaos.com/codelog/2023-11-15-spacious-padding-extra-ui-dev/
   (add-to-list 'treemacs-ignored-file-predicates #'pac/treemacs-ignore)
   (treemacs-project-follow-mode 1))
 #+end_src
-** Theme switching
 
-#+begin_src  emacs-lisp
-(defun pac/custom-toggle-theme ()
-  (interactive)
-  (setq doom-theme (if (eq doom-theme 'doom-one-light) 'doom-one  'doom-one-light))
-  (load-theme doom-theme)
-
-  (when (and (eq major-mode 'org-mode ) org-startup-with-latex-preview)
-    (org-clear-latex-preview)
-    (let ((current-prefix-arg '(16))) ;; magic number in the code.
-      (call-interactively 'org-latex-preview))))
-
-(map!
- :g "<f6>" 'pac/custom-toggle-theme
- ;; Sometimes loading default theme is broken. I couldn't figured that out yet.
-)
-#+end_src
-Even better, theme switching following the dbus signal
+** Typst
+Is this the new LaTeX ? Let's find out
 #+begin_src emacs-lisp :tangle "packages.el"
-(package! auto-dark)
+;; in packages.el
+(package! typst-ts-mode :recipe (:host codeberg :repo "meow_king/typst-ts-mode"))
+
+
+(package! typst-preview 
+  :recipe (:host github :repo "havarddj/typst-preview.el"))
+#+end_src
+
+#+begin_src emacs-lisp
+;; in config.el
+(use-package! typst-ts-mode
+  :defer t
+  :defer-incrementally (treesit
+                        typst-ts-core typst-ts-embedding-lang-settings
+                        typst-ts-faces
+                        compile typst-ts-compile typst-ts-watch-mode
+                        typst-ts-embedding-lang-settings edit-indirect typst-ts-edit-indirect
+                        outline typst-ts-editing
+                        eglot typst-ts-lsp
+                        typst-ts-misc-commands
+                        ;; transient typst-ts-transient ;was causing an error
+                        typst-ts-compile typst-ts-misc-commands)
+
+  :init
+  (set-tree-sitter! 'typst-mode 'typst-ts-mode
+    '((typst :url "https://github.com/uben0/tree-sitter-typst")))
+  (add-to-list 'auto-mode-alist '("\\.typ\\'" . typst-ts-mode))
+  :config
+  (map! :map typst-ts-mode-map
+        "C-c C-w" #'typst-ts-watch-mode
+        ;; "C-c C-o" #'typst-ts-compile
+        (:localleader "w" #'typst-ts-watch-mode))
+  ;; "o" #'typst-ts-compile))
+
+  (setq! typst-ts-grammar-location (car (doom-glob doom-cache-dir "tree-sitter/libtree-sitter-typst.*")))
+
+  (setq! typst-ts-watch-options '("--open")
+         typst-ts-fontification-precision-level 'max)
+
+  (when (executable-find "tinymist")
+    (set-eglot-client! 'typst-ts-mode '("tinymist"))
+    (add-hook 'typst-ts-mode-local-vars-hook #'lsp! 'append))
+
+    (after! smartparens
+      ;; https://typst.app/docs/reference/syntax/
+      (sp-with-modes 'typst-ts-mode
+        (sp-local-pair "+" "+" :actions '() :when nil)
+        (sp-local-pair "|" "|" :actions '() :when nil)
+        (sp-local-pair "<" ">" :actions '(:add wrap autoskip) :when nil)
+        (sp-local-pair "=" "=" :actions '() :when nil)
+        (sp-local-pair "/" "/" :actions '() :when nil)
+        (sp-local-pair "~" "~" :actions '() :when nil)
+        (sp-local-pair "*" "*" :actions '(:add insert wrap autoskip navigate) :when nil
+                       :unless (list #'+typst-sp--in-math-p
+                                     #'sp-point-after-word-p
+                                     #'sp-point-before-word-p))
+        (sp-local-pair "_" "_" :actions '(:add insert wrap autoskip navigate) :when nil
+                       :unless (list #'+typst-sp--in-math-p
+                                     #'sp-point-after-word-p
+                                     #'sp-point-before-word-p))
+        (sp-local-pair "`" "`" :actions '(:add insert wrap autoskip navigate) :when nil
+                       :unless (list #'+typst-sp--in-math-p))
+        (sp-local-pair "$" "$" :actions '(:add insert wrap autoskip navigate) :when nil))
+
+      (defun +typst-sp--in-math-p (_id _action _context)
+        (cl-block nil
+          (when (derived-mode-p 'typst-ts-mode)
+            (let ((node (treesit-node-at (point))))
+              (while node
+                (when (member (treesit-node-type node) '("math" "formula"))
+                  (cl-return t))
+                (setq node (treesit-node-parent node)))
+              nil))))))
 #+end_src
 #+begin_src emacs-lisp
-(use-package! auto-dark)
-(after! doom-themes
-  (setq! auto-dark-dark-theme 'doom-one
-        auto-dark-light-theme 'doom-one-light)
-  (auto-dark-mode 1))
+
+(use-package! typst-preview
+  :defer t
+  :defer-incrementally (websocket json)
+    :init
+  (setq typst-preview-autostart t) ; start preview automatically when typst-preview-mode is activated
+  (setq typst-preview-open-browser-automatically t) ; open browser automatically when typst-preview-start is run
+
+  :custom
+  (typst-preview-browser "default") 	; this is the default option; other options are `eaf-browser' or `xwidget'.
+  (typst-preview-invert-colors "never")	; invert colors depending on system theme
+  (typst-preview-executable "tinymist") ; path to tinymist binary (relative or absolute)
+  (typst-preview-partial-rendering t)   ; enable partial rendering 
+ ) 
+#+end_src
+*** Jinx Support
+#+begin_src emacs-lisp
+(after! jinx
+;; Limitations:
+;; 1. since raw block highlighting let the local parser highlights the area,
+;; some area doesn't contain face (like `bash-ts-mode'), and those areas will
+;; be checked by jinx
+(add-to-list
+  'jinx-exclude-faces
+  '(typst-ts-mode
+  ;; not included font lock faces
+  ;; `font-lock-comment-face', `font-lock-string-face', `font-lock-doc-face'
+  ;; `font-lock-doc-markup-face'
+  font-lock-warning-face font-lock-function-name-face font-lock-function-call-face
+  font-lock-variable-name-face font-lock-variable-use-face font-lock-keyword-face
+  font-lock-comment-delimiter-face font-lock-type-face font-lock-constant-face
+  font-lock-builtin-face font-lock-preprocessor-face
+  font-lock-negation-char-face font-lock-escape-face font-lock-number-face
+  font-lock-operator-face font-lock-property-use-face font-lock-punctuation-face
+  font-lock-bracket-face font-lock-delimiter-face font-lock-misc-punctuation-face
+  ;; typst-ts-mode created faces
+  typst-ts-markup-item-indicator-face typst-ts-markup-term-indicator-face
+  typst-ts-markup-rawspan-indicator-face typst-ts-markup-rawspan-blob-face
+  typst-ts-markup-rawblock-indicator-face typst-ts-markup-rawblock-lang-face
+  typst-ts-markup-rawblock-blob-face
+  typst-ts-error-face typst-ts-shorthand-face typst-ts-markup-linebreak-face
+  typst-ts-markup-quote-face typst-ts-markup-url-face typst-ts-math-indicator-face))
+
+  )
 #+end_src
 
 ** Which-key
@@ -973,8 +1115,8 @@ let's change that, and do a few other similar tweaks while we're at it.
 (after! which-key
   (pushnew!
    which-key-replacement-alist
-   '(("" . "\\`+?evil[-:]?\\(?:a-\\)?\\(.*\\)") . (nil . "◂\\1"))
-   '(("\\`g s" . "\\`evilem--?motion-\\(.*\\)") . (nil . "◃\\1"))
+   '(("" . "\\`+?evil[-:]?\\(?:a-\\)?\\(.*\\)") . (nil . "∃\\1"))
+   '(("\\`g s" . "\\`evilem--?motion-\\(.*\\)") . (nil . "∃\\1"))
    ))
 #+end_src
 ** XKCD :tec:
@@ -1356,6 +1498,7 @@ SQL can be either the emacsql vector representation, or a string."
               (format "(defun org-git-version () \"The truncate git commit hash of Org mode.\" %S)\n" git-version)
               "(provide 'org-version)\n"))))
   :pin nil)
+
 (unpin! org)
 (package! ox-gfm)
 #+end_src
@@ -1384,9 +1527,9 @@ SQL can be either the emacsql vector representation, or a string."
    org-use-sub-superscripts t       ; don't treat lone _ / ^ as sub/superscripts, require _{} / ^{}
    org-highlight-latex-and-related '(native script entities)
    ;; org-preview-latex-default-process 'dvisvgm   ;No blur when
-   org-startup-with-latex-preview nil
+   org-startup-with-inline-images t
+   org-image-actual-width 600
    org-pretty-entities t
-   org-appear-inside-latex t
    org-hide-emphasis-markers t                 ; hide the emphasis.
    org-pretty-entities-include-sub-superscripts nil ;  hide the _ and ^
    org-list-allow-alphabetical t               ; have a. A. a) A) list bullets
@@ -1394,6 +1537,9 @@ SQL can be either the emacsql vector representation, or a string."
    org-log-done nil ;; Don't track time.
    org-startup-indented nil
    org-use-property-inheritance t              ; it's convenient to have properties inherited
+   org-appear-inside-latex t
+   org-startup-with-latex-preview t
+   org-latex-preview-auto-mode t
    org-latex-listings 'minted
    org-latex-pdf-process '("latexmk -f -pdf -%latex -shell-escape -interaction=nonstopmode -output-directory=%o %f")
    org-latex-precompile-command "%l -shell-escape -output-directory %o -ini -jobname=%b \"&%L\" mylatexformat.ltx %f"
@@ -1401,9 +1547,16 @@ SQL can be either the emacsql vector representation, or a string."
    org-cite-biblatex-options "sorting=none, doi=false,url=false,isbn=false,style=authoryear"
    )
 
-(global-org-modern-mode 1)
-                )
-                                        ; cd-latex support
+  (global-org-modern-mode 1)
+)
+
+
+;; dev stuff
+(add-hook 'org-mode-hook 'org-latex-preview-mode)
+(after! org
+(setq org-latex-preview-auto-mode t
+      org-startup-with-latex-preview t)
+  )
 
 
 (defun +org-insert-file-link ()
@@ -1414,10 +1567,7 @@ SQL can be either the emacsql vector representation, or a string."
 
 (map! :map org-mode-map
       :localleader
-      :desc "LaTeX Preview Buffer" "M"  #'+org-latex-preview-buffer
       :desc "Insert file link" "l f" #'+org-insert-file-link)
-
-;; (add-hook 'org-mode-hook 'turn-on-org-cdlatex)
 
 #+end_src
 
@@ -1435,7 +1585,8 @@ SQL can be either the emacsql vector representation, or a string."
           (note ,(nerd-icons-octicon "nf-oct-note" :face 'nerd-icons-blue :v-adjust -0.3) . " ")
           (link ,(nerd-icons-octicon "nf-oct-link" :face 'nerd-icons-orange :v-adjust 0.01) . " "))
                 )
-  ;(pushnew '("pdf" . citar-file-open-external) citar-file-open-functions)
+  ;; use external pdf reader for now
+  (cl-pushnew '("pdf" . citar-file-open-external) citar-file-open-functions)
 
 (map! :leader
       :prefix "i"
@@ -1832,12 +1983,6 @@ let's make it transparent.
     <<grab("org-latex-math-conveniences")>>
     ))
 
-(after! org
-  (plist-put org-format-latex-options :background "Transparent")
-  (plist-put org-format-latex-options :scale 3)
-  (plist-put org-format-latex-options :zoom 0.93) ; Calibrated based on the TeX font and org-buffer font.
-  )
-
 (defun my-org-latex-format-headline-function
     (todo todo-type priority text tags _info)
   "Default format function for a headline.
@@ -1954,6 +2099,13 @@ Rincing Org /easily/ with *markup* _test_
   (run-at-time nil nil #'org-appear--set-elements)
 )
 #+end_src
+*** Mixed Pitch
+#+begin_src emacs-lisp
+(setq +zen-mixed-pitch-modes '(org-mode LaTeX-mode markdown-mode gfm-mode Info-mode rst-mode adoc-mode))
+
+(dolist (hook +zen-mixed-pitch-modes)
+  (add-hook (intern (concat (symbol-name hook) "-hook")) #'mixed-pitch-mode))
+#+end_src
 *** Org Roam UI
 A nice graph of knowledge.
 #+begin_src emacs-lisp :tangle "packages.el"
@@ -1978,14 +2130,8 @@ A nice graph of knowledge.
           org-roam-ui-update-on-save t
           org-roam-ui-open-on-start t))
 #+end_src
-*** org-latex-preview
-#+begin_src emacs-lisp
-(after! org
-  (org-latex-preview-mode 1)
-  (setq org-startup-with-latex-preview t)
-  )
-#+end_src
 ** Source block completion
+
 #+begin_quote
 Corg is an Emacs package that provides completion-at-point for Org-mode source block and dynamic block headers. corg auto-completes programming language names, their parameters, and possible parameter values for source blocks. For dynamic blocks, it completes block names, their parameters, and possible parameter values.
 #+end_quote
@@ -2001,6 +2147,66 @@ Corg is an Emacs package that provides completion-at-point for Org-mode source b
 #+end_src
 ** Org-Roam
 This makes sure that org-roam buffer are open in a dedicated workspace, to prevent them to spread in others.
+*** Org Roam Basic Configuration
+
+I use the roam dailies as a very crude and *flat*  notebook, each entry is under a top level headline, with a timestamp and then I use a custom title, tags, handles, etc...
+
+#+begin_src emacs-lisp
+(after! org-roam
+  (setq org-roam-directory "~/org/roam/"
+        org-roam-capture-templates
+        '(("d" "default" plain "%?"
+           :target (file+head "%<%Y-%m-%d>-${slug}.org"
+                              "#+title: ${title}\n#+filetags: :draft:empty:\n")
+           :unnarrowed t)
+          )
+        org-roam-extract-new-file-path "%<%Y-%m-%d>-${slug}.org"
+        )
+  )
+#+end_src
+#+begin_src emacs-lisp
+
+(defadvice! doom-modeline--buffer-file-name-roam-aware-a (orig-fun)
+  :around #'doom-modeline-buffer-file-name ; takes no args
+  (if (s-contains-p org-roam-directory (or buffer-file-name ""))
+      (replace-regexp-in-string
+       "\\(?:^\\|.*/\\)\\([0-9]\\{4\\}\\)\\([0-9]\\{2\\}\\)\\([0-9]\\{2\\}\\)[0-9]*-"
+       "(++\\1-\\2-\\3)"
+       (subst-char-in-string ?_ ?  buffer-file-name))
+    (funcall orig-fun)))
+
+
+#+end_src
+*** Journal Daily
+The journal consist of a list of top level heading that look like this  =*<2000-01-01 Wed>XXXX= 
+#+begin_src emacs-lisp
+(after! org-roam
+  (setq 
+        org-roam-dailies-directory "~/org/roam/journal"
+        org-roam-dailies-capture-templates
+        '(("d" "Daily Notes" plain
+           "%?"
+           :target (file+olp "journal.org" ("<%<%Y-%m-%d %A>>"))
+          ))))
+#+end_src
+Let's make accessing the journal more easily
+Bind to ~SPC j~
+#+begin_src emacs-lisp
+(map! :leader :desc "Open Today log" "j" #'org-roam-dailies-goto-today)
+#+end_src
+
+
+Exclude the journal from the roam database
+#+begin_src emacs-lisp
+(setq my/org-roam-excluded-dirs '("journal"))
+
+(setq org-roam-db-node-include-function
+      (lambda ()
+        (let* ((file-path (buffer-file-name (buffer-base-buffer)))
+               (rel-file-path (f-relative file-path org-roam-directory))
+               (parent-directories (butlast (f-split rel-file-path))))
+          (if (cl-intersection my/org-roam-excluded-dirs parent-directories :test #'string=) nil t))))
+#+end_src
 
 *** Search Org-Roam notes
 There exists the =SPC n s= (~+default/search-notes~) but its searching in the whole org directory, which is not what I want. I want to search only in the org-roam directory, and only in org-files
@@ -2031,71 +2237,6 @@ There exists the =SPC n s= (~+default/search-notes~) but its searching in the wh
   (when (modulep! :ui workspaces)
     (+workspace-switch "*roam*" t)))
 #+end_src
-*** Org Roam Basic Configuration
-#+begin_src emacs-lisp
-(after! org-roam
-  (setq org-roam-directory "~/org/roam/"
-        org-roam-dailies-directory "~/org/roam/journal"
-        org-roam-dailies-capture-templates
-        '(("d" "Daily Notes" plain
-           "%?"
-           :target (file+datetree "journal.org" "+title: Personal Journal")
-           :unnarrowed t)
-          )
-
-        org-roam-capture-templates
-        '(("d" "default" plain "%?"
-           :target (file+head "%<%Y%m%d%H%M%S>-${slug}.org"
-                              "#+title: ${title}\n#+filetags: :draft:empty:\n")
-           :unnarrowed t)
-          ("p" "project" plain "%?"
-           :target (file+head "project/${slug}.org"
-                              "#+title: ${title}\n")
-           :unnarrowed t)
-          ("h" "publish" plain "%?"
-           :target (file+head "publish/${slug}.org"
-                              "#+title: ${title}\n")
-           :unnarrowed t)
-          ("b" "blog" plain "%?"
-           :target (file+head "blog/${slug}.org"
-                              "#+title: ${title}\n")
-           :unnarrowed t)
-          ("c" "config" plain "%?"
-           :target (file+head "config/${slug}.org"
-                              "#+title: ${title}\n")
-           :unnarrowed t)
-          ("r" "review" plain (file "/home/pac/org/roam/templates/review_paper.org")
-           :target (file "review/${slug}.org")
-           :unnarrowed t)
-           )
-        )
-  )
-#+end_src
-#+begin_src emacs-lisp
-
-
-(defadvice! doom-modeline--buffer-file-name-roam-aware-a (orig-fun)
-  :around #'doom-modeline-buffer-file-name ; takes no args
-  (if (s-contains-p org-roam-directory (or buffer-file-name ""))
-      (replace-regexp-in-string
-       "\\(?:^\\|.*/\\)\\([0-9]\\{4\\}\\)\\([0-9]\\{2\\}\\)\\([0-9]\\{2\\}\\)[0-9]*-"
-       "(++\\1-\\2-\\3)"
-       (subst-char-in-string ?_ ?  buffer-file-name))
-    (funcall orig-fun)))
-
-
-#+end_src
-#+begin_src emacs-lisp
-(setq my/org-roam-excluded-dirs '("journal"))
-
-(setq org-roam-db-node-include-function
-      (lambda ()
-        (let* ((file-path (buffer-file-name (buffer-base-buffer)))
-               (rel-file-path (f-relative file-path org-roam-directory))
-               (parent-directories (butlast (f-split rel-file-path))))
-          (if (cl-intersection my/org-roam-excluded-dirs parent-directories :test #'string=) nil t))))
-#+end_src
-
 *** Extending Org-roam
 **** Insert node immediately
 This make the node linking less painfull by two means:
@@ -2270,10 +2411,8 @@ Lets add convenients key bindings for the functions aboves
 ** Capture and GTD
 See also  [[id:e20503eb-2a58-46b6-a071-311956b594c2][Workflow]]
 #+begin_src emacs-lisp
-(setq +org-inbox-file "~/org/roam/inbox.org")
-(defvar +org-project-dir "~/org/roam/project/")
+(setq +org-inbox-file "~/org/inbox.org")
 (after! org
-
   (setq org-todo-keywords '((sequence "TODO(t)" "WAIT(w)" "|" "DONE(d)")
                             (sequence "[ ](T)" "[?](W)" "|" "[X](D)"))
         org-modern-todo-faces
@@ -2340,12 +2479,9 @@ See also  [[id:e20503eb-2a58-46b6-a071-311956b594c2][Workflow]]
 #+end_src
 
 ** Ox-HUGO
-
 #+begin_src emacs-lisp
 (after! ox-hugo
   (plist-put org-hugo-citations-plist :bibliography-section-heading "")
-
-
 
 (defun org-hugo--org-cite-export-bibliography (orig-fun &rest args)
   "Insert a heading before the exported bibliography.
@@ -2669,6 +2805,7 @@ Such special cases should be remapped to another value, as given in `string-offs
                     ("'u" . "breve")
                     ("'m" . "bm") ; was mbox
                     ("'c" . "mathcal")
+                    ("'o" . "operatorname")
                     ("'0" . ("{\\textstyle " . "}"))
                     ("'1" . ("{\\displaystyle " . "}"))
                     ("'2" . ("{\\scriptstyle " . "}"))
@@ -2803,11 +2940,20 @@ My main programming language, so let's make it even better.
                         python-shell-virtualenv-root (pet-virtualenv-root))
             (pet-dape-setup))))
 #+end_src
+Code cell for vs-code like experience 
 #+begin_src emacs-lisp
 (use-package! code-cells)
 (add-hook 'python-mode-hook 'code-cells-mode-maybe)
 
 #+end_src
+
+** Ruff formatter
+Ideally, use ruff format everywhere, unless the project has black configured (ie check the toml file).
+#+begin_src emacs-lisp
+
+#+end_src
+** Pytest
+
 Add option to define local pytest options.
 #+begin_src emacs-lisp
 ;; (require 'python-pytest)
@@ -2863,6 +3009,7 @@ Add option to define local pytest options.
 ;; ;; (transient-append-suffix 'python-pytest-dispatch '(-2) ["Local Options" :setup-children (lambda (_) (list (transient-parse-suffixes transient--suffix pytest-local-transient)))])
 ;; ;; )
 #+end_src
+** Dape 
 #+begin_src emacs-lisp 
 (after! dape
   (add-to-list 'dape-configs
@@ -2909,7 +3056,7 @@ Add option to define local pytest options.
           :showReturnValue t
           :stopOnEntry nil)))
 #+end_src
-
+** Coverage
 #+begin_src emacs-lisp
 ;; And be able to see the coverage direcly in buffer is nice.
 (load! "lisp/python-coverage.el")
@@ -3060,21 +3207,26 @@ Adapted and improve from https://gist.github.com/fleimgruber/cd2386d8326fad3e0e2
   :config
     (add-to-list 'eglot-server-programs '(
       (python-mode python-ts-mode)
-         "basedpyright-langserver" "--stdio"
+         "ty" "server"
     ))
-    (setq-default
-       eglot-workspace-configuration
-       '(:basedpyright (
-           :typeCheckingMode "recommended"
-         )
-         :basedpyright.analysis (
-           :diagnosticSeverityOverrides (
-             :reportUnusedCallResult "none"
-           )
-           :inlayHints (
-             :callArgumentNames :json-false
-           )
-         )))
+    ;; (add-to-list 'eglot-server-programs '(
+    ;;   (python-mode python-ts-mode)
+    ;;      "basedpyright-langserver" "--stdio"
+    ;; ))
+    
+    ;; (setq-default
+    ;;    eglot-workspace-configuration
+    ;;    '(:basedpyright (
+    ;;        :typeCheckingMode "recommended"
+    ;;      )
+    ;;      :basedpyright.analysis (
+    ;;        :diagnosticSeverityOverrides (
+    ;;          :reportUnusedCallResult "none"
+    ;;        )
+    ;;        :inlayHints (
+    ;;          :callArgumentNames :json-false
+    ;;        )
+    ;;      )))
 )
 #+end_src
 #+begin_src emacs-lisp :tangle "packages.el"
@@ -3089,7 +3241,7 @@ Adapted and improve from https://gist.github.com/fleimgruber/cd2386d8326fad3e0e2
 #+end_src
 * LaTeX OCR
 
-#+begin_src bash :tangle "~/bin/latex_ocr.sh"
+#+begin_src bash :tangle "~/bin/latex_ocr.sh" :tangle-mode (identity #o775)
 #!/bin/bash
 # ~/bin/latex_ocr.sh
 # Take a screenshot and extract the LaTeX code from it
@@ -3128,4 +3280,16 @@ Adding the following keybinding to your config will allow you to insert LaTeX co
        "m" (cmd! (pac/latex-ocr-insert "\\(" " \\)"))
        "M" (cmd! (pac/latex-ocr-insert "\\[\n" "\n\\]"))
        )
+#+end_src
+* Code Assistant :testing:
+
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! eca :recipe (:host github :repo "editor-code-assistant/eca-emacs" :files ("*.el")))
+#+end_src
+
+
+
+* Org-roam export
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! weblorg)
 #+end_src
