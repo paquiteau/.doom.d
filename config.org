@@ -189,7 +189,11 @@ Even better, theme switching following the dbus signal
   '(org-document-title :height 1.3)
 )
 #+end_src
-
+*** Remove the window decoration
+Fullscreen like 
+#+begin_src emacs-lisp
+(add-to-list 'default-frame-alist '(undecorated . t))
+#+end_src
 ** Functions
 #+begin_src emacs-lisp
 (defadvice! prompt-for-buffer (&rest _)
@@ -416,7 +420,7 @@ alias et="e -t"
     ;; (custom-set-faces!
     ;;   '(mode-line :family "Iosevka Nerd Font" :height 0.9)
     ;;   '(mode-line-inactive :family "Iosevka Nerd Font" :height 0.9))
-(after! modeline)
+(with-eval-after-load 'modeline)
 (defun +modeline-format-icon (icon-set icon label &optional face help-echo voffset)
   "Build from ICON-SET the ICON with LABEL.
 Using optionals attributes FACE, HELP-ECHO and VOFFSET."
@@ -506,9 +510,9 @@ Jinx is faster and better than spell-fu or flycheck
   (add-to-list 'jinx-exclude-faces
    '(LaTeX-mode tex-math font-latex-math-face font-latex-sedate-face font-latex-verbatim-face font-lock-function-name-face font-lock-keyword-face font-lock-variable-name-face))
   ;; Take over the relevant bindings.
-  (after! ispell
+  (with-eval-after-load 'ispell
     (global-set-key [remap ispell-word] #'jinx-correct))
-  (after! evil-commands
+  (with-eval-after-load 'evil-commands
     (global-set-key [remap evil-next-flyspell-error] #'jinx-next)
     (global-set-key [remap evil-prev-flyspell-error] #'jinx-previous))
   ;; I prefer for `point' to end up at the start of the word,
@@ -524,7 +528,7 @@ I write stuff mostly in English, but sometimes I have to add French in the mix.
 (package! flyspell-lazy :disable t)
 #+end_src
 #+begin_src emacs-lisp
-(after! guess-language
+(with-eval-after-load 'guess-language
 (setq guess-language-languages '(en fr))
 (setq guess-language-min-paragraph-length 35)
 (setq guess-language-langcodes
@@ -534,6 +538,14 @@ I write stuff mostly in English, but sometimes I have to add French in the mix.
 (add-hook! text-mode #'guess-language-mode))
 #+end_src
 
+** Fancy-fill-paragraph
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! fancy-fill-paragraph)
+#+end_src
+#+begin_src emacs-lisp
+(use-package! fancy-fill-paragraph
+  :bind ("M-q" . Fancy-fill-paragraph))
+#+end_src
 ** Flymake-language-tools
 #+begin_src emacs-lisp :tangle "packages.el"
 (package! flymake-languagetool
@@ -598,7 +610,7 @@ I write stuff mostly in English, but sometimes I have to add French in the mix.
 #+begin_src emacs-lisp
 (use-package! flycheck-grammarly
   :defer-incrementally flycheck)
-(after! flycheck-grammary
+(with-eval-after-load 'flycheck-grammary
  (setq flycheck-grammarly-check-time 1.0)
  (flycheck-add-mode 'grammarly 'LaTeX-mode)
  (flycheck-grammarly-setup)
@@ -624,7 +636,7 @@ I write stuff mostly in English, but sometimes I have to add French in the mix.
 This makes manual pages nicer to look at :)
 Variable pitch fontification + colouring
 #+begin_src emacs-lisp :tangle "packages.el"
-(package! info-colors :pin "47ee73cc19b1049eef32c9f3e264ea7ef2aaf8a5")
+(package! info-colors)
 #+end_src
 #+begin_src emacs-lisp
 (use-package! info-colors
@@ -636,7 +648,7 @@ Variable pitch fontification + colouring
 ** Magit
 Let's add personal forges:
 #+begin_src emacs-lisp
-(after! forge
+(with-eval-after-load 'forge
   (add-to-list 'forge-alist '("gitlab.crans.org" "gitlab.crans.org/api/v4" "gitlab.crans.org" forge-gitlab-repository))
   (setq forge-owned-accounts '(("paquiteau" . (remote-name "paquiteau"))))
   )
@@ -644,7 +656,7 @@ Let's add personal forges:
 And configure the repository list.
 At some point I would like this to be a dash board of all my projects.
 #+begin_src emacs-lisp
-(after! magit
+(with-eval-after-load 'magit
   ;; (setq magit-repolist-columns
   ;;       '(("Name"    25 magit-repolist-column-ident ())
   ;;         ("Version" 25 magit-repolist-column-version ())
@@ -770,14 +782,14 @@ per [[https://emacs.stackexchange.com/a/28506]]
       (magit-insert-un/tracked-files-1 files nil)
       (insert ?\n))))
 
-(after! magit
+(with-eval-after-load 'magit
   (pac/insert-before magit-status-sections-hook #'magit-insert-ignored-files #'magit-insert-untracked-files)
   )
 #+end_src
 
 ** Markdown
 #+begin_src emacs-lisp
-(after! markdown
+(with-eval-after-load 'markdown
   (setq markdown-fontify-code-blocks-natively t)
 )
 #+end_src
@@ -785,7 +797,7 @@ per [[https://emacs.stackexchange.com/a/28506]]
 ** Marginalia
 Quite good ootb, but there is some things from Teco:
 #+begin_src emacs-lisp
-(after! marginalia
+(with-eval-after-load 'marginalia
   (setq marginalia-censor-variables nil)
 
   (defadvice! +marginalia--anotate-local-file-colorful (cand)
@@ -820,12 +832,19 @@ Quite good ootb, but there is some things from Teco:
       (propertize (file-size-human-readable size) 'face (list :foreground color)))))
 #+end_src
 
+** Mixed Pitch
+#+begin_src emacs-lisp
+(setq +zen-mixed-pitch-modes '(org-mode LaTeX-mode markdown-mode gfm-mode Info-mode rst-mode adoc-mode))
+
+(dolist (hook +zen-mixed-pitch-modes)
+  (add-hook (intern (concat (symbol-name hook) "-hook")) #'mixed-pitch-mode))
+#+end_src
 ** Projectile
 When using tramp let's add the host name to the project name.
 
 #+begin_src emacs-lisp
 
-(after! projectile
+(with-eval-after-load 'projectile
   (defun pac/projectile-project-name-tramp (project-root)
     "Return the project name for a project in a tramp session."
     (let ((project-name (projectile-default-project-name project-root)))
@@ -842,31 +861,23 @@ When using tramp let's add the host name to the project name.
 #+end_src
 ** PDF Tools Scrolling
 #+begin_src emacs-lisp :tangle "packages.el"
-(package! pdf-tools :recipe
-  (:host github :repo "aikrahguzar/pdf-tools" :branch "upstream-pdf-roll")
-  :pin "009e9c9d16bc232c4446e1c0c870a681b647b1c9"
-                )
+;; (package! pdf-tools :recipe
+;;   (:host github :repo "aikrahguzar/pdf-tools" :branch "upstream-pdf-roll")
+;;   :pin "009e9c9d16bc232c4446e1c0c870a681b647b1c9"
+;;                )
 #+end_src
 #+begin_src emacs-lisp
 (add-hook 'pdf-view-mode-hook #'(lambda ()
                                   (ultra-scroll-mode -1) ;; disable ultra-scroll to avoid conflict on mapping scroll wheel
                                   (pdf-view-roll-minor-mode)))
-
-(after! pdf-tools
-  (defun pac/pdf-view-bounding-box ()
-    (interactive)
-    (save-excursion
-    (pdf-view-roll-minor-mode -1)
-    (pdf-view--push-mark)
-    (pdf-view-first-page)
-    (pdf-view-next-page)
-    (pdf-view-set-slice-from-bounding-box)
-    (pdf-view-roll-minor-mode 1)
-    (pdf-view-fit-width-to-window)
-    ))
-  )
-
-
+(setq pdf-view-midnight-colors '("#cdd6f4" . "#1e1e2e"))
+#+end_src
+** Org-RST export
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! ox-rst)
+#+end_src
+#+begin_src emacs-lisp
+(use-package! ox-rst :after org)
 #+end_src
 ** String Inflection
 
@@ -895,7 +906,7 @@ String Inflection for easily changing naming scheme.
         :desc "under_score" "_" #'string-inflection-underscore
         :desc "Upper_Score" "u" #'string-inflection-capital-underscore
         :desc "UP_CASE" "U" #'string-inflection-upcase)
-  (after! evil
+  (with-eval-after-load 'evil
     (evil-define-operator evil-operator-string-inflection (beg end _type)
       "Define a new evil operator that cycles symbol casing."
       :move-point nil
@@ -944,7 +955,7 @@ https://protesilaos.com/codelog/2023-11-15-spacious-padding-extra-ui-dev/
 (setq remote-file-name-inhibit-cache nil)
 (setq remote-file-name-inhibit-locks t)
 (setq tramp-verbose 2)
-(after! tramp
+(with-eval-after-load 'tramp
         (add-to-list 'tramp-remote-path 'tramp-own-remote-path)
         (add-to-list 'tramp-remote-path "~/.local/bin")
         (add-to-list 'tramp-remote-path "~/.pyenv/bin")
@@ -974,7 +985,7 @@ https://protesilaos.com/codelog/2023-11-15-spacious-padding-extra-ui-dev/
       (when (string-match-p pattern filename)
         (setq ignore t)))
     ignore))
-(after! treemacs
+(with-eval-after-load 'treemacs
   (add-to-list 'treemacs-ignored-file-predicates #'pac/treemacs-ignore)
   (treemacs-project-follow-mode 1))
 #+end_src
@@ -1025,7 +1036,7 @@ Is this the new LaTeX ? Let's find out
     (set-eglot-client! 'typst-ts-mode '("tinymist"))
     (add-hook 'typst-ts-mode-local-vars-hook #'lsp! 'append))
 
-    (after! smartparens
+    (with-eval-after-load 'smartparens
       ;; https://typst.app/docs/reference/syntax/
       (sp-with-modes 'typst-ts-mode
         (sp-local-pair "+" "+" :actions '() :when nil)
@@ -1069,12 +1080,24 @@ Is this the new LaTeX ? Let's find out
   (typst-preview-browser "default") 	; this is the default option; other options are `eaf-browser' or `xwidget'.
   (typst-preview-invert-colors "never")	; invert colors depending on system theme
   (typst-preview-executable "tinymist") ; path to tinymist binary (relative or absolute)
-  (typst-preview-partial-rendering t)   ; enable partial rendering 
- ) 
+  (typst-preview-partial-rendering t)   ; enable partial rendering
+ )
+(defun pac/typst-start-slides ()
+  (interactive)
+  (typst-preview-mode 0) ;; Disable
+  (revert-buffer) ;; Make sure we are syncd.
+  (let ((typst-preview-preview-mode "slide")
+        (typst-preview--master-file (buffer-file-name))
+        )
+    (typst-preview-start)
+    (typst-preview-open-browser)
+    ))
+
+
 #+end_src
 *** Jinx Support
 #+begin_src emacs-lisp
-(after! jinx
+(with-eval-after-load 'jinx
 ;; Limitations:
 ;; 1. since raw block highlighting let the local parser highlights the area,
 ;; some area doesn't contain face (like `bash-ts-mode'), and those areas will
@@ -1112,7 +1135,7 @@ let's change that, and do a few other similar tweaks while we're at it.
  which-key-idle-delay 0.2                   ; I need the help, I really do
  )
 
-(after! which-key
+(with-eval-after-load 'which-key
   (pushnew!
    which-key-replacement-alist
    '(("" . "\\`+?evil[-:]?\\(?:a-\\)?\\(.*\\)") . (nil . "∃\\1"))
@@ -1135,7 +1158,7 @@ let's change that, and do a few other similar tweaks while we're at it.
         xkcd-cache-latest (concat xkcd-cache-dir "latest"))
   (unless (file-exists-p xkcd-cache-dir)
     (make-directory xkcd-cache-dir))
-  (after! evil-snipe
+  (with-eval-after-load 'evil-snipe
     (add-to-list 'evil-snipe-disabled-modes 'xkcd-mode))
   :general (:states 'normal
             :keymaps 'xkcd-mode-map
@@ -1159,7 +1182,7 @@ let's change that, and do a few other similar tweaks while we're at it.
 #+begin_src emacs-lisp
 
 
-(after! xkcd
+(with-eval-after-load 'xkcd
   (require 'emacsql-sqlite)
 
   (defun +xkcd-select ()
@@ -1410,7 +1433,7 @@ SQL can be either the emacsql vector representation, or a string."
 *** ORG link
 #+begin_src emacs-lisp
 
-(after! org
+(with-eval-after-load 'org
   (org-link-set-parameters "xkcd"
                            :image-data-fun #'+org-xkcd-image-fn
                            :follow #'+org-xkcd-open-fn
@@ -1509,13 +1532,8 @@ SQL can be either the emacsql vector representation, or a string."
 ** Global config
 
 #+begin_src emacs-lisp
-(after! org
+(with-eval-after-load 'org
   (setq
-   org-agenda-compact-blocks t
-   org-agenda-deadline-faces '((1.001 . error)
-                               (1.0 . org-warning)
-                               (0.5 . org-upcoming-deadline)
-                               (0.0 . org-upcoming-distant-deadline))
    org-fold-catch-invisible-edits 'show            ; try not to accidently do weird stuff in invisible regions
    org-directory "~/org"                      ; let's put files here
    org-ellipsis " ▾ "
@@ -1523,10 +1541,8 @@ SQL can be either the emacsql vector representation, or a string."
    org-export-allow-bind-keywords t
    org-export-with-broken-links t
    org-export-with-todo-keywords t
-
    org-use-sub-superscripts t       ; don't treat lone _ / ^ as sub/superscripts, require _{} / ^{}
    org-highlight-latex-and-related '(native script entities)
-   ;; org-preview-latex-default-process 'dvisvgm   ;No blur when
    org-startup-with-inline-images t
    org-image-actual-width 600
    org-pretty-entities t
@@ -1542,38 +1558,20 @@ SQL can be either the emacsql vector representation, or a string."
    org-latex-preview-auto-mode t
    org-latex-listings 'minted
    org-latex-pdf-process '("latexmk -f -pdf -%latex -shell-escape -interaction=nonstopmode -output-directory=%o %f")
-   org-latex-precompile-command "%l -shell-escape -output-directory %o -ini -jobname=%b \"&%L\" mylatexformat.ltx %f"
+   org-latex-precompile nil
+;;   org-latex-precompile-command "%l -shell-escape -output-directory %o -ini -jobname=%b \"&%L\" mylatexformat.ltx %f"
    org-cite-global-bibliography `(,(expand-file-name "~/org/library.bib"))
    org-cite-biblatex-options "sorting=none, doi=false,url=false,isbn=false,style=authoryear"
    )
-
   (global-org-modern-mode 1)
 )
-
-
-;; dev stuff
 (add-hook 'org-mode-hook 'org-latex-preview-mode)
-(after! org
-(setq org-latex-preview-auto-mode t
-      org-startup-with-latex-preview t)
-  )
-
-
-(defun +org-insert-file-link ()
-  "Insert a file link.  At the prompt, enter the filename."
-  (interactive)
-  (insert (format "[[%s]]" (org-link-complete-file))))
-
-
-(map! :map org-mode-map
-      :localleader
-      :desc "Insert file link" "l f" #'+org-insert-file-link)
-
+(add-hook 'auto-save-hook 'org-save-all-org-buffers)
 #+end_src
-
-** Citations, References and Bibliography
+** Writing in Org Mode
+*** Citations, References and Bibliography
 #+begin_src emacs-lisp
-(after! citar
+(with-eval-after-load 'citar
   (setq citar-org-roam-subdir "bib"
         citar-bibliography (list (expand-file-name  "~/org/library.bib"))
         citar-library-paths (list (expand-file-name "~/Zotero/"))
@@ -1592,7 +1590,7 @@ SQL can be either the emacsql vector representation, or a string."
       :prefix "i"
        "b" 'citar-insert-reference))
 
-(after! org
+(with-eval-after-load 'org
   (add-to-list 'org-cite-biblatex-styles '("full" nil "fullcite" nil nil)))
 #+end_src
 
@@ -1608,7 +1606,84 @@ Org ref provide extension for references (not only for bibliography). The biblio
       (lambda () (org-cite-insert nil)))
 #+end_src
 
-** Export
+*** Org-Modern and Org appear
+Rincing Org /easily/ with *markup* _test_
+
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! org-modern)
+(package! org-appear :recipe (:host github :repo "awth13/org-appear"))
+#+end_src
+#+begin_src emacs-lisp
+;; (with-eval-after-load 'org
+;;   (global-org-modern-mode)
+;; )
+;; (use-package! org-modern
+;;   :hook (org-mode . org-modern-mode)
+;;   :config
+;;   (setq org-modern-table-vertical 1
+;;         org-modern-table-horizontal 0.2
+;;         org-modern-horizontal-rule nil
+;;         org-modern-list '((43 . "➤")
+;;                           (45 . "–")
+;;                           (42 . "•"))
+;;         org-modern-block-fringe nil
+;;         ))
+
+;; also needs org-hide-emphasis-marker to be set.
+(use-package! org-appear
+  :hook (org-mode . org-appear-mode)
+  :config
+  (setq org-appear-autoemphasis t
+        org-appear-autoentities t
+        org-appear-autosubmarkers t
+        org-appear-autolinks nil)
+  (run-at-time nil nil #'org-appear--set-elements)
+)
+#+end_src
+*** Source block completion
+
+#+begin_quote
+Corg is an Emacs package that provides completion-at-point for Org-mode source block and dynamic block headers. corg auto-completes programming language names, their parameters, and possible parameter values for source blocks. For dynamic blocks, it completes block names, their parameters, and possible parameter values.
+#+end_quote
+
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! corg
+  :recipe (:host github :repo "isamert/corg.el"))
+#+end_src
+#+begin_src emacs-lisp
+(use-package! corg
+        :config
+        (add-hook 'org-mode-hook #'corg-setup))
+#+end_src
+*** Edit as Org Mode everywhere
+#+begin_src emacs-lisp :tangle "packages.el"
+;; $DOOMDIR/packages.el
+(package! edit-as-format)
+#+end_src
+#+begin_src emacs-lisp
+;; $DOOMDIR/config.el
+(use-package! edit-as-format)
+#+end_src
+*** Org Noter Taking
+#+begin_src emacs-lisp
+(with-eval-after-load 'org-noter
+  (setq org-noter-notes-search-path (list (expand-file-name "bib/" org-roam-directory)))
+  )
+#+end_src
+*** Import with pandoc
+
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! org-pandoc-import
+  :recipe (:host github
+           :repo "tecosaur/org-pandoc-import"
+           :files ("*.el" "filters" "preprocessors")))
+#+end_src
+#+begin_src emacs-lisp
+(use-package! org-pandoc-import
+  :after org)
+#+end_src
+
+** Export to LaTeX
 Stolen from tecosaur
 *** LaTeX Export
 From tecosaur's config
@@ -1640,7 +1715,8 @@ accomplished with
 #+name: latex-hanging-secnum
 #+begin_src LaTeX
 
-\setkomafont{title}{\sffamily\bfseries\Large}
+\setkomafont{title}{\bfseries\sffamily}
+\addtokomafont{title}{\let\huge\large} % best way to change the title size really ?
 \setkomafont{author}{\normalfont\small}
 \setkomafont{date}{\normalfont\small}
 
@@ -1653,7 +1729,7 @@ It can also be nice to have big =\chapter=​s.
 #+name: latex-big-chapter
 #+begin_src LaTeX
 \RedeclareSectionCommand[afterindent=false, beforeskip=0pt, afterskip=0pt, innerskip=0pt]{chapter}
-\setkomafont{title}{\normalfont\Large}
+\setkomafont{title}{\normalfont\small}
 \setkomafont{author}{\normalfont\small}
 \setkomafont{date}{\normalfont\scriptsize}
 \setkomafont{chapter}{\normalfont\Huge}
@@ -1670,7 +1746,7 @@ It can also be nice to have big =\chapter=​s.
 Now let's just sprinkle some KOMA all over the Org LaTeX classes.
 
 #+begin_src emacs-lisp :noweb no-export :noweb-prefix no
-(after! ox-latex
+(with-eval-after-load 'ox-latex
   (let* ((article-sections '(("\\section{%s}" . "\\section*{%s}")
                              ("\\subsection{%s}" . "\\subsection*{%s}")
                              ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
@@ -1726,6 +1802,8 @@ The =hyperref= setup needs to be handled separately however.
 %% hide links styles in toc
 \NewCommandCopy{\oldtoc}{\tableofcontents}
 \renewcommand{\tableofcontents}{\begingroup\hypersetup{hidelinks}\oldtoc\endgroup}
+
+
 #+end_src
 Then for captions
 #+name: org-latex-caption-preamble
@@ -1851,7 +1929,7 @@ We defines some global variable to hold the content of preamble snippets.
 
 
 #+begin_src emacs-lisp
-(after! ox
+(with-eval-after-load 'ox
 (org-export-update-features 'latex
   (condensed-lists
    :condition (and org-latex-condense-lists "^[ \t]*[-+]\\|^[ \t]*[1Aa][.)] ")
@@ -1952,7 +2030,7 @@ We defines some global variable to hold the content of preamble snippets.
 #+end_src
 xcolor is always usefull.
 #+begin_src emacs-lisp
-(after! ox
+(with-eval-after-load 'ox
   (setq org-latex-packages-alist '(("" "xcolor" t))
         org-export-headline-levels 5 ))
 
@@ -2051,100 +2129,6 @@ theme-appropriate foreground.
       (message "No exported file found"))))
 
 #+end_src
-** Import
-
-#+begin_src emacs-lisp :tangle "packages.el"
-(package! org-pandoc-import
-  :recipe (:host github
-           :repo "tecosaur/org-pandoc-import"
-           :files ("*.el" "filters" "preprocessors")))
-#+end_src
-#+begin_src emacs-lisp
-(use-package! org-pandoc-import
-  :after org)
-#+end_src
-
-** Visuals Style
-*** Org-Modern
-Rincing Org /easily/ with *markup* _test_
-
-#+begin_src emacs-lisp :tangle "packages.el"
-(package! org-modern)
-(package! org-appear :recipe (:host github :repo "awth13/org-appear"))
-#+end_src
-#+begin_src emacs-lisp
-;; (after! org
-;;   (global-org-modern-mode)
-;; )
-;; (use-package! org-modern
-;;   :hook (org-mode . org-modern-mode)
-;;   :config
-;;   (setq org-modern-table-vertical 1
-;;         org-modern-table-horizontal 0.2
-;;         org-modern-horizontal-rule nil
-;;         org-modern-list '((43 . "➤")
-;;                           (45 . "–")
-;;                           (42 . "•"))
-;;         org-modern-block-fringe nil
-;;         ))
-
-;; also needs org-hide-emphasis-marker to be set.
-(use-package! org-appear
-  :hook (org-mode . org-appear-mode)
-  :config
-  (setq org-appear-autoemphasis t
-        org-appear-autoentities t
-        org-appear-autosubmarkers t
-        org-appear-autolinks nil)
-  (run-at-time nil nil #'org-appear--set-elements)
-)
-#+end_src
-*** Mixed Pitch
-#+begin_src emacs-lisp
-(setq +zen-mixed-pitch-modes '(org-mode LaTeX-mode markdown-mode gfm-mode Info-mode rst-mode adoc-mode))
-
-(dolist (hook +zen-mixed-pitch-modes)
-  (add-hook (intern (concat (symbol-name hook) "-hook")) #'mixed-pitch-mode))
-#+end_src
-*** Org Roam UI
-A nice graph of knowledge.
-#+begin_src emacs-lisp :tangle "packages.el"
-(unpin! org-roam company-org-roam)
-(package! websocket)
-(package! org-roam-ui :recipe (:host github :repo "org-roam/org-roam-ui" :files ("*.el" "out")))
-#+end_src
-
-#+begin_src emacs-lisp
-(use-package! websocket
-    :after org-roam)
-
-(use-package! org-roam-ui
-    :after org-roam ;; or :after org
-;;         normally we'd recommend hooking orui after org-roam, but since org-roam does not have
-;;         a hookable mode anymore, you're advised to pick something yourself
-;;         if you don't care about startup time, use
-;;  :hook (after-init . org-roam-ui-mode)
-    :config
-    (setq org-roam-ui-sync-theme t
-          org-roam-ui-follow t
-          org-roam-ui-update-on-save t
-          org-roam-ui-open-on-start t))
-#+end_src
-** Source block completion
-
-#+begin_quote
-Corg is an Emacs package that provides completion-at-point for Org-mode source block and dynamic block headers. corg auto-completes programming language names, their parameters, and possible parameter values for source blocks. For dynamic blocks, it completes block names, their parameters, and possible parameter values.
-#+end_quote
-
-#+begin_src emacs-lisp :tangle "packages.el"
-(package! corg
-  :recipe (:host github :repo "isamert/corg.el"))
-#+end_src
-#+begin_src emacs-lisp
-(use-package! corg
-        :config
-        (add-hook 'org-mode-hook #'corg-setup))
-#+end_src
 ** Org-Roam
 This makes sure that org-roam buffer are open in a dedicated workspace, to prevent them to spread in others.
 *** Org Roam Basic Configuration
@@ -2152,7 +2136,7 @@ This makes sure that org-roam buffer are open in a dedicated workspace, to preve
 I use the roam dailies as a very crude and *flat*  notebook, each entry is under a top level headline, with a timestamp and then I use a custom title, tags, handles, etc...
 
 #+begin_src emacs-lisp
-(after! org-roam
+(with-eval-after-load 'org-roam
   (setq org-roam-directory "~/org/roam/"
         org-roam-capture-templates
         '(("d" "default" plain "%?"
@@ -2180,7 +2164,7 @@ I use the roam dailies as a very crude and *flat*  notebook, each entry is under
 *** Journal Daily
 The journal consist of a list of top level heading that look like this  =*<2000-01-01 Wed>XXXX= 
 #+begin_src emacs-lisp
-(after! org-roam
+(with-eval-after-load 'org-roam
   (setq 
         org-roam-dailies-directory "~/org/roam/journal"
         org-roam-dailies-capture-templates
@@ -2190,11 +2174,10 @@ The journal consist of a list of top level heading that look like this  =*<2000-
           ))))
 #+end_src
 Let's make accessing the journal more easily
-Bind to ~SPC j~
+Bind to ~SPC j~ *Disabled as we used for SPC J for GTD*
 #+begin_src emacs-lisp
-(map! :leader :desc "Open Today log" "j" #'org-roam-dailies-goto-today)
+;;(map! :leader :desc "Open Today log" "j" #'org-roam-dailies-goto-today)
 #+end_src
-
 
 Exclude the journal from the roam database
 #+begin_src emacs-lisp
@@ -2244,7 +2227,7 @@ This make the node linking less painfull by two means:
  - Add the possibility to create an new node without opening its buffer.
 #+name: insert immediate
 #+begin_src emacs-lisp
-(after! org-roam
+(with-eval-after-load 'org-roam
 
 (defun pac/org-roam-node-insert-space (arg &rest args)
   (interactive "P")
@@ -2302,7 +2285,7 @@ This makes easy to add screenshot(s) to a node, and take care of the naming.
 When Writing the first draft of a paper in Org-Mode (The full paper would be tweaked in LaTeX afterwards), I like to have some personal reference to the data I am working with
 #+begin_src emacs-lisp
 
-(after! org-roam
+(with-eval-after-load 'org-roam
 (defvar pac/org-entry-related-name "ROAM_RELATED"
   "Name of the property field where related notes would be stored.")
   (defun pac/insert-roam-node-property ()
@@ -2361,10 +2344,10 @@ this predicate is not nil."
            :properties (org-roam-backlink-properties backlink))))
       (insert ?\n))))
 
-(add-to-list 'org-roam-mode-sections #'org-roam-forwardlinks-section t)
+;; (add-to-list 'org-roam-mode-sections #'org-roam-forwardlinks-section t)
 
 ;; LaTeX Preview
-(after! org-roam
+(with-eval-after-load 'org-roam
 (defun my/org-roam-node-latex-preview (&rest _)
   (let ((major-mode 'org-mode))
     (org-latex-preview 'buffer)))
@@ -2408,79 +2391,33 @@ Lets add convenients key bindings for the functions aboves
 #+begin_src emacs-lisp
 (load! "lisp/ox-roam.el")
 #+end_src
-** Capture and GTD
-See also  [[id:e20503eb-2a58-46b6-a071-311956b594c2][Workflow]]
-#+begin_src emacs-lisp
-(setq +org-inbox-file "~/org/inbox.org")
-(after! org
-  (setq org-todo-keywords '((sequence "TODO(t)" "WAIT(w)" "|" "DONE(d)")
-                            (sequence "[ ](T)" "[?](W)" "|" "[X](D)"))
-        org-modern-todo-faces
-        '(("TODO"  :foreground "Orange"        :inverse-video t :weight bold)
-          ("WAIT"  :foreground "Coral"         :inverse-video t :weight bold)
-          ("DONE"  :foreground "Dark Gray"     :inverse-video t :weight bold)
-          )
-        org-todo-keyword-faces
-        '(("TODO"  :foreground "Orange"        :weight bold)
-          ("WAIT"  :foreground "Coral"         :weight bold)
-          ("DONE"  :foreground "Dark Gray"     :weight bold)
-          ))
-  )
-
-#+end_src
-
-#+begin_src emacs-lisp
-(defun pac/open-inbox ()
-  "Open the inbox file, and launch the org-roam buffer  "
-  (interactive)
-  (when (modulep! :ui workspaces)
-    (+workspace-switch "*roam*" t))
-  (org-open-file +org-inbox-file   t)
-  (pcase (org-roam-buffer--visibility)
-    ((or 'exists 'none)
-     (progn
-       (display-buffer (get-buffer-create org-roam-buffer))
-       (org-roam-buffer-persistent-redisplay)))))
-
-(map! "<f12>" #'pac/open-inbox )
-#+end_src
-
-*** Agenda Configuration
-#+begin_src emacs-lisp
-(setq org-agenda-files ())
-(cl-pushnew +org-inbox-file org-agenda-files)
-#+end_src
-
-#+begin_src emacs-lisp
-(after! org
-  (setq org-agenda-deadline-leaders '("" "" "%2d d. ago: ")
-      org-deadline-warning-days 0
-      org-agenda-span 7
-      org-agenda-start-day "-0d"
-      org-agenda-skip-function-global '(org-agenda-skip-entry-if 'todo 'done)
-      )
-)
-#+end_src
-
-** Edit as Org Mode everywhere
+*** Org Roam UI
+A nice graph of knowledge.
 #+begin_src emacs-lisp :tangle "packages.el"
-;; $DOOMDIR/packages.el
-(package! edit-as-format)
-#+end_src
-#+begin_src emacs-lisp
-;; $DOOMDIR/config.el
-(use-package! edit-as-format)
-#+end_src
-** Org Noter Taking
-#+begin_src emacs-lisp
-(after! org-noter
-  (setq org-noter-notes-search-path (list (expand-file-name "bib/" org-roam-directory)))
-  )
+(unpin! org-roam company-org-roam)
+(package! websocket)
+(package! org-roam-ui :recipe (:host github :repo "org-roam/org-roam-ui" :files ("*.el" "out")))
 #+end_src
 
+#+begin_src emacs-lisp
+(use-package! websocket
+    :after org-roam)
+
+(use-package! org-roam-ui
+    :after org-roam ;; or :after org
+;;         normally we'd recommend hooking orui after org-roam, but since org-roam does not have
+;;         a hookable mode anymore, you're advised to pick something yourself
+;;         if you don't care about startup time, use
+;;  :hook (after-init . org-roam-ui-mode)
+    :config
+    (setq org-roam-ui-sync-theme t
+          org-roam-ui-follow t
+          org-roam-ui-update-on-save t
+          org-roam-ui-open-on-start t))
+#+end_src
 ** Ox-HUGO
 #+begin_src emacs-lisp
-(after! ox-hugo
+(with-eval-after-load 'ox-hugo
   (plist-put org-hugo-citations-plist :bibliography-section-heading "")
 
 (defun org-hugo--org-cite-export-bibliography (orig-fun &rest args)
@@ -2537,11 +2474,71 @@ are the arguments of the ORIG-FUN."
                (format "{{< fileDL icon=\"download\" file=\"%s\" >}} %s {{< /fileDL >}}" path (or desc "file"))))
          (t (format "[[file:%s][%s]]" path (or desc path)))))
   #+end_src
+** Org-GTD
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! org-gtd)
+#+end_src
+#+begin_src emacs-lisp
+
+;; Strip all configs from doom-emacs 
+(defun +org-init-agenda-h ())
+
+(use-package! org-gtd
+  :after org
+  :init
+  ;; Suppress upgrade warnings (must be set before package loads)
+  (setq org-gtd-update-ack "4.0.0")
+  ;; Set GTD directory before package loads
+  (setq org-gtd-directory (expand-file-name "gtd/" org-directory))
+
+  :custom
+  (org-todo-keywords '((sequence "TODO" "NEXT" "WAIT" "|" "DONE" "CNCL")))
+  (org-gtd-keyword-mapping '((todo . "TODO")
+                             (next . "NEXT")
+                             (wait . "WAIT")
+                             (done . "DONE")
+                             (canceled . "CNCL")))
+  ;; Enable per-type refile prompting (recommended)
+  ;; Without this, all items auto-refile to first target without prompting
+  (org-gtd-refile-to-any-target nil)
+  (org-gtd-areas-of-focus '("home" "work" "scouts" "health" "nous"))
+
+  :config
+  (org-edna-mode)
+  ;; Add org-gtd files to your agenda (in :config so org-gtd-directory is defined)
+  (setq org-gtd-additional-inbox-files `(,(expand-file-name "~/org/gtd/inbox-phone.org")))
+  (setq org-agenda-files (list org-gtd-directory))
+  ;; Doom-style leader key bindings
+  (map! :leader
+        (:prefix ("j" . "org-gtd")
+         :desc "Capture"        "c"  #'org-gtd-capture
+         :desc "Engage"         "e"  #'org-gtd-engage
+         :desc "Process inbox"  "p"  #'org-gtd-process-inbox
+         :desc "Show all next"  "n"  #'org-gtd-show-all-next
+         :desc "Stuck projects" "s"  #'org-gtd-reflect-stuck-projects))
+  ;; Clarify map binding
+  (map! :map org-gtd-clarify-mode-map
+        :desc "Organize this item" "C-c c" #'org-gtd-organize)
+  ;; Quick task actions in agenda view
+  (map! :map org-agenda-mode-map
+        :desc "GTD quick actions" "C-c ." #'org-gtd-agenda-transient))
+(with-eval-after-load 'org-modern
+  (setq org-modern-todo-faces
+        '(("TODO" :background "orange" :foreground "black" :weight bold)
+          ("NEXT" :background "green" :foreground "white" :weight bold)
+          ("WAIT" :background "blue" :foreground "white" :weight bold))
+  )
+
+  (setq org-agenda-tags-column 80)
+  )
+
+
+#+end_src
 * LaTeX
 #+begin_src emacs-lisp
 (setq +latex-viewers '(pdf-tools zathura evince))
 (add-to-list 'auto-mode-alist '("\\.tex" . LaTeX-mode))
-(after! latex
+(with-eval-after-load 'latex
 (add-to-list 'auto-mode-alist '("\\.tex" . LaTeX-mode))
 (add-to-list 'auto-mode-alist '("\\.tikz" . LaTeX-mode))
 (add-to-list 'auto-mode-alist '("\\.pgf" . LaTeX-mode))
@@ -2733,7 +2730,7 @@ Such special cases should be remapped to another value, as given in `string-offs
 (use-package! laas
   :hook (org-mode . laas-mode)
   :hook (LaTeX-mode . laas-mode))
-(after! laas
+(with-eval-after-load 'laas
   (setq laas-enable-auto-space nil)
   (aas-set-snippets 'laas-mode
                     ;; set condition!
@@ -2760,6 +2757,7 @@ Such special cases should be remapped to another value, as given in `string-offs
                     "max" "\\min"
                     "amin" "\\argmin"
                     "infty" "\\infty"
+                    "ii" "\\in"
                     ))
 
 (defun laas-accent--rm () (interactive)   (laas-wrap-previous-object (if (laas-mathp) "mathrm" "textrm")))
@@ -2859,7 +2857,7 @@ https://tex.stackexchange.com/questions/557959/emacs-auctex-tabular-vertical-ali
 ** Auto updating of bibliography
 When writing paper, I have a local-bib file (to be shared with coworker, publisher, etc.) But all my existing bib entries are stored in =~/org/library.bib=  (which is the value of the variable =citar-bibliography=). This bib files is synchronized from zotero (using the Better Biblatex plugin)
 #+begin_src emacs-lisp
-(after! latex
+(with-eval-after-load 'latex
   (require 'citar)
 
 (defvar-local +latex-bib-files nil "The local bibliography file. Usefull when reftex does not found the bib by itself.")
@@ -2906,23 +2904,33 @@ Github copilot is too great to be ignored this days.
            ("C-TAB" . 'copilot-accept-completion-by-word)
            ("C-<tab>" . 'copilot-accept-completion-by-word)))
 #+end_src
+** Agent
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! shell-maker)
+(package! acp)
+(package! agent-shell)
+#+end_src
+#+begin_src emacs-lisp
+(require 'acp)
+(require 'agent-shell)
+#+end_src
 * Python
 My main programming language, so let's make it even better.
 #+begin_src emacs-lisp :tangle "packages.el"
 (package! xml+)
 (package!  nose :disable t)
 (package! code-cells)
-(package! pet)
+;;(package! pet)
 #+end_src
 #+begin_src emacs-lisp
-(use-package! pet
-  :config
-  (add-hook 'python-base-mode-hook
-          (lambda ()
-            (setq-local python-shell-interpreter (pet-executable-find "python")
-                        python-pytest-executable (pet-executable-find "pytest")
-                        python-shell-virtualenv-root (pet-virtualenv-root))
-            (pet-dape-setup))))
+;; (use-package! pet
+;;   :config
+;;   (add-hook 'python-base-mode-hook
+;;           (lambda ()
+;;             (setq-local python-shell-interpreter (pet-executable-find "python")
+;;                         python-pytest-executable (pet-executable-find "pytest")
+;;                         python-shell-virtualenv-root (pet-virtualenv-root))
+;;             (pet-dape-setup))))
 #+end_src
 Code cell for vs-code like experience 
 #+begin_src emacs-lisp
@@ -2930,11 +2938,10 @@ Code cell for vs-code like experience
 (add-hook 'python-mode-hook 'code-cells-mode-maybe)
 
 #+end_src
-
 ** Ruff formatter
 Ideally, use ruff format everywhere, unless the project has black configured (ie check the toml file).
 #+begin_src emacs-lisp
-
+(add-hook 'python-mode-hook #'(setq-local fill-column 88)) ;; TODO get this from the toml file if it exists.
 #+end_src
 ** Pytest
 
@@ -2989,13 +2996,13 @@ Add option to define local pytest options.
 ;;     ("M" "directories" python-pytest-directories)]
 ;;    [("d" "def/class (dwim)" python-pytest-function-dwim)
 ;;     ("D" "def/class (this)" python-pytest-function)]])
-;; ;; (after! python-pytest
+;; ;; (with-eval-after-load 'python-pytest
 ;; ;; (transient-append-suffix 'python-pytest-dispatch '(-2) ["Local Options" :setup-children (lambda (_) (list (transient-parse-suffixes transient--suffix pytest-local-transient)))])
 ;; ;; )
 #+end_src
 ** Dape 
 #+begin_src emacs-lisp 
-(after! dape
+(with-eval-after-load 'dape
   (add-to-list 'dape-configs
                `(pytest modes (python-mode python-ts-mode)
                         ensure (lambda (config) (dape-ensure-command config)
@@ -3058,7 +3065,7 @@ Add option to define local pytest options.
 
 Adapted and improve from https://gist.github.com/fleimgruber/cd2386d8326fad3e0e2b99ebc2f05739
 #+begin_src emacs-lisp
-(after! edit-indirect
+(with-eval-after-load 'edit-indirect
 (defun edit-indirect-rst-set-mode (_parent _beg _end)
   (rst-mode))
 
@@ -3109,7 +3116,7 @@ Adapted and improve from https://gist.github.com/fleimgruber/cd2386d8326fad3e0e2
 #+end_src
 
 #+begin_src emacs-lisp
-;;(after! lsp-mode (setq lsp-diagnostic-provider :flymake))
+;;(with-eval-after-load 'lsp-mode (setq lsp-diagnostic-provider :flymake))
 #+end_src
 ** Copilot
 #+begin_src emacs-lisp
@@ -3141,7 +3148,7 @@ Adapted and improve from https://gist.github.com/fleimgruber/cd2386d8326fad3e0e2
   (setq lsp-ltex-plus-completion-enabled nil)
   (setq lsp-ltex-plus-diagnostic-severity "hint")
   )
-(after! tex
+(with-eval-after-load 'tex
   (add-hook! '(tex-mode-local-vars-hook
                  latex-mode-local-vars-hook
                  LaTeX-mode-local-vars-hook)
@@ -3158,7 +3165,7 @@ Adapted and improve from https://gist.github.com/fleimgruber/cd2386d8326fad3e0e2
   (setq! lsp-latex-experimental-citation-commands ["cite" "citep" "citet" "parencite" "textcite" "autocite"]))
 
 ;; ;; For bibtex
-;; (after! bibtex
+;; (with-eval-after-load 'bibtex
 ;;  (add-hook 'bibtex-mode-hook 'lsp))
 #+end_src
 #+begin_src emacs-lisp
@@ -3177,7 +3184,7 @@ Adapted and improve from https://gist.github.com/fleimgruber/cd2386d8326fad3e0e2
 ;; (setq! lsp-ltex-mother-tongue "fr-FR")
 ;; (load! "lsp-ltex-plus.el")
 
-;; (after! latex
+;; (with-eval-after-load 'latex
 ;;     (add-hook! '(tex-mode-local-vars-hook
 ;;                  latex-mode-local-vars-hook
 ;;                  LaTeX-mode-local-vars-hook)
@@ -3272,8 +3279,3 @@ Adding the following keybinding to your config will allow you to insert LaTeX co
 #+end_src
 
 
-
-* Org-roam export
-#+begin_src emacs-lisp :tangle "packages.el"
-(package! weblorg)
-#+end_src

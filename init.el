@@ -201,7 +201,7 @@
         +lsp
         +pyright
         +tree-sitter
-        ;; +pyenv
+        +uv
         )
        ;;qt                ; the 'cutest' gui framework ever
        ;;racket            ; a DSL for DSLs
