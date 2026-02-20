@@ -2904,16 +2904,22 @@ Github copilot is too great to be ignored this days.
            ("C-TAB" . 'copilot-accept-completion-by-word)
            ("C-<tab>" . 'copilot-accept-completion-by-word)))
 #+end_src
-** Agent
+** Copilot-chat
 #+begin_src emacs-lisp :tangle "packages.el"
-(package! shell-maker)
-(package! acp)
-(package! agent-shell)
+(package! copilot-chat
+  :recipe (:host github :repo "chep/copilot-chat.el" :files ("*.el"))
+)
 #+end_src
 #+begin_src emacs-lisp
-(require 'acp)
-(require 'agent-shell)
+(use-package! copilot-chat
+  :after (org markdown-mode request))
 #+end_src
+** Code Assistant :testing:
+
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! eca :recipe (:host github :repo "editor-code-assistant/eca-emacs" :files ("*.el")))
+#+end_src
+
 * Python
 My main programming language, so let's make it even better.
 #+begin_src emacs-lisp :tangle "packages.el"
