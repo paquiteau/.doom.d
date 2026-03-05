@@ -22,6 +22,9 @@ title: Doom Emacs Literate configuration
 #+end_src
 * HOTFIX
 ** LaTeX-Mode broken
+#+begin_src emacs-lisp :tangle "packages.el"
+(unpin! jsonrpc)
+#+end_src
 #+begin_src emacs-lisp
 (setq major-mode-remap-alist major-mode-remap-defaults)
 #+end_src
@@ -2474,66 +2477,174 @@ are the arguments of the ORIG-FUN."
                (format "{{< fileDL icon=\"download\" file=\"%s\" >}} %s {{< /fileDL >}}" path (or desc "file"))))
          (t (format "[[file:%s][%s]]" path (or desc path)))))
   #+end_src
-** Org-GTD
-#+begin_src emacs-lisp :tangle "packages.el"
-(package! org-gtd)
-#+end_src
+
+** My Org-GTD
+I have try to commit to getting organize more and more, after some testing with [[https://github.com/trevoke/org-gtd.el][org-gtd.el]], I have decided to start from first principles again. Unfortunatly, this mean RTFM, find other setups, and remove configuration from the raw org config as well.
 #+begin_src emacs-lisp
+;;
+(setq org-todo-keywords '((sequence
+                           "TODO(t)"
+                           "NEXT(n)"
+                           "WAIT(w)"
+                           "|"
+                           "DONE(d)"
+                           "CNCL(c)"
+                           ))
+      org-modern-todo-faces '(
+                              ("TODO" . (:background "darkred" :weight bold))
+                              ("NEXT" . (:background "green" :weight bold))
+                              ("WAIT" . (:background "darkorange" :weight bold))
+                              )
+      org-agenda-files '("~/org/gtd")
+      org-refile-targets '(("~/org/gtd/next.org"  . (:level  . 0))
+                             ("~/org/gtd/projects.org" . (:maxlevel . 2))
+                             ("~/org/gtd/someday.org" . (:level . 0))
+                             )
+      org-refile-use-outline-path 'file
+      org-outline-path-complete-in-steps nil
+      )
 
-;; Strip all configs from doom-emacs 
-(defun +org-init-agenda-h ())
 
-(use-package! org-gtd
-  :after org
-  :init
-  ;; Suppress upgrade warnings (must be set before package loads)
-  (setq org-gtd-update-ack "4.0.0")
-  ;; Set GTD directory before package loads
-  (setq org-gtd-directory (expand-file-name "gtd/" org-directory))
+(setq org-capture-templates
+      `(("t" "Task" entry  (file "~/org/gtd/inbox.org")
+         ,(string-join '("* TODO %?\n"
+                         ":PROPERTIES:"
+                         ":CREATED: %U"
+                         ":END:"
+                         "%a") "\n")
+         )
+        ("i" "infos" entry (file "~/org/gtd/inbox.org")
+         ,(string-join '("* %?\n"
+                         ":PROPERTIES:"
+                         ":CREATED: %U"
+                         ":END:"
+                         "%a") "\n")
+         )
+        ))
 
-  :custom
-  (org-todo-keywords '((sequence "TODO" "NEXT" "WAIT" "|" "DONE" "CNCL")))
-  (org-gtd-keyword-mapping '((todo . "TODO")
-                             (next . "NEXT")
-                             (wait . "WAIT")
-                             (done . "DONE")
-                             (canceled . "CNCL")))
-  ;; Enable per-type refile prompting (recommended)
-  ;; Without this, all items auto-refile to first target without prompting
-  (org-gtd-refile-to-any-target nil)
-  (org-gtd-areas-of-focus '("home" "work" "scouts" "health" "nous"))
+#+end_src
+*** Clarify function
+#+begin_src emacs-lisp
+(defun log-todo-next-creation-date (&rest ignore)
+  "Log NEXT creation time in the property drawer under the key 'ACTIVATED'"
+  (when (and (string= (org-get-todo-state) "NEXT")
+             (not (org-entry-get nil "ACTIVATED")))
+    (org-entry-put nil "ACTIVATED" (format-time-string "[%Y-%m-%d]"))))
+(add-hook 'org-after-todo-state-change-hook #'log-todo-next-creation-date)
 
-  :config
-  (org-edna-mode)
-  ;; Add org-gtd files to your agenda (in :config so org-gtd-directory is defined)
-  (setq org-gtd-additional-inbox-files `(,(expand-file-name "~/org/gtd/inbox-phone.org")))
-  (setq org-agenda-files (list org-gtd-directory))
-  ;; Doom-style leader key bindings
-  (map! :leader
-        (:prefix ("j" . "org-gtd")
-         :desc "Capture"        "c"  #'org-gtd-capture
-         :desc "Engage"         "e"  #'org-gtd-engage
-         :desc "Process inbox"  "p"  #'org-gtd-process-inbox
-         :desc "Show all next"  "n"  #'org-gtd-show-all-next
-         :desc "Stuck projects" "s"  #'org-gtd-reflect-stuck-projects))
-  ;; Clarify map binding
-  (map! :map org-gtd-clarify-mode-map
-        :desc "Organize this item" "C-c c" #'org-gtd-organize)
-  ;; Quick task actions in agenda view
-  (map! :map org-agenda-mode-map
-        :desc "GTD quick actions" "C-c ." #'org-gtd-agenda-transient))
-(with-eval-after-load 'org-modern
-  (setq org-modern-todo-faces
-        '(("TODO" :background "orange" :foreground "black" :weight bold)
-          ("NEXT" :background "green" :foreground "white" :weight bold)
-          ("WAIT" :background "blue" :foreground "white" :weight bold))
-  )
+#+end_src
+*** Agenda
+        #+begin_src emacs-lisp 
 
-  (setq org-agenda-tags-column 80)
-  )
+;; remove all sub-refile command for now,
+;; Ideally we want to setup a transient interface for the refile, à-là org-gtd 
+(map! :map org-mode-map :localleader "r" #'org-refile)
+(map! :map doom-leader-map "o a" #'org-agenda)
 
 
 #+end_src
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! org-super-agenda)
+#+end_src
+#+begin_src emacs-lisp 
+(use-package! org-super-agenda)
+(after! org-agenda
+  (let ((inhibit-message t))
+    (org-super-agenda-mode)))
+
+
+(setq org-agenda-skip-scheduled-if-done t
+      org-agenda-skip-deadline-if-done t
+      org-agenda-include-deadlines t
+      org-agenda-block-separator nil
+      org-agenda-tags-column 100;; from testing this seems to be a good value
+      org-agenda-compact-blocks nil
+      org-agenda-window-setup 'current-window
+      org-agenda-skip-unavailable-files t
+      org-agenda-span 10
+      org-agenda-breadcrumbs-separator "▶"
+      org-agenda-start-on-weekday nil
+      org-agenda-start-day "-3d" ;; see 3days before the current day
+      org-agenda-deadline-faces '((1.0 . org-imminent-deadline) (0.5 . org-upcoming-deadline)
+                                  (0.0 . org-upcoming-distant-deadline))
+
+      org-deadline-warning-days 14
+      )
+
+(defun pac/format-prefix-project ()
+(format "%-30s" (or (car (last (org-get-outline-path))) ""))
+)
+;; Customizing agenda
+(setq org-agenda-time-grid '((daily) (800 1200 1800) "---" "-----"))
+(set-face-attribute 'org-super-agenda-header nil :weight 'bold)
+(setq org-agenda-custom-commands
+      '(("g" "Get Things Done (GTD)"
+         (
+          (agenda ""
+                  ((org-agenda-span 1)
+                   (org-agenda-start-day "+0d")
+                   (org-agenda-skip-function '(org-agenda-skip-entry-if 'deadline))
+                   (org-agenda-overriding-header "Schedule"\n)
+                   (org-agenda-remove-tags t)
+                   (org-agenda-prefix-format "  %i %?-2 t%s")
+                   (org-agenda-time)
+                   ))
+          (todo "NEXT"
+                ((org-agenda-skip-function
+                  '(org-agenda-skip-entry-if 'deadline 'scheduled))
+                 (org-agenda-prefix-format "  %-20b")
+                 (org-agenda-overriding-header "==Just Do It==")
+                 (org-agenda-prefix-format "  %s")
+                 ))
+          (agenda ""
+                  ((org-agenda-entry-types '(:deadline))
+                   (org-agenda-span 1)
+                   (org-agenda-time-grid nil)
+                   (org-agenda-start-day "+0d")
+                   (org-agenda-format-date "")
+                   (org-deadline-warning-days 31)
+                   (org-agenda-prefix-format "  %(pac/format-prefix-project) %s")
+                   ;; (org-agenda-skip-function
+                   ;; '(org-agenda-skip-entry-if 'notregexp "\\* NEXT"))
+                   (org-agenda-overriding-header "==Deadline==")))
+          (tags "inbox"
+                ((org-agenda-prefix-format "  %?-12t% s")
+                 (org-agenda-hide-tags-regexp "inbox") ;; we are already filtering
+                 (org-agenda-overriding-header "\n*Inbox: Clarify and Organize*\n")))
+
+          (tags-todo "-inbox"
+                ((org-agenda-skip-function
+                  '(org-agenda-skip-entry-if 'deadline 'scheduled))
+                 (org-agenda-prefix-format "  %(format \"%-20s\" (car (last (org-get-outline-path))))")
+                ))
+          (tags "CLOSED>=\"<today>\""
+                ((org-agenda-overriding-header "\nCompleted today\n")))))
+        ("c" "Super view" 
+         ;; (agenda "" ((org-agenda-overriding-header "")
+         ;;             (org-super-agenda-groups
+         ;;              '((:name "Today"
+         ;;                 :time-grid t
+         ;;                 :date today
+         ;;                 :order 1)))))
+         ((agenda "" ((org-agenda-overriding-header "")
+                       (org-super-agenda-groups
+                        '((:log t)
+                          (:name "Done today"
+                           :and (:regexp "State \"DONE\""
+                                 :log t))
+                           (:name "Inbox"
+                            :file-path "inbox\\.*.org")
+                           (:name "Deadlines"
+                            :deadline t
+                            )
+                           (:name "Habits of the Day"
+                            :and (:habit t
+                            :scheduled today))
+                           
+                           (:name "Projects"
+                            :auto-parent)))))))))
+#+end_src
+
 * LaTeX
 #+begin_src emacs-lisp
 (setq +latex-viewers '(pdf-tools zathura evince))
@@ -2892,7 +3003,7 @@ When writing paper, I have a local-bib file (to be shared with coworker, publish
 Github copilot is too great to be ignored this days.
 #+begin_src emacs-lisp :tangle "packages.el"
 (package! copilot
-:recipe (:host github :repo "copilot-emacs/copilot.el" :files ("*.el" "dist"))
+:recipe (:host github :repo "copilot-emacs/copilot.el" :files ("*.el"))
 )
 #+end_src
 #+begin_src emacs-lisp
