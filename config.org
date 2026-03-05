@@ -2479,6 +2479,9 @@ are the arguments of the ORIG-FUN."
   #+end_src
 
 ** My Org-GTD
+:PROPERTIES:
+:PROJECT_ID: my-org-gtd
+:END:
 I have try to commit to getting organize more and more, after some testing with [[https://github.com/trevoke/org-gtd.el][org-gtd.el]], I have decided to start from first principles again. Unfortunatly, this mean RTFM, find other setups, and remove configuration from the raw org config as well.
 #+begin_src emacs-lisp
 ;;
@@ -2497,30 +2500,51 @@ I have try to commit to getting organize more and more, after some testing with 
                               )
       org-agenda-files '("~/org/gtd")
       org-refile-targets '(("~/org/gtd/next.org"  . (:level  . 0))
-                             ("~/org/gtd/projects.org" . (:maxlevel . 2))
-                             ("~/org/gtd/someday.org" . (:level . 0))
-                             )
+                           ("~/org/gtd/projects.org" . (:maxlevel . 2))
+                           ("~/org/gtd/someday.org" . (:level . 0))
+                           )
       org-refile-use-outline-path 'file
       org-outline-path-complete-in-steps nil
       )
 
 
+(defun pac/slugify (str)
+  "Create a slug from a str"
+  (let*
+      ((str (downcase str))
+       (str (replace-regexp-in-string "\\(\\[.*?\\]\\)" " " str))
+       (str (replace-regexp-in-string "[^[:alnum:]]+" " " str))
+       ;; Remove leading and trailing whitespace.
+       (str (replace-regexp-in-string "\\(^[[:space:]]*\\|[[:space:]]*$\\)" "" str))
+       ;; Replace 2 or more spaces with a single space.
+       (str (replace-regexp-in-string "[[:space:]]\\{2,\\}" " " str))
+       ;; Replace spaces dashes.
+       (str (replace-regexp-in-string "[[:space:]]" "-" str)))
+    str))
+
 (setq org-capture-templates
       `(("t" "Task" entry  (file "~/org/gtd/inbox.org")
-         ,(string-join '("* TODO %?\n"
+         ,(string-join '("* TODO %?"
                          ":PROPERTIES:"
                          ":CREATED: %U"
                          ":END:"
                          "%a") "\n")
          )
         ("i" "infos" entry (file "~/org/gtd/inbox.org")
-         ,(string-join '("* %?\n"
+         ,(string-join '("* %?"
                          ":PROPERTIES:"
                          ":CREATED: %U"
                          ":END:"
                          "%a") "\n")
          )
-        ))
+        ("p" "project" entry (file "~/org/gtd/projects.org") 
+         ,(string-join '("* %? ^g" 
+                         ":PROPERTIES:"
+                         ":CREATED: %U"
+                         ":END:") "\n")
+         :before-finalize (,(lambda () (org-set-property "PROJECT_ID"  (pac/slugify (org-get-heading t t t t)))) 
+         )
+        )))
 
 #+end_src
 *** Clarify function
@@ -2547,10 +2571,17 @@ I have try to commit to getting organize more and more, after some testing with 
 (package! org-super-agenda)
 #+end_src
 #+begin_src emacs-lisp 
-(use-package! org-super-agenda)
-(after! org-agenda
-  (let ((inhibit-message t))
-    (org-super-agenda-mode)))
+(use-package! org-super-agenda
+  :after org-agenda
+  :init
+  (org-super-agenda-mode)
+  :config
+  (setq org-super-agenda-header-map (make-sparse-keymap)))
+
+(after! org-super-agenda
+  (map! :map org-super-agenda-mode-map
+        :m "j" #'org-agenda-next-line
+        :m "k" #'org-agenda-previous-line))
 
 
 (setq org-agenda-skip-scheduled-if-done t
@@ -2568,12 +2599,22 @@ I have try to commit to getting organize more and more, after some testing with 
       org-agenda-deadline-faces '((1.0 . org-imminent-deadline) (0.5 . org-upcoming-deadline)
                                   (0.0 . org-upcoming-distant-deadline))
 
+      org-log-done 'time
+      org-log-done-with-time t
       org-deadline-warning-days 14
       )
 
 (defun pac/format-prefix-project ()
-(format "%-30s" (or (car (last (org-get-outline-path))) ""))
-)
+  "Format the prefix to be the name of the project (parent header)"
+  ;; TODO use a PROJECT_ID 
+  (format "%-20s" (or (car (last (org-get-outline-path))) ""))
+  )
+(defun pac/header-face (s)
+  "Customize faces of the header string for the agenda"
+  (add-face-text-property 0 (length s) '(:weight bold :height 2) nil s)
+  s
+  )
+(set-face-attribute 'org-agenda-structure nil :weight 'bold :height 1.1)
 ;; Customizing agenda
 (setq org-agenda-time-grid '((daily) (800 1200 1800) "---" "-----"))
 (set-face-attribute 'org-super-agenda-header nil :weight 'bold)
@@ -2584,7 +2625,7 @@ I have try to commit to getting organize more and more, after some testing with 
                   ((org-agenda-span 1)
                    (org-agenda-start-day "+0d")
                    (org-agenda-skip-function '(org-agenda-skip-entry-if 'deadline))
-                   (org-agenda-overriding-header "Schedule"\n)
+                   (org-agenda-overriding-header "📆 Schedule"\n)
                    (org-agenda-remove-tags t)
                    (org-agenda-prefix-format "  %i %?-2 t%s")
                    (org-agenda-time)
@@ -2593,8 +2634,8 @@ I have try to commit to getting organize more and more, after some testing with 
                 ((org-agenda-skip-function
                   '(org-agenda-skip-entry-if 'deadline 'scheduled))
                  (org-agenda-prefix-format "  %-20b")
-                 (org-agenda-overriding-header "==Just Do It==")
-                 (org-agenda-prefix-format "  %s")
+                 (org-agenda-overriding-header (pac/header-face "🚀 Just Do It"))
+                 (org-agenda-prefix-format "  %(pac/format-prefix-project) %s")
                  ))
           (agenda ""
                   ((org-agenda-entry-types '(:deadline))
@@ -2606,19 +2647,20 @@ I have try to commit to getting organize more and more, after some testing with 
                    (org-agenda-prefix-format "  %(pac/format-prefix-project) %s")
                    ;; (org-agenda-skip-function
                    ;; '(org-agenda-skip-entry-if 'notregexp "\\* NEXT"))
-                   (org-agenda-overriding-header "==Deadline==")))
+                   (org-agenda-overriding-header "⏰ Upcoming Deadlines")))
           (tags "inbox"
                 ((org-agenda-prefix-format "  %?-12t% s")
                  (org-agenda-hide-tags-regexp "inbox") ;; we are already filtering
-                 (org-agenda-overriding-header "\n*Inbox: Clarify and Organize*\n")))
+                 (org-agenda-overriding-header "📥 Inbox: Clarify and Organize")))
 
           (tags-todo "-inbox"
-                ((org-agenda-skip-function
-                  '(org-agenda-skip-entry-if 'deadline 'scheduled))
-                 (org-agenda-prefix-format "  %(format \"%-20s\" (car (last (org-get-outline-path))))")
-                ))
+                     ((org-agenda-skip-function
+                       '(org-agenda-skip-entry-if 'deadline 'scheduled))
+                     (org-agenda-overriding-header "🗂️ Projects")
+                      (org-agenda-prefix-format "  %(pac/format-prefix-project) %s")
+                      ))
           (tags "CLOSED>=\"<today>\""
-                ((org-agenda-overriding-header "\nCompleted today\n")))))
+                ((org-agenda-overriding-header "✔️ Completed today")))))
         ("c" "Super view" 
          ;; (agenda "" ((org-agenda-overriding-header "")
          ;;             (org-super-agenda-groups
@@ -2626,23 +2668,23 @@ I have try to commit to getting organize more and more, after some testing with 
          ;;                 :time-grid t
          ;;                 :date today
          ;;                 :order 1)))))
-         ((agenda "" ((org-agenda-overriding-header "")
-                       (org-super-agenda-groups
-                        '((:log t)
-                          (:name "Done today"
-                           :and (:regexp "State \"DONE\""
-                                 :log t))
-                           (:name "Inbox"
-                            :file-path "inbox\\.*.org")
-                           (:name "Deadlines"
-                            :deadline t
-                            )
-                           (:name "Habits of the Day"
-                            :and (:habit t
-                            :scheduled today))
-                           
-                           (:name "Projects"
-                            :auto-parent)))))))))
+         ((todo "" ((org-agenda-overriding-header "")
+                    (org-super-agenda-groups
+                     '((:log t)
+                       (:name "Done today"
+                        :and (:regexp "State \"DONE\""
+                              :log t))
+                       (:name "Inbox"
+                        :file-path "inbox\\.*.org")
+                       (:name "Deadlines"
+                        :deadline t
+                        )
+                       (:name "Habits of the Day"
+                        :and (:habit t
+                              :scheduled today))
+                       
+                       (:name "Projects"
+                        :auto-parent)))))))))
 #+end_src
 
 * LaTeX
