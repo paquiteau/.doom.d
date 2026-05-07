@@ -1098,6 +1098,15 @@ Is this the new LaTeX ? Let's find out
 
 
 #+end_src
+
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! citar-typst)
+#+end_src
+#+begin_src emacs-lisp
+(use-package! citar-typst
+  :config
+  (citar-typst-mode))
+#+end_src
 *** Jinx Support
 #+begin_src emacs-lisp
 (with-eval-after-load 'jinx
@@ -2675,6 +2684,33 @@ I have try to commit to getting organize more and more, after some testing with 
 (add-hook 'org-after-todo-state-change-hook #'log-todo-next-creation-date)
 
 #+end_src
+*** Refile DONE state to org-roam dailies
+https://systemcrafters.net/build-a-second-brain-in-emacs/5-org-roam-hacks/#automatically-copy-or-move-completed-tasks-to-dailies
+#+begin_src emacs-lisp
+(defun my/org-roam-copy-todo-to-today ()
+  (interactive)
+  (let ((org-refile-keep nil) ;; Set this to nil to delete the original!
+        (org-roam-dailies-capture-templates
+          '(("t" "tasks" entry "%?"
+             :if-new (file+head+olp "%<%Y-%m-%d>.org" "#+title: %<%Y-%m-%d>\n" ("Tasks")))))
+        (org-after-refile-insert-hook #'save-buffer)
+        today-file
+        pos)
+    (save-window-excursion
+      (org-roam-dailies--capture (current-time) t)
+      (setq today-file (buffer-file-name))
+      (setq pos (point)))
+
+    ;; Only refile if the target file is different than the current file
+    (unless (equal (file-truename today-file)
+                   (file-truename (buffer-file-name)))
+      (org-refile nil nil (list "Tasks" today-file nil pos)))))
+
+(add-to-list 'org-after-todo-state-change-hook
+             (lambda ()
+               (when (equal org-state "DONE")
+                 (my/org-roam-copy-todo-to-today))))
+#+end_src
 *** Agenda
         #+begin_src emacs-lisp 
 
@@ -3199,6 +3235,7 @@ Github copilot is too great to be ignored this days.
 
 #+end_src
 * Python
+
 My main programming language, so let's make it even better.
 #+begin_src emacs-lisp :tangle "packages.el"
 (package! xml+)
@@ -3206,26 +3243,38 @@ My main programming language, so let's make it even better.
 (package! code-cells)
 (package! pet)
 #+end_src
+
+
+Ideally, use ruff format everywhere, unless the project has black configured (ie check the toml file).
+#+begin_src emacs-lisp
+(add-hook 'python-mode-hook #'(setq-local fill-column 88)) ;; TODO get this from the toml file if it exists.
+#+end_src
+
+Managing virtualenv is somewhat a pain..
 #+begin_src emacs-lisp
 (use-package! pet
   :config
   (add-hook 'python-base-mode-hook
-          (lambda ()
-            (setq-local python-shell-interpreter (pet-executable-find "python")
-                        python-pytest-executable (pet-executable-find "pytest")
-                        python-shell-virtualenv-root (pet-virtualenv-root))
-            (pet-dape-setup))))
+            (lambda ()
+              (setq-local
+               python-shell-virtualenv-root (pet-virtualenv-root)
+               python-shell-interpreter (pet-executable-find "python")
+               python-pytest-executable (pet-executable-find "pytest"))
+              (pet-dape-setup))))
 #+end_src
 Code cell for vs-code like experience 
 #+begin_src emacs-lisp
 (use-package! code-cells)
 (add-hook 'python-mode-hook 'code-cells-mode-maybe)
-
 #+end_src
-** Ruff formatter
-Ideally, use ruff format everywhere, unless the project has black configured (ie check the toml file).
+** Multiplexed LSP setup
+using eglot and rassumfrassum, merge the output from =ty= (typechecker) and =ruff= (linter/formatter)
 #+begin_src emacs-lisp
-(add-hook 'python-mode-hook #'(setq-local fill-column 88)) ;; TODO get this from the toml file if it exists.
+(use-package! eglot-python-preset
+  :custom
+  (eglot-python-preset-lsp-server 'rass)
+  (eglot-python-preset-rass-tools '(ty ruff))
+  )
 #+end_src
 ** Pytest
 

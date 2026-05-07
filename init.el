@@ -60,7 +60,7 @@
        (window-select     ; visually switch windows
         +number)
        workspaces        ; tab emulation, persistence & separate workspaces
-       zen               ; distraction-free coding or writing
+       (zen +focus)               ; distraction-free coding or writing
        (smooth-scroll  ; good vibes only
         +interpolate)
        
@@ -199,9 +199,7 @@
        ;;purescript        ; javascript, but functional
        (python            ; beautiful is better than ugly
         +lsp
-        +pyright
         +tree-sitter
-        +uv
         )
        ;;qt                ; the 'cutest' gui framework ever
        ;;racket            ; a DSL for DSLs
