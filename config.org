@@ -547,7 +547,7 @@ I write stuff mostly in English, but sometimes I have to add French in the mix.
 #+end_src
 #+begin_src emacs-lisp
 (use-package! fancy-fill-paragraph
-  :bind ("M-q" . Fancy-fill-paragraph))
+  :bind ("M-q" . fancy-fill-paragraph))
 #+end_src
 ** Flymake-language-tools
 #+begin_src emacs-lisp :tangle "packages.el"
@@ -1735,6 +1735,22 @@ accomplished with
 \renewcommand\sectionformat{\llap{\thesection\autodot\enskip}}
 \renewcommand\subsectionformat{\llap{\thesubsection\autodot\enskip}}
 \renewcommand\subsubsectionformat{\llap{\thesubsubsection\autodot\enskip}}
+\makeatletter
+\renewcommand{\maketitle}{%
+  \begin{center}
+    {\Large\sffamily\bfseries \@title \par}
+    \ifx\@author\@empty
+    \else
+      {\large \@author \par}
+      \vspace{0.5em}
+    \fi
+    \ifx\@date\@empty
+    \else
+      {\small \@date \par}
+    \fi
+  \end{center}
+}
+\makeatother
 #+end_src
 
 It can also be nice to have big =\chapter=​s.
@@ -1769,7 +1785,7 @@ Now let's just sprinkle some KOMA all over the Org LaTeX classes.
          (hanging-secnum-preamble <<grab("latex-hanging-secnum")>>)
          (big-chap-preamble <<grab("latex-big-chapter")>>))
     (setcdr (assoc "article" org-latex-classes)
-            `(,(concat "\\documentclass[a4paper, 12pt]{scrartcl}" hanging-secnum-preamble)
+            `(,(concat "\\documentclass[a4paper, 12pt, DIV=16]{scrartcl}" hanging-secnum-preamble)
               ,@article-sections))
     (add-to-list 'org-latex-classes
                  `("report" ,(concat "\\documentclass{scrartcl}" hanging-secnum-preamble)
@@ -2158,6 +2174,9 @@ I use the roam dailies as a very crude and *flat*  notebook, each entry is under
           )
         org-roam-extract-new-file-path "%<%Y-%m-%d>-${slug}.org"
         )
+  ;; Disable spurious completion in math.
+    (defadvice! org-roam-complete-everywhere-but-math (orig-fun) :around #'org-roam-complete-everywhere
+      (unless (org-inside-LaTeX-fragment-p) (funcall orig-fun)))
   )
 #+end_src
 #+begin_src emacs-lisp
@@ -2293,7 +2312,7 @@ This makes easy to add screenshot(s) to a node, and take care of the naming.
   )
 #+end_src
 
-**** Insert A reference to a node in property drawer
+**** Insert a reference to a node in property drawer
 When Writing the first draft of a paper in Org-Mode (The full paper would be tweaked in LaTeX afterwards), I like to have some personal reference to the data I am working with
 #+begin_src emacs-lisp
 
@@ -2929,6 +2948,7 @@ Such special cases should be remapped to another value, as given in `string-offs
                     "ej" (lambda () (interactive) (yas-expand-snippet "e^{j $1} $0"))
                     "ei2p" (lambda () (interactive) (yas-expand-snippet "e^{2\\imath\\pi $1} $0"))
                     "dp" (lambda () (interactive) (yas-expand-snippet "\\frac{\\partial $1}{\\partial $2} $0"))
+                    "dd" (lambda () (interactive) (yas-expand-snippet "\\frac{d $1}{d $2} $0"))
                     "j2p" "j2\\pi"
                     "CC" "\\mathbb{C}"
                     "CN" "\\mathbb{C}^N"
