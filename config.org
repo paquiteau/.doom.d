@@ -3123,10 +3123,25 @@ Github copilot is too great to be ignored this days.
 (use-package! copilot-chat
   :after (org markdown-mode request))
 #+end_src
-** Code Assistant :testing:
+** Editor-Code Assistant (ECA) :testing:
 
 #+begin_src emacs-lisp :tangle "packages.el"
 (package! eca :recipe (:host github :repo "editor-code-assistant/eca-emacs" :files ("*.el")))
+#+end_src
+
+Setup connection to LLAMA CPP
+#+begin_src json :tangle-mode (identity #o444) :tangle "~/.config/eca/config.json" :mkdirp t
+{
+    "providers": {
+        "llamacpp": {
+        "api": "openai-chat",
+        "fetchModels": true,
+        "url": "http://10.10.10.3:8080/v1",
+        models":{
+        "Qwen3.6": {},
+        }
+    }
+}
 #+end_src
 
 * Python
@@ -3356,33 +3371,6 @@ Adapted and improve from https://gist.github.com/fleimgruber/cd2386d8326fad3e0e2
 #+begin_src emacs-lisp
 (setq lsp-pyright-langserver-command "basedpyright")
 #+end_src
-** LTEX
-#+begin_src emacs-lisp :tangle "packages.el"
-(package! lsp-ltex-plus
- :recipe (:host github :repo "emacs-languagetool/lsp-ltex-plus")
-  )
-#+end_src
-#+begin_src emacs-lisp
-(use-package! lsp-ltex-plus
-  :defer-incrementally lsp
-  :init
-  (setq lsp-ltex-plus-version "18.5.1")
-  (setq lsp-ltex-plus-languagetool-http-server-uri "https://api.languagetoolplus.com")
-  (setq lsp-ltex-plus-languagetool-org-username (auth-source-pass-get "login" "web/languagetool.org"))
-  (setq lsp-ltex-plus-languagetool-org-api-key (auth-source-pass-get "api_key" "web/languagetool.org"))
-  (setq lsp-ltex-plus-server-store-path (expand-file-name "ltex-ls-plus" lsp-server-install-dir ))
-  :config
-  (setq lsp-ltex-plus-enabled t)
-  (setq lsp-ltex-plus-mother-tongue "fr-FR")
-  (setq lsp-ltex-plus-completion-enabled nil)
-  (setq lsp-ltex-plus-diagnostic-severity "hint")
-  )
-(with-eval-after-load 'tex
-  (add-hook! '(tex-mode-local-vars-hook
-                 latex-mode-local-vars-hook
-                 LaTeX-mode-local-vars-hook)
-               :append #'lsp!))
-#+end_src
 ** LSP-LATEX
 #+begin_src emacs-lisp :tangle "packages.el"
 (package! lsp-latex :disable t)
@@ -3421,6 +3409,21 @@ Adapted and improve from https://gist.github.com/fleimgruber/cd2386d8326fad3e0e2
 
 #+end_src
 * Eglot
+** LTEX
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! eglot-ltex-plus
+ :recipe (:host github :repo "emacs-languagetool/eglot-ltex-plus")
+  )
+#+end_src
+#+begin_src emacs-lisp
+(use-package! eglot-ltex-plus
+  :init
+  (setq eglot-ltex-plus-server-path (expand-file-name "~/.config/emacs/.local/etc/lsp/ltex-ls-plus-18.6.1"))
+  :hook (text-mode . (lambda ()
+                       (require 'eglot-ltex-plus)
+                       (eglot-ensure)))
+)
+#+end_src
 * LaTeX OCR
 
 #+begin_src bash :tangle "~/bin/latex_ocr.sh" :tangle-mode (identity #o775)
