@@ -113,10 +113,10 @@ Even better, theme switching following the dbus signal
 
  ;; font configuration
  ;; setting to float ensures consistency in hidpi.
- doom-font (font-spec :family "Iosevka Nerd Font" :size 18)
- doom-variable-pitch-font (font-spec :family "LM Sans10" :size 12)
- doom-big-font (font-spec :family "Iosevka Nerd Font" :size 30)
- doom-serif-font (font-spec :family "Iosevka Nerd Font" :size 18)
+ doom-font (font-spec :family "Iosevka Nerd Font" :size 12.0)
+ doom-variable-pitch-font (font-spec :family "LM Sans10" :size 12.0)
+ doom-big-font (font-spec :family "Iosevka Nerd Font" :size 18.0)
+ doom-serif-font (font-spec :family "Iosevka Nerd Font" :size 12.0)
 
  ;;doom-serif-font (font-spec :familly "Iosevka Term Nerd Font" :size 18)
  ;; A nice font with ligature -> <- __
@@ -3251,8 +3251,7 @@ Github copilot is too great to be ignored this days.
 #+begin_src emacs-lisp
 (require 'acp)
 (require 'agent-shell)
-;; rest of config...
-
+#+end_src
 Setup connection to LLAMA CPP
 #+begin_src json :tangle-mode (identity #o444) :tangle "~/.config/eca/config.json" :mkdirp t
 {
@@ -3303,7 +3302,10 @@ Code cell for vs-code like experience
 #+end_src
 ** Multiplexed LSP setup
 using eglot and rassumfrassum, merge the output from =ty= (typechecker) and =ruff= (linter/formatter)
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! eglot-python-preset)
+#+end_src 
+,#+begin_src emacs-lisp
 (use-package! eglot-python-preset
   :custom
   (eglot-python-preset-lsp-server 'rass)
@@ -3532,7 +3534,10 @@ Adapted and improve from https://gist.github.com/fleimgruber/cd2386d8326fad3e0e2
 
 #+end_src
 * Eglot
-** Python
+*** Python
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! flymake-ruff)
+#+end_src
 #+begin_src emacs-lisp
 (use-package! eglot
   :config
@@ -3559,25 +3564,27 @@ Adapted and improve from https://gist.github.com/fleimgruber/cd2386d8326fad3e0e2
     ;;        )
     ;;      )))
 )
+(use-package! flymake-ruff
+  :config
+    (add-hook 'eglot-managed-mode-hook #'flymake-ruff-load)
+  )
 #+end_src
+
+
+** LTEX 
 #+begin_src emacs-lisp :tangle "packages.el"
 (package! eglot-ltex-plus
  :recipe (:host github :repo "emacs-languagetool/eglot-ltex-plus")
   )
-(package! flymake-ruff)
 #+end_src
 #+begin_src emacs-lisp
 (use-package! eglot-ltex-plus
   :init
   (setq eglot-ltex-plus-server-path (expand-file-name "~/.config/emacs/.local/etc/lsp/ltex-ls-plus-18.6.1"))
-  :hook (text-mode . (lambda ()
+  :hook (org-mode . (lambda ()
                        (require 'eglot-ltex-plus)
                        (eglot-ensure)))
 )
-(use-package! flymake-ruff
-  :config
-    (add-hook 'eglot-managed-mode-hook #'flymake-ruff-load)
-  )
 #+end_src
 * LaTeX OCR
 
