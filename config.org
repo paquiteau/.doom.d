@@ -701,10 +701,6 @@ At some point I would like this to be a dash board of all my projects.
   (interactive)
   (shell-command (concat "git add -f "
                          (shell-quote-argument buffer-file-name))))
-
-
-
-
 #+end_src
 Then we are also setting up code reviews
 *** Conventional Commit
@@ -785,7 +781,7 @@ And add some custom functions provided by =blamer= author:
 (setq auto-revert-buffer-list-filter
       'magit-auto-revert-repository-buffer-p)
 #+end_src
-*** Add section in status buffer
+*** Add Ignored filed section in status buffer
 #+begin_src emacs-lisp
 (with-eval-after-load 'magit
   (pac/add-hook-relative 'magit-status-sections-hook #'magit-insert-ignored-files #'magit-insert-untracked-files 'before)
@@ -793,6 +789,7 @@ And add some custom functions provided by =blamer= author:
 #+end_src
 *** Per-file diffstat in status buffer
 Magit only offers =--stat= in =magit-diff-mode= buffers, so show =+added -deleted= next to each file heading of the staged/unstaged sections through =magit-format-file-function=.
+The file status goes after the name as an icon + italic label, and =modified= is dropped since the diffstat implies it.
 The numstat is computed once per section and refresh (sections are recreated on refresh, hence the weak cache).
 #+begin_src emacs-lisp
 (defvar pac/magit-numstat-cache (make-hash-table :test #'eq :weakness 'key))
@@ -805,19 +802,39 @@ The numstat is computed once per section and refresh (sections are recreated on 
             (apply #'magit-git-items "diff" "-z" "--numstat"
                    (and (eq (oref section type) 'staged) '("--cached"))))))
 
-(defun pac/magit-format-file-with-numstat (kind file face &optional status orig)
-  (let ((str (magit-format-file-nerd-icons kind file face status orig))
-        (parent (and (eq kind 'diff)
-                     (derived-mode-p 'magit-status-mode)
-                     magit-insert-section--current
-                     (oref magit-insert-section--current parent))))
-    (if-let* (((and parent (memq (oref parent type) '(staged unstaged))))
+(defvar pac/magit-file-status-icons
+  '(("new file" "nf-cod-diff_added"    magit-diffstat-added)
+    ("deleted"  "nf-cod-diff_removed"  magit-diffstat-removed)
+    ("removed"  "nf-cod-diff_removed"  magit-diffstat-removed)
+    ("modified" "nf-cod-diff_modified" magit-diffstat-added)
+    ("renamed"  "nf-cod-diff_renamed"  font-lock-constant-face)
+    ("copied"   "nf-cod-copy"          font-lock-constant-face)
+    ("unmerged" "nf-cod-git_merge"     warning)
+    ("changed"  "nf-cod-git_merge"     warning)
+    ("resolved" "nf-cod-git_merge"     success))
+  "Icon and face shown after the file name for each magit file STATUS.")
+
+(defun pac/magit-format-file-status (status)
+  (pcase-let ((`(,icon ,face) (or (cdr (assoc status pac/magit-file-status-icons))
+                                  '(nil shadow))))
+    (concat (when icon (nerd-icons-codicon icon :face face)) " "))))
+
+(defun pac/magit-format-file-numstat (file)
+  (when-let* ((parent (and (derived-mode-p 'magit-status-mode)
+                           magit-insert-section--current
+                           (oref magit-insert-section--current parent)))
+              ((memq (oref parent type) '(staged unstaged)))
               (stat (cdr (assoc file (pac/magit-section-numstat parent))))
               ((not (member (car stat) '(nil "-")))))
-        (concat str
-                " " (propertize (concat "+" (car stat)) 'font-lock-face 'magit-diffstat-added)
-                " " (propertize (concat "-" (cadr stat)) 'font-lock-face 'magit-diffstat-removed))
-      str)))
+    (concat " " (propertize (concat "+" (car stat)) 'font-lock-face 'magit-diffstat-added)
+            " " (propertize (concat "-" (cadr stat)) 'font-lock-face 'magit-diffstat-removed))))
+
+(defun pac/magit-format-file-with-numstat (kind file face &optional status orig)
+  "Like `magit-format-file-nerd-icons', with the status after the file name.
+In the status buffer, also append the diffstat of diff file headings."
+  (concat (pac/magit-format-file-status status)
+          (magit-format-file-nerd-icons kind file face nil orig)
+          (and (eq kind 'diff) (pac/magit-format-file-numstat file))))
 
 (setq magit-format-file-function #'pac/magit-format-file-with-numstat)
 #+end_src
@@ -2888,7 +2905,8 @@ https://systemcrafters.net/build-a-second-brain-in-emacs/5-org-roam-hacks/#autom
 (TeX-add-style-hook
     "cleveref"
     (lambda ()
-      (add-to-list 'TeX-complete-list '("\\\\[Cc]ref{\\([^{}\n\\%,]*\\)" 1 LaTeX-completion-label-list "}"))
+      (add-to-list 'TeX-complete-list '("\\\\[Cc]ref{\\([^{}\n
+\\%,]*\\)" 1 LaTeX-completion-label-list "}"))
       ;; (reftex-ref-style-activate "Cleveref")
       ;; (TeX-add-symbols
       ;;  '("cref" TeX-arg-ref)
