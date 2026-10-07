@@ -1,4 +1,4 @@
-title: Doom Emacs Literate configuration
+#+title: Doom Emacs Literate configuration
 #+author: Pierre-Antoine Comby
 
 #+property: header-args:emacs-lisp :tangle yes :comments link
@@ -19,19 +19,6 @@ title: Doom Emacs Literate configuration
 
 #+begin_src shell :exports none :comments no :tangle-mode (identity #o755)
 #!/bin/bash
-#+end_src
-* HOTFIX
-** LaTeX-Mode broken
-#+begin_src emacs-lisp :tangle "packages.el"
-(unpin! jsonrpc)
-#+end_src
-#+begin_src emacs-lisp
-(setq major-mode-remap-alist major-mode-remap-defaults)
-#+end_src
-** org-element cache warnings
-#+begin_src emacs-lisp
-;; (setq warning-suppress-types (append warning-suppress-types '((org-element-cache))))
-;; (setq warning-minimum-level :emergency)
 #+end_src
 * Simple Configuration
 ** Headers for tangle
@@ -101,9 +88,7 @@ Even better, theme switching following the dbus signal
 
 ** General configuration
 #+begin_src emacs-lisp :noweb yes
-(pixel-scroll-precision-mode -1)
 (setq
- +workspaces-switch-project-function #'magit-status
  auth-source-cache-expiry nil
  auto-save-default t
  display-line-numbers-type nil
@@ -143,11 +128,12 @@ Even better, theme switching following the dbus signal
  user-full-name "Pierre-Antoine Comby"
  user-mail-address "comby@crans.org"
  vterm-kill-buffer-on-exit t
+ delete-by-moving-to-trash nil
+ magit-delete-by-moving-to-trash nil
  )
 
 
 (display-time-mode)
-;;(pixel-scroll-precision-mode)
 
 (setq +lookup-provider-url-alist
       '(("Doom Emacs issues" "https://github.com/hlissner/doom-emacs/issues?q=is%%3Aissue+%s")
@@ -227,6 +213,29 @@ Does nothing if SYM is not found or is the first element."
     (when (and (cdr cur) (eq (cadr cur) sym))
       (setcdr cur (cons new-elt (cdr cur)))))
   lst)
+
+
+(defun pac/add-hook-relative (hook function target-function &optional position)
+  "Add FUNCTION to HOOK relative to TARGET-FUNCTION.
+POSITION can be 'before (default) or 'after."
+  (let ((hook-val (if (boundp hook) (symbol-value hook) nil)))
+    ;; If the hook doesn't exist or target isn't found, fall back to standard add-hook
+    (if (not (memq target-function hook-val))
+        (add-hook hook function)
+      ;; Remove duplicate if function is already in the hook
+      (setq hook-val (remq function hook-val))
+      ;; Insert relative to target-function
+      (let ((rest (memq target-function hook-val)))
+        (if (eq position 'after)
+            (setcdr rest (cons function (cdr rest)))
+          ;; Insert before target-function
+          (let ((idx (- (length hook-val) (length rest))))
+            (if (= idx 0)
+                (setq hook-val (cons function hook-val))
+              (setcdr (nthcdr (1- idx) hook-val)
+                      (cons function rest))))))
+      (set hook hook-val))))
+
 #+end_src
 
 #+name: grab
@@ -461,6 +470,13 @@ Using optionals attributes FACE, HELP-ECHO and VOFFSET."
 
 (add-hook 'compilation-finish-functions #'bury-compile-buffer-if-successful)
 #+end_src
+** Project management
+Open The magit status page when entering a project (if it is a git repo, otherwise, use dired.)
+#+begin_src emacs-lisp
+(with-eval-after-load 'magit
+    (setq +workspaces-switch-project-function #'(lambda (d)(if (magit-git-repo-p d) (magit-status d) (find-file d))))
+    )
+#+end_src
 * Package configuration
 ** Abbrev
 #+begin_src emacs-lisp
@@ -487,6 +503,19 @@ Using optionals attributes FACE, HELP-ECHO and VOFFSET."
 (add-hook! csv-mode #'rainbow-csv-mode)
 #+end_src
 
+** Dired
+#+begin_src emacs-lisp
+;; don't ignore .bin files
+(setq dired-omit-extensions '(".fdb_latexmk" ".o" "~" ".elc"
+                              ".lof" ".glo" ".idx" ".lot" ".svn/" ".hg/" ".git/" ".bzr/" "CVS/" "_darcs/"
+                              "_MTN/" ".fmt" ".tfm" ".class" ".fas" ".lib" ".mem" ".x86f" ".sparcf" ".dfsl"
+                              ".pfsl" ".d64fsl" ".p64fsl" ".lx64fsl" ".lx32fsl" ".dx64fsl" ".dx32fsl"
+                              ".fx64fsl" ".fx32fsl" ".sx64fsl" ".sx32fsl" ".wx64fsl" ".wx32fsl" ".fasl"
+                              ".ufsl" ".fsl" ".dxl" ".lo" ".la" ".gmo" ".mo" ".toc" ".aux" ".cp" ".fn" ".ky"
+                              ".pg" ".tp" ".vr" ".cps" ".fns" ".kys" ".pgs" ".tps" ".vrs" ".pyc" ".pyo"
+                              ".idx" ".lof" ".lot" ".glo" ".blg" ".bbl" ".cp" ".cps" ".fn" ".fns" ".ky"
+                              ".kys" ".pg" ".pgs" ".tp" ".tps" ".vr" ".vrs"))
+#+end_src
 ** Spell with jinx
 Jinx is faster and better than spell-fu or flycheck
 #+begin_src emacs-lisp :tangle "packages.el"
@@ -606,19 +635,6 @@ I write stuff mostly in English, but sometimes I have to add French in the mix.
   )
 
 #+end_src
-** Grammarly :noexport:
-#+begin_src emacs-lisp :tangle "packages.el"
-(package! flycheck-grammarly)
-#+end_src
-#+begin_src emacs-lisp
-(use-package! flycheck-grammarly
-  :defer-incrementally flycheck)
-(with-eval-after-load 'flycheck-grammary
- (setq flycheck-grammarly-check-time 1.0)
- (flycheck-add-mode 'grammarly 'LaTeX-mode)
- (flycheck-grammarly-setup)
-(grammarly-load-from-authinfo "pierre-antoine.comby@universite-paris-saclay.fr"))
-#+end_src
 ** Smart Parentheses
 #+begin_src emacs-lisp :tangle "packages.el"
 (package! rainbow-delimiters)
@@ -674,7 +690,6 @@ At some point I would like this to be a dash board of all my projects.
   (setq magit-repository-directories '(("~/gits/nsp" . 1) ("~/gits/rep/" . 1)))
   ;; Better visualisation of current branch.
   (set-face-attribute 'magit-branch-current nil :weight 'ultra-bold :box t)
-
   ;; Magit credential helpers.
   ;; (add-hook 'magit-process-find-password-functions
   ;;    'magit-process-password-auth-source)
@@ -770,31 +785,69 @@ And add some custom functions provided by =blamer= author:
 (setq auto-revert-buffer-list-filter
       'magit-auto-revert-repository-buffer-p)
 #+end_src
-*** Ignored files in status buffer
-Getting a potential view of ignored files can be helpfull as well
-per [[https://emacs.stackexchange.com/a/28506]]
+*** Add section in status buffer
 #+begin_src emacs-lisp
-
-(defun magit-ignored-files ()
-  (magit-git-items "ls-files" "--others" "--ignored" "--exclude-standard" "-z" "--directory"))
-
-(defun magit-insert-ignored-files ()
-  (-when-let (files (magit-ignored-files))
-    (magit-insert-section (ignored)
-      (magit-insert-heading "Ignored files:")
-      (magit-insert-un/tracked-files-1 files nil)
-      (insert ?\n))))
-
 (with-eval-after-load 'magit
-  (pac/insert-before magit-status-sections-hook #'magit-insert-ignored-files #'magit-insert-untracked-files)
-  )
+  (pac/add-hook-relative 'magit-status-sections-hook #'magit-insert-ignored-files #'magit-insert-untracked-files 'before)
+  (add-hook 'magit-status-sections-hook #'magit-insert-worktrees t))
+#+end_src
+*** Per-file diffstat in status buffer
+Magit only offers =--stat= in =magit-diff-mode= buffers, so show =+added -deleted= next to each file heading of the staged/unstaged sections through =magit-format-file-function=.
+The numstat is computed once per section and refresh (sections are recreated on refresh, hence the weak cache).
+#+begin_src emacs-lisp
+(defvar pac/magit-numstat-cache (make-hash-table :test #'eq :weakness 'key))
+
+(defun pac/magit-section-numstat (section)
+  "Alist of (FILE ADDED DELETED) for the staged or unstaged SECTION."
+  (with-memoization (gethash section pac/magit-numstat-cache)
+    (mapcar (lambda (item) (pcase-let ((`(,add ,del ,file) (split-string item "\t")))
+                             (list file add del)))
+            (apply #'magit-git-items "diff" "-z" "--numstat"
+                   (and (eq (oref section type) 'staged) '("--cached"))))))
+
+(defun pac/magit-format-file-with-numstat (kind file face &optional status orig)
+  (let ((str (magit-format-file-nerd-icons kind file face status orig))
+        (parent (and (eq kind 'diff)
+                     (derived-mode-p 'magit-status-mode)
+                     magit-insert-section--current
+                     (oref magit-insert-section--current parent))))
+    (if-let* (((and parent (memq (oref parent type) '(staged unstaged))))
+              (stat (cdr (assoc file (pac/magit-section-numstat parent))))
+              ((not (member (car stat) '(nil "-")))))
+        (concat str
+                " " (propertize (concat "+" (car stat)) 'font-lock-face 'magit-diffstat-added)
+                " " (propertize (concat "-" (cadr stat)) 'font-lock-face 'magit-diffstat-removed))
+      str)))
+
+(setq magit-format-file-function #'pac/magit-format-file-with-numstat)
 #+end_src
 
 ** Markdown
 #+begin_src emacs-lisp
-(with-eval-after-load 'markdown
-  (setq markdown-fontify-code-blocks-natively t)
-)
+(when (>= emacs-major-version 31)
+  ;; use markdown-ts-mode
+  (add-to-list 'auto-mode-alist '("\\.md\\'" . markdown-ts-mode))
+  (with-eval-after-load 'markdown-ts-mode
+    (require 'markdown-ts-mode-x)
+    (setq markdown-fontify-code-blocks-natively t
+          markdown-enable-math t
+          markdown-enable-highlighting-syntax t
+          markdown-enable-wiki-links t
+          )
+    )
+  (with-eval-after-load 'eglot)
+  (setopt eglot-documentation-renderer #'markdown-ts-view-mode)
+  )
+
+(when (<= emacs-major-version 30)
+  ;; use markdown-mode
+      (with-eval-after-load 'markdown
+        (setq markdown-fontify-code-blocks-natively t
+              markdown-enable-math t
+              markdown-enable-highlighting-syntax t
+              markdown-enable-wiki-links t
+              )
+  ))
 #+end_src
 
 ** Marginalia
@@ -952,8 +1005,21 @@ https://protesilaos.com/codelog/2023-11-15-spacious-padding-extra-ui-dev/
 #+end_src
 
 ** TRAMP
+*** Faster tramp with tramp-rpc
+https://github.com/ArthurHeymans/emacs-tramp-rpc
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! msgpack)
+(package! tramp-rpc :recipe (:host github :repo "ArthurHeymans/emacs-tramp-rpc" :files ("lisp/*.el") :build (:not autoloads)))
+#+end_src
 #+begin_src emacs-lisp
-(setq tramp-default-method "ssh")
+(use-package! msgpack)
+(use-package! tramp-rpc :after tramp
+              :config
+   (setq tramp-rpc-deploy-git-build-policy 'release))
+#+end_src
+*** General Configuration
+#+begin_src emacs-lisp
+(setq tramp-default-method "ssh") ;; for copies only
 (setq tramp-default-remote-shell "/bin/bash")
 (setq remote-file-name-inhibit-cache nil)
 (setq remote-file-name-inhibit-locks t)
@@ -961,13 +1027,18 @@ https://protesilaos.com/codelog/2023-11-15-spacious-padding-extra-ui-dev/
 (with-eval-after-load 'tramp
         (add-to-list 'tramp-remote-path 'tramp-own-remote-path)
         (add-to-list 'tramp-remote-path "~/.local/bin")
-        (add-to-list 'tramp-remote-path "~/.pyenv/bin")
 )
 (setq!
  tramp-ssh-controlmaster-options
  (concat
    "-o ControlPath=/tmp/ssh-ControlPath-%%r@%%h:%%p "
    "-o ControlMaster=auto -o ControlPersist=yes"))
+
+(with-eval-after-load 'magit
+  (add-to-list 'tramp-remote-process-environment "GPG_TTY=/dev/tty")
+  )
+
+(setq apheleia-remote-algorithm 'local)
 
 #+end_src
 
@@ -1070,6 +1141,7 @@ Is this the new LaTeX ? Let's find out
                 (setq node (treesit-node-parent node)))
               nil))))))
 #+end_src
+
 #+begin_src emacs-lisp
 
 (use-package! typst-preview
@@ -1137,7 +1209,8 @@ Is this the new LaTeX ? Let's find out
 
   )
 #+end_src
-
+*** TODO eglot-tinymist enhance
+https://codeberg.org/Rathur421/eglot-tinymist
 ** Which-key
 I also think that having =evil-= appear in so many popups is a bit too verbose,
 let's change that, and do a few other similar tweaks while we're at it.
@@ -1816,8 +1889,6 @@ context.  When called with an argument, unconditionally call
 ** Export to LaTeX
 Stolen from tecosaur
 *** LaTeX Export
-From tecosaur's config
-
 #+begin_src emacs-lisp
 ;; For checkboxes
 (defun +org-export-latex-fancy-item-checkboxes (text backend info)
@@ -1956,13 +2027,10 @@ Then for captions
 #+begin_src LaTeX
 \usepackage{subcaption}
 \usepackage[hypcap=true]{caption}
-\makeatletter
-\@ifundefined{setkomafont}{}{
 \setkomafont{caption}{\sffamily\small}
 \setkomafont{captionlabel}{\upshape\bfseries}}
 \captionsetup{justification=raggedright,singlelinecheck=true}
-\makeatother
-\usepackage{capt-of} % required by Org
+\usepackage{capt-of} % required by org
 #+end_src
 Checkboxes
 #+name: org-latex-checkbox-preamble
@@ -2075,7 +2143,6 @@ We defines some global variable to hold the content of preamble snippets.
 
 
 #+begin_src emacs-lisp
-(with-eval-after-load 'ox
 (org-export-update-features 'latex
   (condensed-lists
    :condition (and org-latex-condense-lists "^[ \t]*[-+]\\|^[ \t]*[1Aa][.)] ")
@@ -2172,14 +2239,14 @@ We defines some global variable to hold the content of preamble snippets.
    :order 98.5)
 
 
-  ))
-#+end_src
-xcolor is always usefull.
-#+begin_src emacs-lisp
-(with-eval-after-load 'ox
-  (setq org-latex-packages-alist '(("" "xcolor" t))
-        org-export-headline-levels 5 ))
-
+  )
+(setq org-latex-packages-alist '(("" "xcolor" t)))
+(setq org-latex-default-packages-alist
+      '(("" "amsmath" t ("lualatex" "xetex")) ("" "fontspec" t ("lualatex" "xetex"))
+        ("AUTO" "inputenc" t ("pdflatex")) ("T1" "fontenc" t ("pdflatex"))
+        ("" "amsmath" t ("pdflatex")) ("" "amssymb" t ("pdflatex"))
+        ("" "hyperref" nil))
+      )
 #+end_src
 *** Fast Latex Preview
 #+name: latex-default-snippet-preamble
@@ -2189,16 +2256,6 @@ xcolor is always usefull.
 [PACKAGES]
 \usepackage{xcolor}
 #+end_src
-
-To this, we make two additions:
-+ Selection of a maths font that fits better with displayed text.
-+ My collection [[*Maths notation conveniences][mathematical notation conveniences]].
-
-#+begin_src emacs-lisp :noweb no-export :noweb-prefix no
-#+end_src
-
-Since we can, instead of making the background colour match the =default= face,
-let's make it transparent.
 
 #+begin_src emacs-lisp :noweb no-export :noweb-prefix no
 (setq org-latex-preview-preamble
@@ -2517,6 +2574,7 @@ Lets add convenients key bindings for the functions aboves
        :desc "Insert node" "i" #'pac/org-roam-node-insert-space
        :desc "Insert screenshot" "c" #'pac/screenshot-to-roam
        :desc "Insert internal ref" "p" #'pac/insert-roam-node-property
+       :desc "Find node" "f" #'org-roam-node-find
        ))
 ;; =SPC n d= is for deft, and i don't used it. so lets remap the dailies here.
 
@@ -2564,32 +2622,6 @@ A nice graph of knowledge.
           org-roam-ui-update-on-save t
           org-roam-ui-open-on-start t))
 #+end_src
-** Ox-HUGO
-#+begin_src emacs-lisp
-(with-eval-after-load 'ox-hugo
-  (plist-put org-hugo-citations-plist :bibliography-section-heading "")
-
-(defun org-hugo--org-cite-export-bibliography (orig-fun &rest args)
-  "Insert a heading before the exported bibliography.
-
-ORIG-FUN is the original function `org-cite-export-bibliography'
-that this function is designed to advice using `:around'.  ARGS
-are the arguments of the ORIG-FUN."
-  (let ((bib (apply orig-fun args)))
-    (when (org-string-nw-p bib)
-      ;; Auto-inject Bibliography heading.
-      (let ((info (nth 2 args)) ;(org-cite-export-bibliography KEYWORD _ INFO)
-            (bib-heading (or (plist-get org-hugo-citations-plist :bibliography-section-heading) "References")))
-        (when bib-heading
-          (let* ((bib-heading (org-blackfriday--translate nil info bib-heading))
-                 (loffset (string-to-number
-                           (or (org-entry-get nil "EXPORT_HUGO_LEVEL_OFFSET" :inherit)
-                               (plist-get info :hugo-level-offset))))
-                 (level-mark (make-string (+ loffset 1) ?#)))
-            (format "%s %s\n\n%s" level-mark bib-heading bib)))))))
-
-)
-#+end_src
 *** Custom Link type
 #+begin_src emacs-lisp
 (org-link-set-parameters "pep"
@@ -2602,26 +2634,6 @@ are the arguments of the ORIG-FUN."
                                    (browse-url (format "https://peps.python.org/pep-%s/" link)))
                          :help-echo "Open PEP"
                          :face 'org-link)
-
-(org-link-set-parameters "hfile"
-                         :complete #'org-link-complete-file
-                         :follow #'org-link-open-in-emacs
-                         :face 'org-link
-                         :help-echo "Open file"
-                         :export #'+org-hugo-export-keywords)
-(defun +org-hugo-export-keywords (path desc backend info)
-  "Export a hfile link."
-  (cond ((org-export-derived-backend-p backend 'md)
-         ;; call org-hugo-link for doing the heavy lifting for us
-  (message "[ox-hugo attachment DBG] The Hugo section is: %s" (plist-get info :hugo-section))
-  (message "[ox-hugo attachment DBG] The Hugo base dir is: %s" (plist-get info :hugo-base-dir))
-  (let* ((raw-link (org-element-property :raw-link link))
-         (raw-path (org-element-property :path link))
-         (type (org-element-property :type link))
-         (path (org-hugo--attachment-rewrite-maybe path info)))
-               ;; use our shortcode
-               (format "{{< fileDL icon=\"download\" file=\"%s\" >}} %s {{< /fileDL >}}" path (or desc "file"))))
-         (t (format "[[file:%s][%s]]" path (or desc path)))))
   #+end_src
 
 ** My Org-GTD
@@ -2869,6 +2881,7 @@ https://systemcrafters.net/build-a-second-brain-in-emacs/5-org-roam-hacks/#autom
 (add-to-list 'auto-mode-alist '("\\.tikz" . LaTeX-mode))
 (add-to-list 'auto-mode-alist '("\\.pgf" . LaTeX-mode))
 (add-to-list 'TeX-view-program-selection '(output-pdf "PDF Tools"))
+(setq TeX-command-extra-options "-shell-escape")
 (add-to-list 'TeX-view-program-list '("PDF Tools" TeX-pdf-tools-sync-view))
 ;; Update PDF buffers after successful LaTeX runs.
 (add-hook 'TeX-after-compilation-finished-functions #'TeX-revert-document-buffer)
@@ -3238,11 +3251,7 @@ Github copilot is too great to be ignored this days.
 (use-package! copilot-chat
   :after (org markdown-mode request))
 #+end_src
-** Editor-Code Assistant (ECA) :testing:
-
-#+begin_src emacs-lisp :tangle "packages.el"
-(package! eca :recipe (:host github :repo "editor-code-assistant/eca-emacs" :files ("*.el")))
-#+end_src
+** Agent Shell 
 #+begin_src emacs-lisp  :tangle "packages.el"
 (package! shell-maker)
 (package! acp)
@@ -3250,67 +3259,76 @@ Github copilot is too great to be ignored this days.
 #+end_src
 #+begin_src emacs-lisp
 (require 'acp)
-(require 'agent-shell)
+
+(use-package! agent-shell
+  :config
+  ;; Evil state-specific RET behavior: insert mode = newline, normal mode = send
+  (evil-define-key 'insert agent-shell-mode-map (kbd "RET") #'newline)
+  (evil-define-key 'insert agent-shell-mode-map (kbd "S-RET") #'comint-send-input)
+  (evil-define-key 'normal agent-shell-mode-map (kbd "RET") #'comint-send-input)
+
+  ;; Configure *agent-shell-diff* buffers to start in Emacs state
+  (add-hook 'diff-mode-hook
+	    (lambda ()
+	      (when (string-match-p "\\*agent-shell-diff\\*" (buffer-name))
+		(evil-emacs-state)))))
 #+end_src
-Setup connection to LLAMA CPP
-#+begin_src json :tangle-mode (identity #o444) :tangle "~/.config/eca/config.json" :mkdirp t
-{
-    "providers": {
-        "llamacpp": {
-        "api": "openai-chat",
-        "fetchModels": true,
-        "url": "http://10.10.10.3:8080/v1",
-        models":{
-        "Qwen3.6": {},
-        }
-    }
-}
+*** TRAMP support
+#+begin_src emacs-lisp :tangle "packages.el"
+ (package! agent-shell-tramp
+   :recipe (:host github :repo "junyi-hou/agent-shell-tramp" :files ("*.el"))
+ )
+#+end_src
+#+begin_src emacs-lisp
+(use-package! agent-shell-tramp)
+(with-eval-after-load 'agent-shell
+  (agent-shell-tramp-mode 1))
+#+end_src
+** claude code IDE
+#+begin_src emacs-lisp :tangle "packages.el"
+(package! claude-code-ide
+  :recipe (:host github :repo "manzaltu/claude-code-ide.el"))
 #+end_src
 
+#+begin_src emacs-lisp
+(use-package! claude-code-ide
+  :bind ("C-c C-'" . claude-code-ide-menu) ; Set your favorite keybinding
+  :config
+  (claude-code-ide-emacs-tools-setup)) ; Optionally enable Emacs MCP tools
+#+end_src
 * Python
 
 My main programming language, so let's make it even better.
 #+begin_src emacs-lisp :tangle "packages.el"
-(package! xml+)
-(package!  nose :disable t)
+(package! xml+) ; for coverage
+(package! nose :disable t)
 (package! code-cells)
 (package! pet)
+(package! jupyter)
 #+end_src
 
 
-Ideally, use ruff format everywhere, unless the project has black configured (ie check the toml file).
-#+begin_src emacs-lisp
-(add-hook 'python-mode-hook #'(setq-local fill-column 88)) ;; TODO get this from the toml file if it exists.
-#+end_src
 
 Managing virtualenv is somewhat a pain..
 #+begin_src emacs-lisp
-(use-package! pet
-  :config
-  (add-hook 'python-base-mode-hook
-            (lambda ()
-              (setq-local
-               python-shell-virtualenv-root (pet-virtualenv-root)
-               python-shell-interpreter (pet-executable-find "python")
-               python-pytest-executable (pet-executable-find "pytest"))
-              (pet-dape-setup))))
+;; (use-package! pet
+;;   :config
+;;   (add-hook 'python-base-mode-hook
+;;             (lambda ()
+;;               (setq-local
+;;                python-shell-virtualenv-root (pet-virtualenv-root)
+;;                python-shell-interpreter (pet-executable-find "python")
+;;                python-pytest-executable (pet-executable-find "pytest"))
+;;               (pet-dape-setup))))
 #+end_src
 Code cell for vs-code like experience 
 #+begin_src emacs-lisp
 (use-package! code-cells)
 (add-hook 'python-mode-hook 'code-cells-mode-maybe)
 #+end_src
-** Multiplexed LSP setup
-using eglot and rassumfrassum, merge the output from =ty= (typechecker) and =ruff= (linter/formatter)
-#+begin_src emacs-lisp :tangle "packages.el"
-(package! eglot-python-preset)
-#+end_src 
-,#+begin_src emacs-lisp
-(use-package! eglot-python-preset
-  :custom
-  (eglot-python-preset-lsp-server 'rass)
-  (eglot-python-preset-rass-tools '(ty ruff))
-  )
+
+#+begin_src emacs-lisp
+(use-package! jupyter)
 #+end_src
 ** Pytest
 
@@ -3382,7 +3400,9 @@ Add option to define local pytest options.
                                          (format "%s -c \"import debugpy.adapter\"" python)))
                                      (user-error "%s module debugpy is not installed"
                                                  python))))
-                        command (pet-executable-find "python")
+                        command (lambda () 
+                           (let ((cwd (dape-cwd)))
+                             (expand-file-name ".venv/bin/python" cwd)))
                         command-args ("-m" "debugpy.adapter" "--host" "0.0.0.0" "--port" :autoport)
                         port :autoport
                         :request "launch"
@@ -3390,31 +3410,169 @@ Add option to define local pytest options.
                         :mode "test"
                         :cwd dape-cwd
                         :module "pytest"
-                        :args [dape-buffer-default]
+                        :args (lambda () (vector "-k" (python-pytest--node-id-def-at-point-treesit)))
                         :justMyCode nil
                         :console "integratedTerminal"
                         :showReturnValue t
                         :stopOnEntry nil))
+  
+  (add-to-list 'dape-configs
+    `(debugpy modes (python-mode python-ts-mode) ensure
+            (lambda (config) (dape-ensure-command config)
+                (let ((python (dape-config-get config 'command)))
+                (unless
+                    (zerop
+                    (process-file-shell-command
+                        (format "%s -c \"import debugpy.adapter\"" python)))
+                    (user-error "%s module debugpy is not installed" python))))
+            command ,(expand-file-name ".venv/bin/python" (dape-cwd))
+            command-args ("-m" "debugpy.adapter" "--host" "0.0.0.0" "--port" :autoport) port
+            :autoport
+            :request "launch"
+            :type "python"
+            :cwd dape-cwd
+            :program dape-buffer-default
+            :args []
+            :justMyCode nil
+            :console "integratedTerminal"
+            :showReturnValue t
+            :stopOnEntry nil))
   )
+
 #+end_src
 
 #+begin_src emacs-lisp
 ;; Add a pytest-debug-this test
-(defun pytest-dape-this-test ()
-  (interactive)
-  (dape `(command ,(pet-executable-find "python")
-          command-args ("-m" "debugpy.adapter" "--host" "0.0.0.0" "--port" :autoport)
-          port :autoport
-          :request "launch"
-          :type "python"
-          :mode "test"
-          :cwd ,(dape-cwd)
-          :module "pytest"
-          :args ["-k" ,(python-pytest--node-id-def-at-point-treesit)]
-          :justMyCode nil
-          :console "integratedTerminal"
-          :showReturnValue t
-          :stopOnEntry nil)))
+(use-package! python-pytest)
+;; (defun pytest-dape-this-test ()
+;;   (interactive)
+;;   (let* ((remote-cwd (dape-cwd))
+;;          (tramp-host (file-remote-p default-directory 'host))
+;;          (tunnel-proc-name "dape-ssh-tunnel")
+;;          (venv-python (expand-file-name ".venv/bin/python" (dape-cwd))))
+
+;;     ;; Only handle the SSH tunnel if we are on a remote TRAMP connection
+;;     (when tramp-host
+;;       ;; 1. Kill any existing stale tunnel
+;;       (when (get-process tunnel-proc-name)
+;;         (delete-process tunnel-proc-name))
+
+;;       ;; 2. Spin up the SSH tunnel to the active TRAMP host
+;;       (message "Remote context detected. Opening background SSH tunnel to %s..." tramp-host)
+;;       (start-process tunnel-proc-name nil
+;;                      "ssh" "-N" "-L" "5678:127.0.0.1:5678" tramp-host)
+
+;;       ;; 3. Register a hook to tear down the tunnel when debugging session stops
+;;       (add-hook 'dape-on-stopped-hook
+;;                 (lambda ()
+;;                   (when (get-process tunnel-proc-name)
+;;                     (delete-process tunnel-proc-name)
+;;                     (message "Closed dape SSH tunnel.")))
+;;                 nil t))
+
+    
+;;     (dape `(command ,venv-python
+;;             ;; Force debugpy to bind to remote 127.0.0.1 on a stable port
+;;             command-args ("-m" "debugpy.adapter" "--host" "127.0.0.1" "--port" "5678")
+;;             port 5678
+;;             ;; Keeping host as "localhost" signals Dape to use its built-in TRAMP SSH tunnel
+;;             host "localhost"
+;;             :request "launch"
+;;             :type "python"
+;;             :mode "test"
+;;             :cwd ,remote-cwd
+;;             :module "pytest"
+;;             :args ["-k" ,(python-pytest--node-id-def-at-point-treesit)]
+;;             :justMyCode nil
+;;             :console "integratedTerminal"
+;;             :showReturnValue t
+;;             :stopOnEntry nil))))
+
+
+(with-eval-after-load 'dape
+  (add-to-list 'dape-configs
+               `(pytest-remote
+                 modes (python-mode python-ts-mode)
+                 ;; 1. We dynamically resolve variables when the config is selected
+                 fn (lambda (config)
+                      (let* ((tramp-host (file-remote-p default-directory 'host))
+                             (tunnel-proc-name "dape-ssh-tunnel"))
+                        ;; Conditionally manage the SSH tunnel lifecycle
+                        (when tramp-host
+                          (when (get-process tunnel-proc-name)
+                            (delete-process tunnel-proc-name))
+                          (message "Opening background SSH tunnel to %s..." tramp-host)
+                          (start-process tunnel-proc-name nil
+                                         "ssh" "-N" "-L" "5678:127.0.0.1:5678" tramp-host)
+                          (add-hook 'dape-on-stopped-hook
+                                    (lambda ()
+                                      (when (get-process tunnel-proc-name)
+                                        (delete-process tunnel-proc-name)
+                                        (message "Closed dape SSH tunnel.")))
+                                    nil t))
+                        ;; Return the config unaltered or slightly modified if desired
+                        config))
+                 command (lambda () 
+                           (let ((cwd (dape-cwd)))
+                             (expand-file-name ".venv/bin/python" cwd)))
+                 command-args ("-m" "debugpy.adapter" "--host" "127.0.0.1" "--port" "5678")
+                 port 5678
+                 host "localhost"
+                 :request "launch"
+                 :type "python"
+                 :mode "test"
+                 :cwd (dape-cwd)
+                 :module "pytest"
+                 ;; Dynamically grabbed but exposed to your prompt editing!
+                 ;; :args ,(vector "-k" (python-pytest--node-id-def-at-point-treesit))
+                 :args (lambda () (vector "-k" (python-pytest--node-id-def-at-point-treesit)))
+                 :justMyCode nil
+                 :console "integratedTerminal"
+                 :showReturnValue t
+                 :stopOnEntry nil))
+
+  
+  (add-to-list 'dape-configs
+               `(debugpy-remote
+                 modes (python-mode python-ts-mode)
+                 ;; 1. We dynamically resolve variables when the config is selected
+                 fn (lambda (config)
+                      (let* ((tramp-host (file-remote-p default-directory 'host))
+                             (tunnel-proc-name "dape-ssh-tunnel"))
+                        ;; Conditionally manage the SSH tunnel lifecycle
+                        (when tramp-host
+                          (when (get-process tunnel-proc-name)
+                            (delete-process tunnel-proc-name))
+                          (message "Opening background SSH tunnel to %s..." tramp-host)
+                          (start-process tunnel-proc-name nil
+                                         "ssh" "-N" "-L" "5678:127.0.0.1:5678" tramp-host)
+                          (add-hook 'dape-on-stopped-hook
+                                    (lambda ()
+                                      (when (get-process tunnel-proc-name)
+                                        (delete-process tunnel-proc-name)
+                                        (message "Closed dape SSH tunnel.")))
+                                    nil t))
+                        ;; Return the config unaltered or slightly modified if desired
+                        config))
+                 command (lambda () 
+                           (let ((cwd (dape-cwd)))
+                             (expand-file-name ".venv/bin/python" cwd)))
+                 command-args ("-m" "debugpy.adapter" "--host" "127.0.0.1" "--port" "5678")
+                 port 5678
+                 host "localhost"
+                 :request "launch"
+                 :type "python"
+                 :cwd (dape-cwd)
+                 ;; Dynamically grabbed but exposed to your prompt editing!
+                 ;; :args ,(vector "-k" (python-pytest--node-id-def-at-point-treesit))
+                 :justMyCode nil
+                 :console "integratedTerminal"
+                 :showReturnValue t
+                 :stopOnEntry nil))
+
+  
+  )
+
 #+end_src
 ** Coverage
 #+begin_src emacs-lisp
@@ -3477,100 +3635,25 @@ Adapted and improve from https://gist.github.com/fleimgruber/cd2386d8326fad3e0e2
       :localleader
       :desc "Edit docstring in RST" "r" #'edit-indirect-rst)
 #+end_src
-* COMMENT LSP-Mode :noexport:
-#+begin_src emacs-lisp :tangle "packages.el"
-;; (unpin! lsp-mode)
-;; (unpin! lsp-ui)
-;; (unpin! dap-mode)
-#+end_src
-
+* Eglot
+** Performance
+https://www.jamescherti.com/emacs-eglot-performance/
+Quite agressive ? 
 #+begin_src emacs-lisp
-;;(with-eval-after-load 'lsp-mode (setq lsp-diagnostic-provider :flymake))
-#+end_src
-** Copilot
-#+begin_src emacs-lisp
-(setq lsp-copilot-enabled t)
-
+(with-eval-after-load 'jsonrpc
+  (advice-add 'jsonrpc--log-event :override #'ignore)
+  )
 #+end_src
 ** Python
-#+begin_src emacs-lisp
-(setq lsp-pyright-langserver-command "basedpyright")
-#+end_src
-** LSP-LATEX
-#+begin_src emacs-lisp :tangle "packages.el"
-(package! lsp-latex :disable t)
-#+end_src
-#+begin_src emacs-lisp
-(use-package! lsp-latex
-  :defer-incrementally lsp
-  :config
-  (setq! lsp-latex-experimental-citation-commands ["cite" "citep" "citet" "parencite" "textcite" "autocite"]))
-
-;; ;; For bibtex
-;; (with-eval-after-load 'bibtex
-;;  (add-hook 'bibtex-mode-hook 'lsp))
-#+end_src
-#+begin_src emacs-lisp
-;; (require 'auth-source)
-;; (when-let* ((lt-userinfo (car (auth-source-search :host "api.languagetoolplus.com")))
-;;         (lt-user (plist-get lt-userinfo :user))
-;;         (lt-api-key (funcall (plist-get lt-userinfo :secret))))
-;; (load! "secrets.el")
-;; (setq! lsp-ltex-languagetool-org-api-key lt-api-key)
-;; (setq! lsp-ltex-languagetool-org-username lt-user)
-;; (setq! lsp-ltex-languagetool-http-server-uri "https://api.languagetoolplus.com/")
-;; (setq! lsp-ltex-java-initial-heap-size 512)
-;; (setq! lsp-ltex-java-maximum-heap-size 8192)
-;; (setq! lsp-ltex-version "18.2.0")
-;; (setq! lsp-ltex-enabled t)
-;; (setq! lsp-ltex-mother-tongue "fr-FR")
-;; (load! "lsp-ltex-plus.el")
-
-;; (with-eval-after-load 'latex
-;;     (add-hook! '(tex-mode-local-vars-hook
-;;                  latex-mode-local-vars-hook
-;;                  LaTeX-mode-local-vars-hook)
-;;                :append #'lsp!))
-
-#+end_src
-* Eglot
-*** Python
-#+begin_src emacs-lisp :tangle "packages.el"
-(package! flymake-ruff)
-#+end_src
 #+begin_src emacs-lisp
 (use-package! eglot
   :config
     (add-to-list 'eglot-server-programs `(
       (python-mode python-ts-mode)
-         ,(expand-file-name "~/.local/bin/ty") "server"
+         ,(expand-file-name "~/.local/bin/rass") "python"
     ))
-    ;; (add-to-list 'eglot-server-programs '(
-    ;;   (python-mode python-ts-mode)
-    ;;      "basedpyright-langserver" "--stdio"
-    ;; ))
-    
-    ;; (setq-default
-    ;;    eglot-workspace-configuration
-    ;;    '(:basedpyright (
-    ;;        :typeCheckingMode "recommended"
-    ;;      )
-    ;;      :basedpyright.analysis (
-    ;;        :diagnosticSeverityOverrides (
-    ;;          :reportUnusedCallResult "none"
-    ;;        )
-    ;;        :inlayHints (
-    ;;          :callArgumentNames :json-false
-    ;;        )
-    ;;      )))
 )
-(use-package! flymake-ruff
-  :config
-    (add-hook 'eglot-managed-mode-hook #'flymake-ruff-load)
-  )
 #+end_src
-
-
 ** LTEX 
 #+begin_src emacs-lisp :tangle "packages.el"
 (package! eglot-ltex-plus
@@ -3583,11 +3666,15 @@ Adapted and improve from https://gist.github.com/fleimgruber/cd2386d8326fad3e0e2
   (setq eglot-ltex-plus-server-path (expand-file-name "~/.config/emacs/.local/etc/lsp/ltex-ls-plus-18.6.1"))
   :hook (org-mode . (lambda ()
                        (require 'eglot-ltex-plus)
-                       (eglot-ensure)))
+                       ))
 )
 #+end_src
 * LaTeX OCR
+Unfortunatly, =gnome-screenshot= needs the following gnome-extension to work 
+https://gitlab.gnome.org/GNOME/gnome-shell/-/merge_requests/3760
+https://github.com/siddhpant/allow-gnome-screenshot
 
+Then a small pipeline for parsing the screenshot.
 #+begin_src bash :tangle "~/bin/latex_ocr.sh" :tangle-mode (identity #o775)
 #!/bin/bash
 # ~/bin/latex_ocr.sh
@@ -3628,10 +3715,20 @@ Adding the following keybinding to your config will allow you to insert LaTeX co
        "M" (cmd! (pac/latex-ocr-insert "\\[\n" "\n\\]"))
        )
 #+end_src
-* Code Assistant :testing:
+* NIFTI Mode
+A custom, vibe-coded, viewer for NifTI files using the canvas API of emacs32.
+#+begin_src emacs-lisp
+(add-to-list 'load-path (expand-file-name "~/gits/emacs/nifti-mode"))
+(autoload 'nifti-view "nifti-mode" "View a NIfTI volume." t)
+(autoload 'nifti-view-files "nifti-mode" "View several NIfTI volumes." t)
+(autoload 'nifti-auto-mode "nifti-mode" "Open NIfTI files in nifti-mode." t)
 
-#+begin_src emacs-lisp :tangle "packages.el"
-(package! eca :recipe (:host github :repo "editor-code-assistant/eca-emacs" :files ("*.el")))
+(nifti-auto-mode 1)
+
+(with-eval-after-load 'nifti-mode
+  (with-eval-after-load 'evil
+    (evil-make-overriding-map nifti-mode-map 'normal)
+    (add-hook 'nifti-mode-hook #'evil-normalize-keymaps)))
+
+(map! :leader :desc "NIfTI volume" "o n" #'nifti-view)
 #+end_src
-
-

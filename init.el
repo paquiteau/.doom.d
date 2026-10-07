@@ -32,7 +32,7 @@
        :ui
        ;;deft              ; notational velocity for Emacs
        doom              ; what makes DOOM look the way it does
-       doom-dashboard    ; a nifty splash screen for Emacs
+       dashboard    ; a nifty splash screen for Emacs
        doom-quit         ; DOOM quit-message prompts when you quit Emacs
        ;; emoji
        hl-todo           ; highlight TODO/FIXME/NOTE/DEPRECATED/HACK/REVIEW
@@ -61,8 +61,8 @@
         +number)
        workspaces        ; tab emulation, persistence & separate workspaces
        (zen +focus)               ; distraction-free coding or writing
-       (smooth-scroll  ; good vibes only
-        +interpolate)
+       ;; (smooth-scroll  ; good vibes only
+       ;;  +interpolate)
        
        :editor
        (evil +everywhere); come to the dark side, we have cookies
@@ -91,8 +91,10 @@
        eshell            ; the elisp shell that works everywhere
        ;;shell             ; simple shell REPL for Emacs
        ;;term              ; basic terminal emulator for Emacs
-       vterm             ; the best terminal emulation in Emacs
-
+       ;;vterm             ; the best terminal emulation in Emacs
+       (ghostel
+        +everywhere)
+       
        :checkers
        (syntax              ; tasing you for every semicolon you forget
         +childframe
@@ -114,7 +116,7 @@
        ;;direnv
        ;;docker
        editorconfig      ; let someone else argue about tabs vs spaces
-       ein               ; tame Jupyter notebooks with emacs
+       ;;ein               ; tame Jupyter notebooks with emacs
        (eval +overlay)     ; run code, run (also, repls)
        (lookup              ; navigate your code and its documentation
         +dictionary
